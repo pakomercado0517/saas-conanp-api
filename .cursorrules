@@ -1,0 +1,1006 @@
+# Reglas de Trabajo - Backend CONANP
+
+## Contexto del Proyecto
+
+### ¿Qué es este proyecto?
+Sistema multi-tenant (Micro-SaaS) para la gestión y regulación de operaciones turísticas en **Áreas Naturales Protegidas (ANP)** de México. La plataforma permite a diferentes ANPs (cada una como una organización) gestionar prestadores de servicios turísticos, sus permisos, activos (embarcaciones, vehículos, guías), actividades turísticas y eventos operativos.
+
+### Propósito del Negocio
+- **Regulación**: Controlar y regular las operaciones turísticas dentro de ANPs
+- **Gestión de Prestadores**: Administrar prestadores de servicios turísticos y sus permisos
+- **Control de Capacidad**: Gestionar la capacidad de actividades turísticas (por bloques o horario libre)
+- **Trazabilidad**: Registrar eventos operativos (operaciones turísticas concretas) con evidencias ambientales
+- **Multi-tenant**: Cada ANP es una organización independiente con sus propias reglas y configuraciones
+
+### Conceptos Clave del Dominio
+
+**ANP (Área Natural Protegida)**: Representada como `Organization` en el sistema. Cada ANP tiene sus propias reglas, actividades permitidas y configuraciones.
+
+**Prestador**: Usuario que ofrece servicios turísticos dentro de una ANP. Debe tener permisos vigentes para realizar actividades.
+
+**Actividad**: Define qué actividad turística puede realizarse (ej: "Snorkel", "Kayak", "Senderismo"). Tiene dos tipos de agenda:
+- **BLOQUES**: Horarios predefinidos que el prestador selecciona
+- **HORARIO_LIBRE**: El prestador define su propio horario de inicio y fin
+
+**Permiso**: Autorización que tiene un prestador para realizar una actividad específica. Tiene fechas de vigencia.
+
+**Activo**: Recurso del prestador (embarcación, vehículo, guía, equipo) que debe ser aprobado antes de usarse.
+
+**Evento Operativo**: Registro de una operación turística concreta realizada por un prestador en una fecha/hora específica.
+
+**Bloque**: Horario predefinido para actividades con tipo BLOQUES. Puede ser una plantilla o una fecha específica.
+
+**Capacidad**: Límite de personas/operaciones permitidas por actividad, fecha y bloque (si aplica).
+
+### Stack Tecnológico
+- **Backend**: Node.js + Express
+- **Lenguaje**: TypeScript (strict mode)
+- **Base de Datos**: PostgreSQL
+- **ORM**: Sequelize
+- **Validación**: Zod
+- **Fechas**: Luxon
+- **Autenticación**: JWT
+- **Logging**: Pino
+
+### Arquitectura
+- **Multi-tenant**: Todo filtrado por `organizationId`
+- **Modular**: Cada dominio en su propio módulo (`auth`, `organizations`, `users`, `prestadores`, `actividades`, `permisos`, `activos`, `eventos`, `capacidad`, `evidencias`)
+- **Service Layer**: Toda lógica de negocio en services, controllers delgados
+- **Separación estricta**: Auth ≠ Dominio ≠ Infraestructura
+
+### Principios Fundamentales
+1. **Multi-tenant desde el inicio**: Nunca asumir una sola ANP
+2. **Dominio primero**: La lógica es operación turística regulada, no el framework
+3. **Reglas como datos**: Nada hardcodeado por ecosistema (configuración en `Organization.settings`)
+4. **Validaciones backend**: Nunca confiar solo en frontend
+
+### Referencia Completa
+Para detalles técnicos completos, ver: `docs/plan-backend-micro-saas-conanp.md`
+
+---
+
+## 1. Tipado Robusto
+
+- **SIEMPRE usar tipos explícitos** en funciones, parámetros y retornos
+- **NUNCA usar `any`** - usar `unknown` si es necesario y hacer type guards
+- Usar tipos estrictos de TypeScript (`strict: true` en tsconfig)
+- Crear tipos/interfaces compartidos en `src/shared/types/`
+- Inferir tipos desde Zod schemas cuando sea posible
+- Usar `as const` para literales cuando sea apropiado
+- Tipar correctamente los modelos de Sequelize
+
+```typescript
+// ✅ CORRECTO
+const createActividad = async (data: CreateActividadDTO): Promise<Actividad> => {
+  // ...
+}
+
+// ❌ INCORRECTO
+const createActividad = async (data: any) => {
+  // ...
+}
+```
+
+---
+
+## 2. Manejo de Fechas con Luxon
+
+- **SIEMPRE usar Luxon** para manejo de fechas
+- **Zona horaria del proyecto (aplicación)**: `America/Mexico_City` (México)
+- **Zona horaria de la base de datos**: `America/New_York` (Virginia, US)
+- Convertir fechas a UTC antes de guardar en BD
+- Convertir fechas de UTC a zona horaria de México al leer de BD
+- Usar `DateTime` de Luxon, nunca `Date` nativo de JavaScript
+- Formatear fechas para respuestas API en zona horaria de México
+
+```typescript
+import { DateTime } from 'luxon';
+
+// Al guardar en BD: convertir a UTC
+const fechaUTC = DateTime.fromISO(fecha, { zone: 'America/Mexico_City' })
+  .toUTC()
+  .toISO();
+
+// Al leer de BD: convertir a zona horaria de México
+const fechaMexico = DateTime.fromISO(fechaBD, { zone: 'utc' })
+  .setZone('America/Mexico_City')
+  .toISO();
+
+// Para comparaciones y cálculos, usar DateTime de Luxon
+const ahora = DateTime.now().setZone('America/Mexico_City');
+```
+
+---
+
+## 3. Documentación
+
+- **NUNCA generar documentación automáticamente** sin preguntar primero
+- **SIEMPRE preguntar al usuario**: "¿Deseas que genere documentación para esta tarea?"
+- Toda documentación se guarda en la carpeta `/docs`
+- Documentar reglas de negocio complejas en código con comentarios claros
+- Documentar APIs y endpoints cuando sea necesario
+- Usar Markdown para documentación
+
+---
+
+## 4. Estructura Modular
+
+- **Modularizar rutas, services y controllers** en sus respectivas carpetas dentro de cada módulo
+- Estructura de cada módulo en `src/modules/[nombre-modulo]/`:
+  ```
+  modules/
+  ├─ [nombre-modulo]/
+  │  ├─ models/
+  │  │  └─ [nombre].model.ts
+  │  ├─ services/
+  │  │  └─ [nombre].service.ts
+  │  ├─ controllers/
+  │  │  └─ [nombre].controller.ts
+  │  ├─ routes/
+  │  │  └─ [nombre].routes.ts
+  │  ├─ validators/
+  │  │  └─ [nombre].validator.ts (schemas Zod)
+  │  └─ types/
+  │     └─ [nombre].types.ts
+  ```
+
+---
+
+## 5. Multi-Tenant Obligatorio
+
+- **TODOS los queries DEBEN filtrar por `organizationId`**
+- **NUNCA asumir una sola organización**
+- Crear middleware para validar y extraer `organizationId` del contexto
+- Incluir `organizationId` en todas las operaciones de base de datos
+- Validar que el usuario tenga acceso a la organización antes de cualquier operación
+
+```typescript
+// ✅ CORRECTO - Siempre filtrar por organizationId
+const actividades = await Actividad.findAll({
+  where: { organizationId, active: true }
+});
+
+// ❌ INCORRECTO - Sin filtro multi-tenant
+const actividades = await Actividad.findAll({
+  where: { active: true }
+});
+```
+
+---
+
+## 6. Service Layer Estricto
+
+- **TODA la lógica de negocio va en services**, NUNCA en controllers
+- Controllers solo orquestan: validación de entrada → service → respuesta
+- Services pueden llamar a otros services cuando sea necesario
+- Controllers deben ser delgados y delegar toda lógica a services
+
+```typescript
+// ✅ CORRECTO
+// Controller
+export const createActividad = async (req: Request, res: Response) => {
+  const data = req.body;
+  const actividad = await actividadService.create(data);
+  res.status(201).json(actividad);
+};
+
+// Service
+export const createActividad = async (data: CreateActividadDTO): Promise<Actividad> => {
+  // Toda la lógica de negocio aquí
+  // Validaciones, transformaciones, etc.
+}
+
+// ❌ INCORRECTO - Lógica en controller
+export const createActividad = async (req: Request, res: Response) => {
+  // Validaciones, lógica de negocio, etc. - NO HACER ESTO
+}
+```
+
+---
+
+## 7. Validaciones con Zod
+
+- **Usar Zod para todas las validaciones** de entrada
+- Crear schemas Zod en `validators/` de cada módulo
+- Inferir tipos TypeScript desde schemas Zod usando `z.infer<>`
+- Validar en middleware antes de llegar al controller
+- Retornar errores de validación en **español** y claros para el usuario
+
+```typescript
+// Schema Zod con mensajes en español
+export const CreateEventoSchema = z.object({
+  actividadId: z.string().uuid({
+    message: 'El ID de actividad debe ser un UUID válido'
+  }),
+  date: z.string().datetime({
+    message: 'La fecha debe tener un formato válido (ISO 8601)'
+  }),
+  peopleCount: z.number().positive({
+    message: 'El número de personas debe ser mayor a cero'
+  }),
+  bloqueId: z.string().uuid().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+});
+
+// Tipo inferido
+export type CreateEventoDTO = z.infer<typeof CreateEventoSchema>;
+
+// Middleware de validación
+export const validateCreateEvento = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    req.body = CreateEventoSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const mensajes = error.errors.map(err => ({
+        campo: err.path.join('.'),
+        mensaje: err.message
+      }));
+      res.status(400).json({
+        error: 'Error de validación',
+        detalles: mensajes
+      });
+    } else {
+      next(error);
+    }
+  }
+};
+```
+
+---
+
+## 8. Manejo de Errores en Español
+
+- **TODOS los mensajes de error deben estar en español**
+- Mensajes claros y entendibles para el usuario del frontend
+- Estructura consistente de respuestas de error
+- No exponer detalles técnicos internos en producción
+- Crear clases de error personalizadas en `src/shared/errors/`
+
+```typescript
+// Clases de error personalizadas
+export class ValidationError extends Error {
+  constructor(message: string, public field?: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+export class NotFoundError extends Error {
+  constructor(resource: string) {
+    super(`${resource} no encontrado`);
+    this.name = 'NotFoundError';
+  }
+}
+
+export class UnauthorizedError extends Error {
+  constructor(message: string = 'No autorizado') {
+    super(message);
+    this.name = 'UnauthorizedError';
+  }
+}
+
+// En services
+if (!actividad) {
+  throw new NotFoundError('Actividad');
+}
+
+if (!permisoVigente) {
+  throw new ValidationError('No tienes un permiso vigente para esta actividad');
+}
+
+// Respuesta de error estructurada
+{
+  error: 'Error de validación',
+  mensaje: 'No tienes un permiso vigente para esta actividad',
+  codigo: 'PERMISO_NO_VIGENTE',
+  detalles: {
+    actividadId: '...',
+    prestadorId: '...'
+  }
+}
+```
+
+---
+
+## 9. Validaciones Backend Obligatorias
+
+- **NUNCA confiar solo en validaciones del frontend**
+- Validar todas las reglas de negocio en el backend (services)
+- Validar tipo de agenda (BLOQUES vs HORARIO_LIBRE) antes de crear eventos
+- Validar capacidad, permisos y activos antes de operaciones
+- Validar que eventos no excedan capacidad definida
+- Validar que prestadores tengan permisos vigentes
+- Validar que activos estén aprobados antes de usarlos
+
+```typescript
+// Validación de regla de negocio en service
+const crearEvento = async (data: CreateEventoDTO) => {
+  const actividad = await Actividad.findByPk(data.actividadId);
+  
+  if (!actividad) {
+    throw new NotFoundError('Actividad');
+  }
+  
+  // Validar tipo de agenda
+  if (actividad.agendaType === 'BLOQUES' && !data.bloqueId) {
+    throw new ValidationError('Esta actividad requiere seleccionar un bloque');
+  }
+  
+  if (actividad.agendaType === 'HORARIO_LIBRE' && (!data.startTime || !data.endTime)) {
+    throw new ValidationError('Esta actividad requiere definir hora de inicio y fin');
+  }
+  
+  // Validar capacidad
+  const capacidad = await verificarCapacidad(actividad.id, data.date, data.bloqueId);
+  if (!capacidad.disponible) {
+    throw new ValidationError(`No hay capacidad disponible. Máximo: ${capacidad.limite}`);
+  }
+  
+  // Más validaciones...
+};
+```
+
+---
+
+## 10. Transacciones para Operaciones Críticas
+
+- Usar transacciones de Sequelize para operaciones que modifican múltiples tablas
+- Rollback automático en caso de error
+- Usar transacciones especialmente en: creación de eventos, aprobación de activos, cambios de estado
+
+```typescript
+import { sequelize } from '@/shared/database';
+
+const crearEventoConTransaccion = async (data: CreateEventoDTO) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const evento = await Evento.create(data, { transaction });
+    await Capacidad.update(
+      { used: sequelize.literal('used + 1') },
+      { where: { ... }, transaction }
+    );
+    
+    await transaction.commit();
+    return evento;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+};
+```
+
+---
+
+## 11. Convenciones de Nombres
+
+- **Models**: PascalCase (ej: `Actividad`, `PrestadorProfile`, `EventoOperativo`)
+- **Services**: camelCase con sufijo `Service` (ej: `actividadService`, `prestadorService`)
+- **Controllers**: camelCase con sufijo `Controller` (ej: `actividadController`)
+- **Routes**: kebab-case en URLs (ej: `/api/actividades`, `/api/prestadores`)
+- **Types/Interfaces**: PascalCase (ej: `CreateActividadDTO`, `CreateEventoRequest`)
+- **Schemas Zod**: PascalCase con sufijo `Schema` (ej: `CreateActividadSchema`)
+- **Variables y funciones**: camelCase
+- **Constantes**: UPPER_SNAKE_CASE
+
+---
+
+## 12. Tipos TypeScript Compartidos
+
+- Crear tipos compartidos en `src/shared/types/`
+- Tipos del dominio en módulos específicos: `src/modules/[modulo]/types/`
+- Interfaces para requests/responses
+- Tipos para validaciones y DTOs
+- Reutilizar tipos cuando sea posible
+
+---
+
+## 13. Índices de Base de Datos
+
+- **SIEMPRE incluir índices** en `organizationId` y campos de fecha
+- Documentar índices en migraciones con comentarios
+- Crear índices compuestos cuando sea necesario (ej: `organizationId + date`)
+- Índices para campos de búsqueda frecuente
+
+```typescript
+// En migración
+await queryInterface.addIndex('eventos', ['organizationId', 'date'], {
+  name: 'idx_eventos_org_date',
+  comment: 'Índice para búsquedas por organización y fecha'
+});
+```
+
+---
+
+## 14. Testing
+
+- Tests unitarios para services (lógica de negocio)
+- Tests de integración para endpoints críticos
+- Usar Vitest para testing
+- Mockear base de datos en tests unitarios
+- Usar base de datos de prueba para tests de integración
+
+---
+
+## 15. Variables de Entorno
+
+- Validar variables de entorno requeridas al iniciar la aplicación
+- Usar tipos para variables de entorno
+- Documentar variables de entorno necesarias
+
+---
+
+## 16. Logging Estructurado
+
+- Usar Pino para logging estructurado
+- Incluir contexto en logs: `organizationId`, `userId`, `requestId`
+- Diferentes niveles según entorno (debug en desarrollo, info/warn en producción)
+- Loggear errores con stack trace en desarrollo
+
+```typescript
+import pino from 'pino';
+
+const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  ...(process.env.NODE_ENV !== 'production' && {
+    transport: {
+      target: 'pino-pretty'
+    }
+  })
+});
+
+logger.info({ organizationId, userId }, 'Evento creado exitosamente');
+logger.error({ error, organizationId }, 'Error al crear evento');
+```
+
+---
+
+## 17. Validación de Entrada
+
+- Validar y sanitizar todos los inputs con Zod
+- Validar tipos, formatos, rangos
+- Validar UUIDs cuando sea necesario
+- Validar fechas y formatos específicos
+- Retornar errores claros en español
+
+---
+
+## 18. Autenticación y Autorización
+
+- Middleware de autenticación JWT
+- Middleware de autorización por roles
+- Validar permisos en services, no solo en middlewares
+- Verificar que el usuario pertenezca a la organización antes de operaciones
+
+---
+
+## 19. Configuración vs Código
+
+- Reglas de negocio configurables en `Organization.settings` (JSONB)
+- **NUNCA hardcodear valores específicos de ecosistema**
+- Si algo depende del ecosistema → Configuración
+- Si algo no depende del ecosistema → Core
+
+---
+
+## 20. Antipatrones a Evitar
+
+- ❌ Lógica en controllers
+- ❌ Queries sin índices
+- ❌ Includes masivos de Sequelize (N+1 queries)
+- ❌ Validaciones solo en frontend
+- ❌ Queries sin filtro multi-tenant
+- ❌ Uso de `any` en TypeScript
+- ❌ Uso de `Date` nativo en lugar de Luxon
+- ❌ Mensajes de error en inglés
+- ❌ Hardcodear valores de ecosistema
+- ❌ Asumir una sola organización
+- ❌ Sobre-ingeniería: abstracciones complejas innecesarias, patrones de diseño excesivos, capas adicionales sin necesidad
+
+---
+
+## 21. Buenas Prácticas
+
+- ✅ Service layer fuerte
+- ✅ Transacciones para operaciones críticas
+- ✅ Índices por organizationId y fechas
+- ✅ Filtros multi-tenant obligatorios
+- ✅ Tipado robusto con TypeScript
+- ✅ Validaciones backend obligatorias
+- ✅ Manejo de errores en español
+- ✅ Logging estructurado con contexto
+- ✅ Separación estricta de responsabilidades
+- ✅ Código modular y reutilizable
+
+---
+
+## 22. Evitar Sobre-Ingeniería
+
+- **NUNCA usar sobre-ingeniería** al crear código
+- Priorizar simplicidad y claridad sobre abstracciones complejas
+- Crear abstracciones solo cuando realmente se necesiten y aporten valor
+- Evitar patrones de diseño complejos si no son necesarios
+- No crear capas adicionales si no hay necesidad real
+- Preferir código directo y fácil de entender sobre arquitecturas "futuras"
+- YAGNI (You Aren't Gonna Need It): No implementar funcionalidades "por si acaso"
+- KISS (Keep It Simple, Stupid): Mantener las soluciones simples
+- Si algo funciona bien y es claro, no complicarlo innecesariamente
+
+```typescript
+// ✅ CORRECTO - Solución simple y directa
+const getActividad = async (id: string, organizationId: string): Promise<Actividad | null> => {
+  return await Actividad.findOne({
+    where: { id, organizationId }
+  });
+};
+
+// ❌ INCORRECTO - Sobre-ingeniería innecesaria
+class ActividadRepositoryFactory {
+  private strategy: RepositoryStrategy;
+  constructor(strategy: RepositoryStrategy) {
+    this.strategy = strategy;
+  }
+  async get(id: string, orgId: string): Promise<Actividad | null> {
+    return this.strategy.execute(id, orgId);
+  }
+}
+// ... cuando un simple findOne es suficiente
+```
+
+---
+
+## 23. Seguridad y Autenticación
+
+- **SIEMPRE validar JWT** en rutas protegidas
+- Usar middleware de autenticación antes de cualquier operación
+- Validar que el token no esté expirado
+- Verificar que el usuario pertenezca a la organización solicitada
+- Hash de contraseñas con bcrypt (mínimo 10 rounds)
+- **NUNCA** exponer contraseñas en logs o respuestas
+- Validar permisos de rol antes de operaciones sensibles
+- Usar HTTPS en producción
+- Implementar rate limiting en endpoints de autenticación
+- Tokens de refresh con expiración más larga que access tokens
+
+```typescript
+// Middleware de autenticación
+export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new UnauthorizedError('Token de autenticación requerido');
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    throw new UnauthorizedError('Token inválido o expirado');
+  }
+};
+```
+
+---
+
+## 24. Paginación y Filtrado
+
+- **SIEMPRE implementar paginación** en endpoints que retornan listas
+- Usar límites razonables (default: 20, máximo: 100)
+- Retornar metadata de paginación (total, página, límite, total de páginas)
+- Permitir filtrado por campos relevantes
+- Incluir ordenamiento (sort) cuando sea necesario
+- Validar parámetros de paginación con Zod
+
+```typescript
+// Schema de paginación
+export const PaginationSchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+// Respuesta paginada
+interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+```
+
+---
+
+## 25. Soft Deletes
+
+- **Usar soft deletes** para entidades críticas (no eliminar físicamente)
+- Agregar campo `deletedAt` (timestamp) a modelos relevantes
+- Filtrar automáticamente registros eliminados en queries normales
+- Incluir opción para restaurar registros eliminados
+- Solo eliminar físicamente en casos específicos (GDPR, limpieza)
+
+```typescript
+// Modelo con soft delete
+export const Actividad = sequelize.define('Actividad', {
+  // ... campos
+  deletedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+}, {
+  paranoid: true, // Habilita soft delete en Sequelize
+});
+
+// Query que excluye eliminados automáticamente
+const actividades = await Actividad.findAll({ where: { organizationId } });
+```
+
+---
+
+## 26. Estados y Transiciones
+
+- Definir estados válidos como tipos/enums de TypeScript
+- Validar transiciones de estado en services
+- No permitir transiciones inválidas
+- Registrar cambios de estado con auditoría
+- Usar máquinas de estado simples cuando sea necesario
+
+```typescript
+// Estados válidos
+export type ActivoStatus = 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido';
+
+// Validar transición
+const cambiarEstadoActivo = async (activoId: string, nuevoEstado: ActivoStatus) => {
+  const activo = await Activo.findByPk(activoId);
+  if (!activo) throw new NotFoundError('Activo');
+  
+  // Validar transición válida
+  const transicionesValidas: Record<ActivoStatus, ActivoStatus[]> = {
+    pendiente: ['aprobado', 'rechazado'],
+    aprobado: ['suspendido'],
+    rechazado: ['pendiente'],
+    suspendido: ['aprobado'],
+  };
+  
+  if (!transicionesValidas[activo.status].includes(nuevoEstado)) {
+    throw new ValidationError(`No se puede cambiar de ${activo.status} a ${nuevoEstado}`);
+  }
+  
+  activo.status = nuevoEstado;
+  await activo.save();
+};
+```
+
+---
+
+## 27. Manejo de Archivos y Evidencias
+
+- Validar tipos MIME y tamaños de archivos
+- Almacenar archivos en servicio externo (S3, R2, etc.), no en servidor
+- Generar nombres únicos para archivos (UUIDs)
+- Validar extensiones permitidas
+- Limitar tamaño máximo de archivos
+- Retornar URLs firmadas o públicas según el caso
+- Validar que el usuario tenga permiso para subir archivos
+
+```typescript
+// Validación de archivo
+export const FileUploadSchema = z.object({
+  file: z.instanceof(File, { message: 'Debe ser un archivo válido' }),
+  type: z.enum(['evidencia', 'documento', 'imagen']),
+});
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+
+const validarArchivo = (file: File) => {
+  if (file.size > MAX_FILE_SIZE) {
+    throw new ValidationError('El archivo excede el tamaño máximo permitido (10MB)');
+  }
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new ValidationError('Tipo de archivo no permitido');
+  }
+};
+```
+
+---
+
+## 28. Rate Limiting
+
+- Implementar rate limiting en endpoints públicos y de autenticación
+- Usar diferentes límites según el tipo de endpoint
+- Retornar headers informativos (X-RateLimit-*)
+- Mensajes de error claros cuando se excede el límite
+- Considerar rate limiting por organización en endpoints multi-tenant
+
+```typescript
+import rateLimit from 'express-rate-limit';
+
+// Rate limit para autenticación
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // 5 intentos
+  message: 'Demasiados intentos de inicio de sesión. Intenta nuevamente en 15 minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limit general
+export const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 100, // 100 requests
+  message: 'Demasiadas solicitudes. Intenta nuevamente en un minuto.',
+});
+```
+
+---
+
+## 29. Versionado de API
+
+- Usar versionado en URLs: `/api/v1/...`
+- Mantener compatibilidad hacia atrás cuando sea posible
+- Documentar cambios breaking en versiones nuevas
+- Usar headers de versión como alternativa si es necesario
+- Planificar deprecación de versiones antiguas
+
+```typescript
+// Estructura de rutas versionadas
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/actividades', actividadesRoutes);
+app.use('/api/v1/eventos', eventosRoutes);
+```
+
+---
+
+## 30. Performance y Optimización
+
+- **Evitar N+1 queries** - usar `include` estratégicamente o `findAll` con joins
+- Usar `select` para limitar campos cuando no se necesiten todos
+- Implementar índices en campos de búsqueda frecuente
+- Usar `findAndCountAll` para paginación eficiente
+- Cachear datos que cambian poco (configuraciones, listas de referencia)
+- Optimizar queries complejos con índices compuestos
+- Usar `raw: false` solo cuando sea necesario
+
+```typescript
+// ✅ CORRECTO - Query optimizado
+const eventos = await Evento.findAndCountAll({
+  where: { organizationId, date },
+  include: [{
+    model: Actividad,
+    attributes: ['id', 'name'], // Solo campos necesarios
+    required: true,
+  }],
+  limit: 20,
+  offset: (page - 1) * limit,
+});
+
+// ❌ INCORRECTO - N+1 query
+const eventos = await Evento.findAll({ where: { organizationId } });
+for (const evento of eventos) {
+  const actividad = await Actividad.findByPk(evento.actividadId); // N+1
+}
+```
+
+---
+
+## 31. Manejo de Relaciones y Asociaciones
+
+- Definir asociaciones de Sequelize correctamente
+- Usar `belongsTo`, `hasMany`, `hasOne` según corresponda
+- Incluir foreign keys en modelos
+- Validar integridad referencial
+- Usar `onDelete` y `onUpdate` apropiadamente (CASCADE, RESTRICT, SET NULL)
+
+```typescript
+// Definir asociaciones
+Actividad.belongsTo(Organization, { foreignKey: 'organizationId' });
+Organization.hasMany(Actividad, { foreignKey: 'organizationId' });
+
+Evento.belongsTo(Actividad, { foreignKey: 'actividadId' });
+Evento.belongsTo(Prestador, { foreignKey: 'prestadorId' });
+Actividad.hasMany(Evento, { foreignKey: 'actividadId' });
+```
+
+---
+
+## 32. Caché (cuando sea necesario)
+
+- Cachear solo datos que cambian poco (configuraciones, listas de referencia)
+- Invalidar caché cuando los datos se actualizan
+- Usar TTL (Time To Live) apropiado
+- No cachear datos sensibles o específicos de usuario
+- Considerar caché por organización en multi-tenant
+
+```typescript
+// Ejemplo de caché simple (usar Redis en producción)
+const cacheKey = `actividades:${organizationId}`;
+let actividades = cache.get(cacheKey);
+
+if (!actividades) {
+  actividades = await Actividad.findAll({ where: { organizationId, active: true } });
+  cache.set(cacheKey, actividades, 3600); // 1 hora
+}
+```
+
+---
+
+## 33. Logging y Auditoría
+
+- Loggear todas las operaciones críticas (crear, actualizar, eliminar)
+- Incluir contexto: userId, organizationId, IP, userAgent
+- Loggear errores con stack trace completo
+- No loggear información sensible (contraseñas, tokens)
+- Usar diferentes niveles según la importancia
+- Considerar tabla de auditoría para cambios importantes
+
+```typescript
+// Logging estructurado
+logger.info({
+  action: 'crear_evento',
+  organizationId,
+  userId,
+  eventoId: evento.id,
+  actividadId: evento.actividadId,
+}, 'Evento creado exitosamente');
+
+// Auditoría de cambios
+await Auditoria.create({
+  table: 'eventos',
+  recordId: evento.id,
+  action: 'CREATE',
+  userId,
+  organizationId,
+  changes: { before: null, after: evento.toJSON() },
+});
+```
+
+---
+
+## 34. Validación de Permisos Granulares
+
+- Validar permisos no solo por rol, sino por contexto
+- Un prestador solo puede ver/editar sus propios eventos
+- Administradores pueden ver todo de su organización
+- Validar permisos en services, no solo en middlewares
+- Retornar errores claros cuando no hay permisos
+
+```typescript
+// Validar permiso granular
+const puedeEditarEvento = async (userId: string, eventoId: string, organizationId: string): Promise<boolean> => {
+  const evento = await Evento.findByPk(eventoId);
+  if (!evento || evento.organizationId !== organizationId) {
+    return false;
+  }
+  
+  const membership = await Membership.findOne({ where: { userId, organizationId } });
+  
+  // Admin puede editar cualquier evento
+  if (membership?.role === 'admin') {
+    return true;
+  }
+  
+  // Prestador solo puede editar sus propios eventos
+  if (membership?.role === 'prestador' && evento.prestadorId === userId) {
+    return true;
+  }
+  
+  return false;
+};
+```
+
+---
+
+## 35. Manejo de Fechas y Horarios
+
+- Validar que fechas no sean en el pasado (cuando corresponda)
+- Validar rangos de fechas (fecha inicio < fecha fin)
+- Validar horarios dentro de rangos permitidos
+- Considerar días de la semana si aplica
+- Validar que bloques no se solapen
+- Convertir siempre a zona horaria correcta antes de comparar
+
+```typescript
+// Validar rango de fechas
+const validarRangoFechas = (fechaInicio: DateTime, fechaFin: DateTime): void => {
+  if (fechaInicio >= fechaFin) {
+    throw new ValidationError('La fecha de inicio debe ser anterior a la fecha de fin');
+  }
+  
+  if (fechaInicio < DateTime.now().setZone('America/Mexico_City')) {
+    throw new ValidationError('No se pueden crear eventos en el pasado');
+  }
+};
+```
+
+---
+
+## 36. Respuestas API Consistentes
+
+- Estructura consistente para respuestas exitosas
+- Estructura consistente para respuestas de error
+- Incluir metadata cuando sea relevante
+- Usar códigos HTTP apropiados
+- Incluir timestamps en respuestas cuando sea útil
+
+```typescript
+// Respuesta exitosa estándar
+interface SuccessResponse<T> {
+  success: true;
+  data: T;
+  message?: string;
+  timestamp: string;
+}
+
+// Respuesta de error estándar
+interface ErrorResponse {
+  success: false;
+  error: string;
+  message: string;
+  code?: string;
+  details?: Record<string, unknown>;
+  timestamp: string;
+}
+
+// Helper para respuestas
+export const sendSuccess = <T>(res: Response, data: T, message?: string, statusCode = 200) => {
+  res.status(statusCode).json({
+    success: true,
+    data,
+    message,
+    timestamp: new Date().toISOString(),
+  });
+};
+```
+
+---
+
+## 37. Testing y Calidad de Código
+
+- Escribir tests para lógica de negocio compleja
+- Mockear dependencias externas (BD, APIs)
+- Usar fixtures para datos de prueba
+- Tests de integración para flujos críticos
+- Mantener cobertura razonable (no obsesionarse con 100%)
+- Tests deben ser rápidos y determinísticos
+
+---
+
+## 38. Manejo de CORS
+
+- Configurar CORS apropiadamente según entorno
+- Permitir solo orígenes necesarios en producción
+- Incluir credenciales cuando sea necesario
+- Configurar headers permitidos
+- Validar origen en producción
+
+```typescript
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : 'http://localhost:3000',
+  credentials: true,
+  optionsSuccessStatus: 200,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+```
+
+---
+
+## Recordatorios Importantes
+
+1. **Multi-tenant desde el inicio**: Todo pertenece a una organización
+2. **Dominio primero**: La lógica es operación turística regulada, no el framework
+3. **Reglas como datos**: Nada hardcodeado por ecosistema
+4. **Separación estricta**: Auth ≠ Dominio ≠ Infraestructura
+5. **Validaciones backend**: Nunca confiar solo en frontend
+6. **Mensajes en español**: Siempre para buena UX
+7. **Preguntar antes de documentar**: No generar documentación automáticamente
+8. **Simplicidad**: Evitar sobre-ingeniería, priorizar código claro y directo
+9. **Performance**: Optimizar queries, evitar N+1, usar índices
+10. **Seguridad**: Validar permisos, proteger endpoints, no exponer datos sensibles
