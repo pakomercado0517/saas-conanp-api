@@ -65,7 +65,9 @@ Sistema multi-tenant (Micro-SaaS) para la gestión y regulación de operaciones 
 - **SIEMPRE usar tipos explícitos** en funciones, parámetros y retornos
 - **NUNCA usar `any`** - usar `unknown` si es necesario y hacer type guards
 - Usar tipos estrictos de TypeScript (`strict: true` en tsconfig)
-- Crear tipos/interfaces compartidos en `src/shared/types/`
+- Crear tipos/interfaces compartidos organizados por dominio funcional:
+  - `src/shared/database/types.ts` - tipos relacionados con la base de datos (UUID, Status, Role, etc.)
+  - `src/shared/dates/types.ts` - tipos relacionados con fechas (DateOnly, TimeOnly, AppDateTime, etc.)
 - Inferir tipos desde Zod schemas cuando sea posible
 - Usar `as const` para literales cuando sea apropiado
 - Tipar correctamente los modelos de Sequelize
@@ -390,7 +392,9 @@ const crearEventoConTransaccion = async (data: CreateEventoDTO) => {
 
 ## 12. Tipos TypeScript Compartidos
 
-- Crear tipos compartidos en `src/shared/types/`
+- Crear tipos compartidos organizados por dominio funcional:
+  - `src/shared/database/types.ts` - tipos relacionados con la base de datos (UUID, Status, Role, EcosystemType, AgendaType, ActividadType, ActivoType, EventoStatus)
+  - `src/shared/dates/types.ts` - tipos relacionados con fechas (DateOnly, TimeOnly, AppDateTime, UTCDateTime, FormatOptions)
 - Tipos del dominio en módulos específicos: `src/modules/[modulo]/types/`
 - Interfaces para requests/responses
 - Tipos para validaciones y DTOs

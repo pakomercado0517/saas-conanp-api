@@ -45,6 +45,7 @@ export {
   isDateInFuture,
   isDateInRange,
   daysBetween,
+  minutesBetween,
   addDays,
   addMonths,
   addYears,
@@ -53,6 +54,9 @@ export {
   isSameDay,
   startOfDay,
   endOfDay,
+  isValidTimeRange,
+  doTimeRangesOverlap,
+  isWithinValidityRange,
 } from './helpers';
 
 // Schemas Zod para validación
