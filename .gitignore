@@ -1,1 +1,4 @@
 node_modules
+
+# Archivos temporales de Windows
+nul
