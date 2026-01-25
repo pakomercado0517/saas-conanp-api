@@ -14,8 +14,10 @@ export interface CapacidadAttributes {
   updatedAt: Date;
 }
 
-export interface CapacidadCreationAttributes
-  extends Optional<CapacidadAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
+export interface CapacidadCreationAttributes extends Optional<
+  CapacidadAttributes,
+  'id' | 'createdAt' | 'updatedAt'
+> {}
 
 export class Capacidad
   extends Model<CapacidadAttributes, CapacidadCreationAttributes>

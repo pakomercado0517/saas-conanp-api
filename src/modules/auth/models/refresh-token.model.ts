@@ -12,8 +12,10 @@ export interface RefreshTokenAttributes {
   updatedAt: Date;
 }
 
-export interface RefreshTokenCreationAttributes
-  extends Optional<RefreshTokenAttributes, 'id' | 'revokedAt' | 'createdAt' | 'updatedAt'> {}
+export interface RefreshTokenCreationAttributes extends Optional<
+  RefreshTokenAttributes,
+  'id' | 'revokedAt' | 'createdAt' | 'updatedAt'
+> {}
 
 export class RefreshToken
   extends Model<RefreshTokenAttributes, RefreshTokenCreationAttributes>

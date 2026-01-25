@@ -14,8 +14,10 @@ export interface MembershipAttributes {
   updatedAt: Date;
 }
 
-export interface MembershipCreationAttributes
-  extends Optional<MembershipAttributes, 'id' | 'status' | 'createdAt' | 'updatedAt'> {}
+export interface MembershipCreationAttributes extends Optional<
+  MembershipAttributes,
+  'id' | 'status' | 'createdAt' | 'updatedAt'
+> {}
 
 export class Membership
   extends Model<MembershipAttributes, MembershipCreationAttributes>

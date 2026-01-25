@@ -16,8 +16,10 @@ export interface PermisoAttributes {
   updatedAt: Date;
 }
 
-export interface PermisoCreationAttributes
-  extends Optional<PermisoAttributes, 'id' | 'status' | 'documentUrl' | 'createdAt' | 'updatedAt'> {}
+export interface PermisoCreationAttributes extends Optional<
+  PermisoAttributes,
+  'id' | 'status' | 'documentUrl' | 'createdAt' | 'updatedAt'
+> {}
 
 export class Permiso
   extends Model<PermisoAttributes, PermisoCreationAttributes>

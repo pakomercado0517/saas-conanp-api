@@ -16,16 +16,41 @@ interface RequestContext extends Request {
 
 /**
  * Formatea errores de Zod para respuesta API
- * 
+ *
  * Convierte los errores de Zod en un formato estructurado con mensajes en español
  */
-const formatZodError = (error: z.ZodError) => {
-  const detalles = error.issues.map((err) => ({
-    campo: err.path.join('.') || 'raíz',
-    mensaje: err.message,
-    codigo: err.code,
-    ...(err.path.length > 0 && { valor: err.path }),
-  }));
+const formatZodError = (
+  error: z.ZodError
+): {
+  success: false;
+  error: string;
+  message: string;
+  code: string;
+  detalles: Array<{
+    campo: string;
+    mensaje: string;
+    codigo: string;
+    valor?: unknown;
+  }>;
+} => {
+  const detalles = error.issues.map((err) => {
+    const detalle: {
+      campo: string;
+      mensaje: string;
+      codigo: string;
+      valor?: unknown;
+    } = {
+      campo: err.path.join('.') || 'raíz',
+      mensaje: err.message,
+      codigo: err.code,
+    };
+
+    if (err.path.length > 0) {
+      detalle.valor = err.path;
+    }
+
+    return detalle;
+  });
 
   return {
     success: false,
@@ -37,22 +62,79 @@ const formatZodError = (error: z.ZodError) => {
 };
 
 /**
+ * Interfaz para errores de validación de Sequelize
+ */
+interface SequelizeValidationErrorItem {
+  path?: string;
+  message: string;
+  value?: unknown;
+  type?: string;
+}
+
+/**
+ * Interfaz para errores de Sequelize
+ */
+interface SequelizeError extends Error {
+  name: string;
+  errors?: SequelizeValidationErrorItem[];
+  fields?: string[];
+}
+
+/**
  * Formatea errores de Sequelize para respuesta API
- * 
+ *
  * Maneja diferentes tipos de errores de Sequelize:
  * - ValidationError: errores de validación de campos
  * - UniqueConstraintError: violaciones de unicidad
  * - ForeignKeyConstraintError: violaciones de claves foráneas
  */
-const formatSequelizeError = (error: any) => {
+const formatSequelizeError = (
+  error: unknown
+): {
+  success: false;
+  error: string;
+  message: string;
+  code: string;
+  detalles?: Array<{
+    campo: string;
+    mensaje: string;
+    valor?: unknown;
+    tipo?: string;
+  }>;
+  details?: {
+    campo: string;
+    valor?: unknown;
+  };
+} | null => {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  const sequelizeError = error as SequelizeError;
+
   // ValidationError de Sequelize
-  if (error.name === 'SequelizeValidationError') {
-    const detalles = error.errors.map((err: any) => ({
-      campo: err.path || 'campo',
-      mensaje: err.message,
-      valor: err.value,
-      tipo: err.type,
-    }));
+  if (sequelizeError.name === 'SequelizeValidationError' && sequelizeError.errors) {
+    const detalles = sequelizeError.errors.map((err: SequelizeValidationErrorItem) => {
+      const detalle: {
+        campo: string;
+        mensaje: string;
+        valor?: unknown;
+        tipo?: string;
+      } = {
+        campo: err.path || 'campo',
+        mensaje: err.message,
+      };
+
+      if (err.value !== undefined) {
+        detalle.valor = err.value;
+      }
+
+      if (err.type !== undefined) {
+        detalle.tipo = err.type;
+      }
+
+      return detalle;
+    });
 
     return {
       success: false,
@@ -64,25 +146,33 @@ const formatSequelizeError = (error: any) => {
   }
 
   // UniqueConstraintError - Campo duplicado
-  if (error.name === 'SequelizeUniqueConstraintError') {
-    const campo = error.errors[0]?.path || 'campo';
-    const valor = error.errors[0]?.value;
+  if (sequelizeError.name === 'SequelizeUniqueConstraintError' && sequelizeError.errors) {
+    const campo = sequelizeError.errors[0]?.path || 'campo';
+    const valor = sequelizeError.errors[0]?.value;
+
+    const details: {
+      campo: string;
+      valor?: unknown;
+    } = {
+      campo,
+    };
+
+    if (valor !== undefined) {
+      details.valor = valor;
+    }
 
     return {
       success: false,
       error: 'Conflicto',
-      message: `El ${campo} ya existe${valor ? `: ${valor}` : ''}`,
+      message: `El ${campo} ya existe${valor !== undefined ? `: ${valor}` : ''}`,
       code: 'CONFLICT',
-      details: {
-        campo,
-        ...(valor && { valor }),
-      },
+      details,
     };
   }
 
   // ForeignKeyConstraintError - Referencia inválida
-  if (error.name === 'SequelizeForeignKeyConstraintError') {
-    const campo = error.fields?.[0] || 'referencia';
+  if (sequelizeError.name === 'SequelizeForeignKeyConstraintError') {
+    const campo = sequelizeError.fields?.[0] || 'referencia';
     return {
       success: false,
       error: 'Error de referencia',
@@ -95,7 +185,7 @@ const formatSequelizeError = (error: any) => {
   }
 
   // DatabaseError - Errores de base de datos
-  if (error.name === 'SequelizeDatabaseError') {
+  if (sequelizeError.name === 'SequelizeDatabaseError') {
     return {
       success: false,
       error: 'Error de base de datos',
@@ -108,14 +198,33 @@ const formatSequelizeError = (error: any) => {
 };
 
 /**
+ * Interfaz para errores de JWT
+ */
+interface JWTError extends Error {
+  name: string;
+}
+
+/**
  * Formatea errores de JWT para respuesta API
- * 
+ *
  * Maneja errores relacionados con tokens JWT:
  * - JsonWebTokenError: token inválido
  * - TokenExpiredError: token expirado
  */
-const formatJWTError = (error: any) => {
-  if (error.name === 'JsonWebTokenError') {
+const formatJWTError = (
+  error: unknown
+): {
+  success: false;
+  error: string;
+  message: string;
+  code: string;
+} | null => {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  const jwtError = error as JWTError;
+  if (jwtError.name === 'JsonWebTokenError') {
     return {
       success: false,
       error: 'Token inválido',
@@ -124,7 +233,7 @@ const formatJWTError = (error: any) => {
     };
   }
 
-  if (error.name === 'TokenExpiredError') {
+  if (jwtError.name === 'TokenExpiredError') {
     return {
       success: false,
       error: 'Token expirado',
@@ -138,10 +247,10 @@ const formatJWTError = (error: any) => {
 
 /**
  * Middleware de manejo de errores globales
- * 
+ *
  * Este middleware debe ser el último middleware registrado en la aplicación.
  * Captura todos los errores no manejados y los formatea de manera consistente.
- * 
+ *
  * @param err - Error capturado
  * @param req - Request de Express
  * @param res - Response de Express
@@ -239,8 +348,8 @@ export const errorHandler = (
       sequelizeError.code === 'CONFLICT'
         ? 409
         : sequelizeError.code === 'DATABASE_ERROR'
-        ? 500
-        : 400;
+          ? 500
+          : 400;
 
     logger.warn(
       {

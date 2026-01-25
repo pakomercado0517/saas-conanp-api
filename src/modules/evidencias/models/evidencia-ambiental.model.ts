@@ -13,8 +13,10 @@ export interface EvidenciaAmbientalAttributes {
   updatedAt: Date;
 }
 
-export interface EvidenciaAmbientalCreationAttributes
-  extends Optional<EvidenciaAmbientalAttributes, 'id' | 'description' | 'fileUrl' | 'createdAt' | 'updatedAt'> {}
+export interface EvidenciaAmbientalCreationAttributes extends Optional<
+  EvidenciaAmbientalAttributes,
+  'id' | 'description' | 'fileUrl' | 'createdAt' | 'updatedAt'
+> {}
 
 export class EvidenciaAmbiental
   extends Model<EvidenciaAmbientalAttributes, EvidenciaAmbientalCreationAttributes>
@@ -112,4 +114,7 @@ EvidenciaAmbiental.init(
 
 // Definir relaciones
 EvidenciaAmbiental.belongsTo(EventoOperativo, { foreignKey: 'eventoId', as: 'EventoOperativo' });
-EventoOperativo.hasMany(EvidenciaAmbiental, { foreignKey: 'eventoId', as: 'EvidenciasAmbientales' });
+EventoOperativo.hasMany(EvidenciaAmbiental, {
+  foreignKey: 'eventoId',
+  as: 'EvidenciasAmbientales',
+});

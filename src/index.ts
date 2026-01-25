@@ -1,8 +1,8 @@
-import app from "./server.js";
-import { testConnection } from "./shared/database/index.js";
-import { logger } from "./shared/logger/index.js";
+import app from './server.js';
+import { testConnection } from './shared/database/index.js';
+import { logger } from './shared/logger/index.js';
 
-const port = parseInt(process.env["PORT"] || "3001");
+const port = parseInt(process.env['PORT'] || '3001');
 
 const server = async (): Promise<void> => {
   try {
@@ -13,9 +13,9 @@ const server = async (): Promise<void> => {
       logger.info(
         {
           port,
-          environment: process.env["NODE_ENV"] || "development",
+          environment: process.env['NODE_ENV'] || 'development',
         },
-        "Servidor iniciado exitosamente"
+        'Servidor iniciado exitosamente'
       );
     });
   } catch (error) {
@@ -23,9 +23,9 @@ const server = async (): Promise<void> => {
       {
         error,
         port,
-        environment: process.env["NODE_ENV"] || "development",
+        environment: process.env['NODE_ENV'] || 'development',
       },
-      "Error al iniciar el servidor"
+      'Error al iniciar el servidor'
     );
     process.exit(1);
   }

@@ -1,6 +1,6 @@
 /**
  * Clase base abstracta para todos los errores personalizados de la aplicación
- * 
+ *
  * Proporciona una estructura consistente para manejo de errores con:
  * - Código HTTP apropiado
  * - Código de error interno para el frontend

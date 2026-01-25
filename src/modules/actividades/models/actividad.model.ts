@@ -16,8 +16,10 @@ export interface ActividadAttributes {
   updatedAt: Date;
 }
 
-export interface ActividadCreationAttributes
-  extends Optional<ActividadAttributes, 'id' | 'requiresGuide' | 'impactLevel' | 'active' | 'createdAt' | 'updatedAt'> {}
+export interface ActividadCreationAttributes extends Optional<
+  ActividadAttributes,
+  'id' | 'requiresGuide' | 'impactLevel' | 'active' | 'createdAt' | 'updatedAt'
+> {}
 
 export class Actividad
   extends Model<ActividadAttributes, ActividadCreationAttributes>

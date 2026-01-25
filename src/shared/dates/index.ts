@@ -1,6 +1,6 @@
 /**
  * Módulo centralizado para manejo de fechas con Luxon
- * 
+ *
  * Este módulo proporciona utilidades para:
  * - Conversión de zonas horarias (México <-> UTC)
  * - Validación de fechas
@@ -12,13 +12,7 @@
 export { APP_TIMEZONE, DB_TIMEZONE, DATE_FORMATS } from './constants';
 
 // Tipos
-export type {
-  DateOnly,
-  TimeOnly,
-  AppDateTime,
-  UTCDateTime,
-  FormatOptions,
-} from './types';
+export type { DateOnly, TimeOnly, AppDateTime, UTCDateTime, FormatOptions } from './types';
 
 // Utilidades de conversión
 export {

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { DateTime } from 'luxon';
 import { parseDate, parseDateOnly, parseTimeOnly } from './utils';
+import { now } from './utils';
 /**
  * Schema Zod para validar DateTime ISO
  */
@@ -115,7 +116,7 @@ export const optionalTimeOnlySchema = timeOnlySchema.optional().nullable();
  * Schema Zod para validar que una fecha no esté en el pasado
  */
 export const futureDateSchema = dateTimeSchema.refine((dt) => {
-    return dt > DateTime.now().setZone('America/Mexico_City');
+    return dt > now();
 }, {
     message: 'La fecha no puede estar en el pasado',
 });
@@ -123,7 +124,7 @@ export const futureDateSchema = dateTimeSchema.refine((dt) => {
  * Schema Zod para validar que una fecha no esté en el futuro
  */
 export const pastDateSchema = dateTimeSchema.refine((dt) => {
-    return dt < DateTime.now().setZone('America/Mexico_City');
+    return dt < now();
 }, {
     message: 'La fecha no puede estar en el futuro',
 });

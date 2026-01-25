@@ -14,8 +14,10 @@ export interface PrestadorProfileAttributes {
   updatedAt: Date;
 }
 
-export interface PrestadorProfileCreationAttributes
-  extends Optional<PrestadorProfileAttributes, 'id' | 'status' | 'permitExpiresAt' | 'createdAt' | 'updatedAt'> {}
+export interface PrestadorProfileCreationAttributes extends Optional<
+  PrestadorProfileAttributes,
+  'id' | 'status' | 'permitExpiresAt' | 'createdAt' | 'updatedAt'
+> {}
 
 export class PrestadorProfile
   extends Model<PrestadorProfileAttributes, PrestadorProfileCreationAttributes>

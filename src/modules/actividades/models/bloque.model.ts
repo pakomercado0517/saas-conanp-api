@@ -17,8 +17,10 @@ export interface BloqueAttributes {
   updatedAt: Date;
 }
 
-export interface BloqueCreationAttributes
-  extends Optional<BloqueAttributes, 'id' | 'date' | 'capacity' | 'isTemplate' | 'createdAt' | 'updatedAt'> {}
+export interface BloqueCreationAttributes extends Optional<
+  BloqueAttributes,
+  'id' | 'date' | 'capacity' | 'isTemplate' | 'createdAt' | 'updatedAt'
+> {}
 
 export class Bloque
   extends Model<BloqueAttributes, BloqueCreationAttributes>

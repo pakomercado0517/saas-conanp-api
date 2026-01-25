@@ -9,11 +9,11 @@ if (!process.env['DATABASE_PUBLIC_URL']) {
 
 /**
  * Configuración de Sequelize para PostgreSQL
- * 
+ *
  * Zonas horarias:
  * - Base de datos: UTC (America/New_York - Virginia, US)
  * - Aplicación: America/Mexico_City (México)
- * 
+ *
  * Las fechas se convierten a UTC antes de guardar y a Mexico_City al leer
  */
 const sequelize = new Sequelize(process.env['DATABASE_PUBLIC_URL'], {

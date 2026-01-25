@@ -50,7 +50,7 @@ export const fromUTCString = (utcString: string | null | undefined): string | nu
  */
 export const parseDate = (dateString: string | null | undefined): DateTime | null => {
   if (!dateString) return null;
-  
+
   const dt = DateTime.fromISO(dateString, { zone: APP_TIMEZONE });
   return dt.isValid ? dt : null;
 };
@@ -68,7 +68,7 @@ export const toDateOnly = (dateTime: DateTime): DateOnly | null => {
  */
 export const parseDateOnly = (dateString: string | null | undefined): DateTime | null => {
   if (!dateString) return null;
-  
+
   const dt = DateTime.fromFormat(dateString, DATE_FORMATS.DATE_ONLY, {
     zone: APP_TIMEZONE,
   });
@@ -86,9 +86,12 @@ export const toTimeOnly = (dateTime: DateTime): TimeOnly | null => {
 /**
  * Parsea un string de hora solo (HH:mm:ss) a DateTime (usando fecha actual)
  */
-export const parseTimeOnly = (timeString: string | null | undefined, baseDate?: DateTime): DateTime | null => {
+export const parseTimeOnly = (
+  timeString: string | null | undefined,
+  baseDate?: DateTime
+): DateTime | null => {
   if (!timeString) return null;
-  
+
   const base = baseDate || now();
   const dt = DateTime.fromFormat(
     `${base.toFormat(DATE_FORMATS.DATE_ONLY)} ${timeString}`,

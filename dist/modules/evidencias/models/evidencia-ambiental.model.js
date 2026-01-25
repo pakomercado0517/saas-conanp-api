@@ -79,5 +79,8 @@ EvidenciaAmbiental.init({
 });
 // Definir relaciones
 EvidenciaAmbiental.belongsTo(EventoOperativo, { foreignKey: 'eventoId', as: 'EventoOperativo' });
-EventoOperativo.hasMany(EvidenciaAmbiental, { foreignKey: 'eventoId', as: 'EvidenciasAmbientales' });
+EventoOperativo.hasMany(EvidenciaAmbiental, {
+    foreignKey: 'eventoId',
+    as: 'EvidenciasAmbientales',
+});
 //# sourceMappingURL=evidencia-ambiental.model.js.map

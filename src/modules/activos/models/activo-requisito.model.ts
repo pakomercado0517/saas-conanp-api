@@ -14,8 +14,10 @@ export interface ActivoRequisitoAttributes {
   updatedAt: Date;
 }
 
-export interface ActivoRequisitoCreationAttributes
-  extends Optional<ActivoRequisitoAttributes, 'id' | 'value' | 'documentUrl' | 'validated' | 'createdAt' | 'updatedAt'> {}
+export interface ActivoRequisitoCreationAttributes extends Optional<
+  ActivoRequisitoAttributes,
+  'id' | 'value' | 'documentUrl' | 'validated' | 'createdAt' | 'updatedAt'
+> {}
 
 export class ActivoRequisito
   extends Model<ActivoRequisitoAttributes, ActivoRequisitoCreationAttributes>

@@ -41,7 +41,10 @@ export const isDateInRange = (
 /**
  * Calcula el número de días entre dos fechas
  */
-export const daysBetween = (startDate: DateTime | string, endDate: DateTime | string): number | null => {
+export const daysBetween = (
+  startDate: DateTime | string,
+  endDate: DateTime | string
+): number | null => {
   const start = typeof startDate === 'string' ? parseDate(startDate) : startDate;
   const end = typeof endDate === 'string' ? parseDate(endDate) : endDate;
 
@@ -143,7 +146,10 @@ export const endOfDay = (date: DateTime | string): DateTime | null => {
 /**
  * Calcula el número de minutos entre dos fechas
  */
-export const minutesBetween = (startDate: DateTime | string, endDate: DateTime | string): number | null => {
+export const minutesBetween = (
+  startDate: DateTime | string,
+  endDate: DateTime | string
+): number | null => {
   const start = typeof startDate === 'string' ? parseDate(startDate) : startDate;
   const end = typeof endDate === 'string' ? parseDate(endDate) : endDate;
 
@@ -171,12 +177,12 @@ export const isValidTimeRange = (start: DateTime | string, end: DateTime | strin
 
 /**
  * Verifica si dos rangos de tiempo se solapan
- * 
+ *
  * Dos rangos se solapan si:
  * - El inicio de A está dentro del rango de B, o
  * - El fin de A está dentro del rango de B, o
  * - A contiene completamente a B
- * 
+ *
  * @param aStart - Inicio del primer rango
  * @param aEnd - Fin del primer rango
  * @param bStart - Inicio del segundo rango
@@ -194,8 +200,16 @@ export const doTimeRangesOverlap = (
   const bStartDt = typeof bStart === 'string' ? parseDate(bStart) : bStart;
   const bEndDt = typeof bEnd === 'string' ? parseDate(bEnd) : bEnd;
 
-  if (!aStartDt || !aStartDt.isValid || !aEndDt || !aEndDt.isValid ||
-      !bStartDt || !bStartDt.isValid || !bEndDt || !bEndDt.isValid) {
+  if (
+    !aStartDt ||
+    !aStartDt.isValid ||
+    !aEndDt ||
+    !aEndDt.isValid ||
+    !bStartDt ||
+    !bStartDt.isValid ||
+    !bEndDt ||
+    !bEndDt.isValid
+  ) {
     return false;
   }
 
@@ -214,9 +228,9 @@ export const doTimeRangesOverlap = (
 
 /**
  * Verifica si una fecha está dentro de un rango de vigencia (inclusive)
- * 
+ *
  * Útil para validar permisos, ofertas u otros recursos con fechas de vigencia.
- * 
+ *
  * @param date - Fecha a verificar
  * @param validFrom - Fecha de inicio de vigencia
  * @param validTo - Fecha de fin de vigencia

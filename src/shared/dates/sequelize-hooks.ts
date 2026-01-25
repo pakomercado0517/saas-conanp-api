@@ -15,10 +15,10 @@ interface DateFieldConfig {
 
 /**
  * Aplica hooks de Sequelize para convertir fechas a UTC antes de guardar
- * 
+ *
  * Nota: Los campos DATE se almacenan en UTC en la BD.
  * Para formatear fechas en respuestas API, usar formatDateForResponse() en servicios/controladores.
- * 
+ *
  * @param model - Modelo de Sequelize
  * @param dateFields - Array de campos de fecha a convertir
  */
@@ -92,10 +92,10 @@ export const applyDateHooks = <T extends Model>(
 
 /**
  * Convierte un valor de fecha al formatear para respuesta JSON
- * 
+ *
  * Usar este helper en servicios o controladores para formatear fechas
  * antes de enviar respuestas al frontend.
- * 
+ *
  * @param value - Valor de fecha (Date, string ISO, o null)
  * @param type - Tipo de campo: 'datetime' o 'dateonly'
  * @returns String ISO en zona horaria de México o null
@@ -131,9 +131,9 @@ export const formatDateForResponse = (
 
 /**
  * Formatea un objeto o array de objetos con fechas para respuesta API
- * 
+ *
  * Útil para formatear modelos completos antes de enviarlos al frontend.
- * 
+ *
  * @param data - Objeto o array de objetos con fechas
  * @param dateFields - Configuración de campos de fecha a formatear
  * @returns Objeto o array formateado
@@ -144,7 +144,7 @@ export const formatModelDatesForResponse = <T extends Record<string, unknown>>(
 ): T | T[] => {
   const formatObject = (obj: T): T => {
     const formatted = { ...obj } as T;
-    
+
     for (const { field, type } of dateFields) {
       if (field in formatted) {
         const formattedValue = formatDateForResponse(
@@ -156,13 +156,13 @@ export const formatModelDatesForResponse = <T extends Record<string, unknown>>(
         }
       }
     }
-    
+
     return formatted;
   };
 
   if (Array.isArray(data)) {
     return data.map(formatObject) as T[];
   }
-  
+
   return formatObject(data);
 };

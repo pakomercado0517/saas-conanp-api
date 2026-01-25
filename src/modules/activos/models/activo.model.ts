@@ -14,8 +14,10 @@ export interface ActivoAttributes {
   updatedAt: Date;
 }
 
-export interface ActivoCreationAttributes
-  extends Optional<ActivoAttributes, 'id' | 'status' | 'createdAt' | 'updatedAt'> {}
+export interface ActivoCreationAttributes extends Optional<
+  ActivoAttributes,
+  'id' | 'status' | 'createdAt' | 'updatedAt'
+> {}
 
 export class Activo
   extends Model<ActivoAttributes, ActivoCreationAttributes>

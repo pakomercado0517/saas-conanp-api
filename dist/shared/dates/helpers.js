@@ -120,4 +120,91 @@ export const endOfDay = (date) => {
         return null;
     return dt.endOf('day');
 };
+/**
+ * Calcula el número de minutos entre dos fechas
+ */
+export const minutesBetween = (startDate, endDate) => {
+    const start = typeof startDate === 'string' ? parseDate(startDate) : startDate;
+    const end = typeof endDate === 'string' ? parseDate(endDate) : endDate;
+    if (!start || !start.isValid || !end || !end.isValid) {
+        return null;
+    }
+    const diff = end.diff(start, 'minutes');
+    return Math.floor(diff.minutes);
+};
+/**
+ * Verifica si un rango de tiempo es válido (inicio < fin)
+ */
+export const isValidTimeRange = (start, end) => {
+    const startDt = typeof start === 'string' ? parseDate(start) : start;
+    const endDt = typeof end === 'string' ? parseDate(end) : end;
+    if (!startDt || !startDt.isValid || !endDt || !endDt.isValid) {
+        return false;
+    }
+    return startDt < endDt;
+};
+/**
+ * Verifica si dos rangos de tiempo se solapan
+ *
+ * Dos rangos se solapan si:
+ * - El inicio de A está dentro del rango de B, o
+ * - El fin de A está dentro del rango de B, o
+ * - A contiene completamente a B
+ *
+ * @param aStart - Inicio del primer rango
+ * @param aEnd - Fin del primer rango
+ * @param bStart - Inicio del segundo rango
+ * @param bEnd - Fin del segundo rango
+ * @returns true si los rangos se solapan, false en caso contrario
+ */
+export const doTimeRangesOverlap = (aStart, aEnd, bStart, bEnd) => {
+    const aStartDt = typeof aStart === 'string' ? parseDate(aStart) : aStart;
+    const aEndDt = typeof aEnd === 'string' ? parseDate(aEnd) : aEnd;
+    const bStartDt = typeof bStart === 'string' ? parseDate(bStart) : bStart;
+    const bEndDt = typeof bEnd === 'string' ? parseDate(bEnd) : bEnd;
+    if (!aStartDt ||
+        !aStartDt.isValid ||
+        !aEndDt ||
+        !aEndDt.isValid ||
+        !bStartDt ||
+        !bStartDt.isValid ||
+        !bEndDt ||
+        !bEndDt.isValid) {
+        return false;
+    }
+    // Verificar que los rangos sean válidos (inicio < fin)
+    if (aStartDt >= aEndDt || bStartDt >= bEndDt) {
+        return false;
+    }
+    // Dos rangos se solapan si:
+    // - El inicio de A está dentro de B: aStart >= bStart && aStart < bEnd
+    // - El fin de A está dentro de B: aEnd > bStart && aEnd <= bEnd
+    // - A contiene a B: aStart <= bStart && aEnd >= bEnd
+    // Simplificado: se solapan si no están completamente separados
+    return !(aEndDt <= bStartDt || aStartDt >= bEndDt);
+};
+/**
+ * Verifica si una fecha está dentro de un rango de vigencia (inclusive)
+ *
+ * Útil para validar permisos, ofertas u otros recursos con fechas de vigencia.
+ *
+ * @param date - Fecha a verificar
+ * @param validFrom - Fecha de inicio de vigencia
+ * @param validTo - Fecha de fin de vigencia
+ * @returns true si la fecha está dentro del rango de vigencia, false en caso contrario
+ */
+export const isWithinValidityRange = (date, validFrom, validTo) => {
+    const dt = typeof date === 'string' ? parseDate(date) : date;
+    const from = typeof validFrom === 'string' ? parseDate(validFrom) : validFrom;
+    const to = typeof validTo === 'string' ? parseDate(validTo) : validTo;
+    if (!dt || !dt.isValid || !from || !from.isValid || !to || !to.isValid) {
+        return false;
+    }
+    // Verificar que el rango de vigencia sea válido
+    if (from > to) {
+        return false;
+    }
+    // Verificar si la fecha está dentro del rango (inclusive)
+    return dt >= from && dt <= to;
+};
 //# sourceMappingURL=helpers.js.map

@@ -1,4 +1,4 @@
-import pino from "pino";
+import pino from 'pino';
 /**
  * Configuración del logger Pino
  *
@@ -9,16 +9,15 @@ import pino from "pino";
  * Por defecto: "info" en producción, "debug" en desarrollo.
  */
 const loggerConfig = {
-    level: process.env["LOG_LEVEL"] ||
-        (process.env["NODE_ENV"] === "production" ? "info" : "debug"),
+    level: process.env['LOG_LEVEL'] || (process.env['NODE_ENV'] === 'production' ? 'info' : 'debug'),
     // En desarrollo, usar pino-pretty para logs legibles
-    ...(process.env["NODE_ENV"] !== "production" && {
+    ...(process.env['NODE_ENV'] !== 'production' && {
         transport: {
-            target: "pino-pretty",
+            target: 'pino-pretty',
             options: {
                 colorize: true,
-                translateTime: "HH:MM:ss Z",
-                ignore: "pid,hostname",
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname',
             },
         },
     }),

@@ -7,12 +7,17 @@ import { AppError } from '../errors/index.js';
  * Convierte los errores de Zod en un formato estructurado con mensajes en español
  */
 const formatZodError = (error) => {
-    const detalles = error.issues.map((err) => ({
-        campo: err.path.join('.') || 'raíz',
-        mensaje: err.message,
-        codigo: err.code,
-        ...(err.path.length > 0 && { valor: err.path }),
-    }));
+    const detalles = error.issues.map((err) => {
+        const detalle = {
+            campo: err.path.join('.') || 'raíz',
+            mensaje: err.message,
+            codigo: err.code,
+        };
+        if (err.path.length > 0) {
+            detalle.valor = err.path;
+        }
+        return detalle;
+    });
     return {
         success: false,
         error: 'Error de validación',
@@ -30,14 +35,25 @@ const formatZodError = (error) => {
  * - ForeignKeyConstraintError: violaciones de claves foráneas
  */
 const formatSequelizeError = (error) => {
+    if (!(error instanceof Error)) {
+        return null;
+    }
+    const sequelizeError = error;
     // ValidationError de Sequelize
-    if (error.name === 'SequelizeValidationError') {
-        const detalles = error.errors.map((err) => ({
-            campo: err.path || 'campo',
-            mensaje: err.message,
-            valor: err.value,
-            tipo: err.type,
-        }));
+    if (sequelizeError.name === 'SequelizeValidationError' && sequelizeError.errors) {
+        const detalles = sequelizeError.errors.map((err) => {
+            const detalle = {
+                campo: err.path || 'campo',
+                mensaje: err.message,
+            };
+            if (err.value !== undefined) {
+                detalle.valor = err.value;
+            }
+            if (err.type !== undefined) {
+                detalle.tipo = err.type;
+            }
+            return detalle;
+        });
         return {
             success: false,
             error: 'Error de validación',
@@ -47,23 +63,26 @@ const formatSequelizeError = (error) => {
         };
     }
     // UniqueConstraintError - Campo duplicado
-    if (error.name === 'SequelizeUniqueConstraintError') {
-        const campo = error.errors[0]?.path || 'campo';
-        const valor = error.errors[0]?.value;
+    if (sequelizeError.name === 'SequelizeUniqueConstraintError' && sequelizeError.errors) {
+        const campo = sequelizeError.errors[0]?.path || 'campo';
+        const valor = sequelizeError.errors[0]?.value;
+        const details = {
+            campo,
+        };
+        if (valor !== undefined) {
+            details.valor = valor;
+        }
         return {
             success: false,
             error: 'Conflicto',
-            message: `El ${campo} ya existe${valor ? `: ${valor}` : ''}`,
+            message: `El ${campo} ya existe${valor !== undefined ? `: ${valor}` : ''}`,
             code: 'CONFLICT',
-            details: {
-                campo,
-                ...(valor && { valor }),
-            },
+            details,
         };
     }
     // ForeignKeyConstraintError - Referencia inválida
-    if (error.name === 'SequelizeForeignKeyConstraintError') {
-        const campo = error.fields?.[0] || 'referencia';
+    if (sequelizeError.name === 'SequelizeForeignKeyConstraintError') {
+        const campo = sequelizeError.fields?.[0] || 'referencia';
         return {
             success: false,
             error: 'Error de referencia',
@@ -75,7 +94,7 @@ const formatSequelizeError = (error) => {
         };
     }
     // DatabaseError - Errores de base de datos
-    if (error.name === 'SequelizeDatabaseError') {
+    if (sequelizeError.name === 'SequelizeDatabaseError') {
         return {
             success: false,
             error: 'Error de base de datos',
@@ -93,7 +112,11 @@ const formatSequelizeError = (error) => {
  * - TokenExpiredError: token expirado
  */
 const formatJWTError = (error) => {
-    if (error.name === 'JsonWebTokenError') {
+    if (!(error instanceof Error)) {
+        return null;
+    }
+    const jwtError = error;
+    if (jwtError.name === 'JsonWebTokenError') {
         return {
             success: false,
             error: 'Token inválido',
@@ -101,7 +124,7 @@ const formatJWTError = (error) => {
             code: 'UNAUTHORIZED',
         };
     }
-    if (error.name === 'TokenExpiredError') {
+    if (jwtError.name === 'TokenExpiredError') {
         return {
             success: false,
             error: 'Token expirado',

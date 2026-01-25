@@ -21,8 +21,10 @@ export interface EventoOperativoAttributes {
   updatedAt: Date;
 }
 
-export interface EventoOperativoCreationAttributes
-  extends Optional<EventoOperativoAttributes, 'id' | 'bloqueId' | 'startTime' | 'endTime' | 'peopleCount' | 'status' | 'createdAt' | 'updatedAt'> {}
+export interface EventoOperativoCreationAttributes extends Optional<
+  EventoOperativoAttributes,
+  'id' | 'bloqueId' | 'startTime' | 'endTime' | 'peopleCount' | 'status' | 'createdAt' | 'updatedAt'
+> {}
 
 export class EventoOperativo
   extends Model<EventoOperativoAttributes, EventoOperativoCreationAttributes>
