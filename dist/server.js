@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
-import morgan from "morgan";
+import { pinoHttp } from "pino-http";
 import dotenv from "dotenv";
 import { AppError } from "./shared/errors/index.js";
+import { logger } from "./shared/logger/index.js";
 dotenv.config();
 const app = express();
 // CORS: Configurar según entorno
@@ -14,8 +15,12 @@ const corsOptions = {
     optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
-// Logging: Diferente formato según entorno
-app.use(morgan(process.env["NODE_ENV"] === "production" ? "combined" : "dev"));
+// Logging HTTP con Pino: Diferente formato según entorno
+// Development: logs legibles (similar a morgan "dev")
+// Production: JSON estructurado (similar a morgan "combined")
+app.use(pinoHttp({
+    logger,
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 // Health check endpoint
@@ -40,10 +45,15 @@ const isAppError = (error) => {
  * Reconoce errores personalizados (AppError) y retorna respuestas estructuradas
  * con códigos HTTP apropiados. Para errores desconocidos, retorna 500.
  */
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
     const isDevelopment = process.env["NODE_ENV"] !== "production";
     // Verificar que es un Error
     if (!(err instanceof Error)) {
+        logger.error({
+            error: "Error desconocido sin instancia de Error",
+            path: req.path,
+            method: req.method
+        }, "Error interno del servidor");
         res.status(500).json({
             success: false,
             error: "Error interno del servidor",
@@ -55,6 +65,14 @@ app.use((err, _req, res, _next) => {
     // Si es un error personalizado (AppError), usar su estructura
     if (isAppError(err)) {
         const errorResponse = err.toJSON();
+        logger.error({
+            error: err,
+            statusCode: err.statusCode,
+            code: errorResponse.code,
+            path: req.path,
+            method: req.method,
+            ...(isDevelopment && { stack: err.stack }),
+        }, "Error de aplicación");
         res.status(err.statusCode).json({
             ...errorResponse,
             ...(isDevelopment && { stack: err.stack }),
@@ -63,6 +81,12 @@ app.use((err, _req, res, _next) => {
     }
     // Para errores de validación de Zod (si se usan directamente)
     if (err.name === "ZodError") {
+        logger.warn({
+            error: err,
+            path: req.path,
+            method: req.method,
+            ...(isDevelopment && { stack: err.stack }),
+        }, "Error de validación");
         res.status(400).json({
             success: false,
             error: "Error de validación",
@@ -73,6 +97,14 @@ app.use((err, _req, res, _next) => {
         return;
     }
     // Para errores desconocidos, retornar 500
+    logger.error({
+        error: err,
+        name: err.name,
+        message: err.message,
+        path: req.path,
+        method: req.method,
+        ...(isDevelopment && { stack: err.stack }),
+    }, "Error interno del servidor");
     res.status(500).json({
         success: false,
         error: "Error interno del servidor",

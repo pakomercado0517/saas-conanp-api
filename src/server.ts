@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
-import morgan from "morgan";
+import { pinoHttp } from "pino-http";
 import dotenv from "dotenv";
 import type { Application, NextFunction, Request, Response } from "express";
 import { AppError } from "./shared/errors/index.js";
+import { logger } from "./shared/logger/index.js";
 
 dotenv.config();
 
@@ -21,8 +22,14 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Logging: Diferente formato según entorno
-app.use(morgan(process.env["NODE_ENV"] === "production" ? "combined" : "dev"));
+// Logging HTTP con Pino: Diferente formato según entorno
+// Development: logs legibles (similar a morgan "dev")
+// Production: JSON estructurado (similar a morgan "combined")
+app.use(
+  pinoHttp({
+    logger,
+  })
+);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -55,11 +62,17 @@ const isAppError = (error: Error): error is AppError => {
  * con códigos HTTP apropiados. Para errores desconocidos, retorna 500.
  */
 app.use(
-  (err: unknown, _req: Request, res: Response, _next: NextFunction): void => {
+  (err: unknown, req: Request, res: Response, _next: NextFunction): void => {
     const isDevelopment = process.env["NODE_ENV"] !== "production";
 
     // Verificar que es un Error
     if (!(err instanceof Error)) {
+      logger.error({ 
+        error: "Error desconocido sin instancia de Error",
+        path: req.path,
+        method: req.method 
+      }, "Error interno del servidor");
+      
       res.status(500).json({
         success: false,
         error: "Error interno del servidor",
@@ -73,6 +86,15 @@ app.use(
     if (isAppError(err)) {
       const errorResponse = err.toJSON();
       
+      logger.error({ 
+        error: err,
+        statusCode: err.statusCode,
+        code: errorResponse.code,
+        path: req.path,
+        method: req.method,
+        ...(isDevelopment && { stack: err.stack }),
+      }, "Error de aplicación");
+      
       res.status(err.statusCode).json({
         ...errorResponse,
         ...(isDevelopment && { stack: err.stack }),
@@ -82,6 +104,13 @@ app.use(
 
     // Para errores de validación de Zod (si se usan directamente)
     if (err.name === "ZodError") {
+      logger.warn({ 
+        error: err,
+        path: req.path,
+        method: req.method,
+        ...(isDevelopment && { stack: err.stack }),
+      }, "Error de validación");
+      
       res.status(400).json({
         success: false,
         error: "Error de validación",
@@ -93,6 +122,15 @@ app.use(
     }
 
     // Para errores desconocidos, retornar 500
+    logger.error({ 
+      error: err,
+      name: err.name,
+      message: err.message,
+      path: req.path,
+      method: req.method,
+      ...(isDevelopment && { stack: err.stack }),
+    }, "Error interno del servidor");
+    
     res.status(500).json({
       success: false,
       error: "Error interno del servidor",
