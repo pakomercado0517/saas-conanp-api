@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
 import { Organization } from '@/modules/organizations/models/organization.model';
@@ -78,9 +78,7 @@ Bloque.init(
       type: DataTypes.DATEONLY,
       allowNull: true,
       validate: {
-        isDate: {
-          msg: 'La fecha debe ser una fecha válida',
-        },
+        isDate: true,
       },
     },
     startTime: {
@@ -100,7 +98,7 @@ Bloque.init(
           msg: 'La hora de fin es requerida',
         },
         isAfterStartTime(value: string): void {
-          if (this.startTime && value <= this.startTime) {
+          if (this['startTime'] && value <= this['startTime']) {
             throw new Error('La hora de fin debe ser posterior a la hora de inicio');
           }
         },

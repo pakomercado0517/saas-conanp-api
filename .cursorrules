@@ -55,7 +55,8 @@ Sistema multi-tenant (Micro-SaaS) para la gestión y regulación de operaciones 
 4. **Validaciones backend**: Nunca confiar solo en frontend
 
 ### Referencia Completa
-Para detalles técnicos completos, ver: `docs/plan-backend-micro-saas-conanp.md`
+- **Plan técnico completo**: `docs/plan-backend-micro-saas-conanp.md`
+- **Tareas del proyecto (Notion)**: `docs/tareas-proyecto-notion.md`
 
 ---
 
@@ -426,9 +427,22 @@ await queryInterface.addIndex('eventos', ['organizationId', 'date'], {
 
 ## 15. Variables de Entorno
 
+- **SIEMPRE usar notación de corchetes** para acceder a variables de entorno: `process.env["NODE_ENV"]`
+- **NUNCA usar notación de punto**: `process.env.NODE_ENV` (evitar)
 - Validar variables de entorno requeridas al iniciar la aplicación
 - Usar tipos para variables de entorno
 - Documentar variables de entorno necesarias
+
+```typescript
+// ✅ CORRECTO - Usar notación de corchetes
+const env = process.env["NODE_ENV"];
+const dbUrl = process.env["DATABASE_PUBLIC_URL"];
+const jwtSecret = process.env["JWT_SECRET"];
+
+// ❌ INCORRECTO - No usar notación de punto
+const env = process.env.NODE_ENV;
+const dbUrl = process.env.DATABASE_PUBLIC_URL;
+```
 
 ---
 

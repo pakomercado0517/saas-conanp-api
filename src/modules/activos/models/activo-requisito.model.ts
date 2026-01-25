@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
 import { Activo } from './activo.model';
@@ -76,12 +76,9 @@ ActivoRequisito.init(
       type: DataTypes.TEXT,
       allowNull: true,
       validate: {
-        isUrl: {
-          msg: 'La URL del documento debe ser una URL válida',
-          args: {
-            protocols: ['http', 'https'],
-            require_protocol: true,
-          },
+        isURL: {
+          protocols: ['http', 'https'],
+          require_protocol: true,
         },
       },
     },

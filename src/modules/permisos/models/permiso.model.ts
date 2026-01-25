@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model';
@@ -76,20 +76,16 @@ Permiso.init(
       type: DataTypes.DATE,
       allowNull: false,
       validate: {
-        isDate: {
-          msg: 'La fecha de inicio debe ser una fecha válida',
-        },
+        isDate: true,
       },
     },
     validTo: {
       type: DataTypes.DATE,
       allowNull: false,
       validate: {
-        isDate: {
-          msg: 'La fecha de fin debe ser una fecha válida',
-        },
+        isDate: true,
         isAfterValidFrom(value: Date): void {
-          if (this.validFrom && value <= this.validFrom) {
+          if (this['validFrom'] && value <= this['validFrom']) {
             throw new Error('La fecha de fin debe ser posterior a la fecha de inicio');
           }
         },
@@ -110,12 +106,9 @@ Permiso.init(
       type: DataTypes.TEXT,
       allowNull: true,
       validate: {
-        isUrl: {
-          msg: 'La URL del documento debe ser una URL válida',
-          args: {
-            protocols: ['http', 'https'],
-            require_protocol: true,
-          },
+        isURL: {
+          protocols: ['http', 'https'],
+          require_protocol: true,
         },
       },
     },

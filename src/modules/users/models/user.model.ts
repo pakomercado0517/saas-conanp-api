@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
 

@@ -2,18 +2,20 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
+import { AppError } from "./shared/errors/index.js";
 dotenv.config();
 const app = express();
 // CORS: Configurar según entorno
 const corsOptions = {
-    origin: process.env.FRONTEND_URL ||
-        process.env.APP_URL ||
-        (process.env.NODE_ENV === "production" ? false : "http://localhost:3000"),
+    origin: process.env["FRONTEND_URL"] ||
+        process.env["APP_URL"] ||
+        (process.env["NODE_ENV"] === "production" ? false : "http://localhost:3000"),
     credentials: true,
     optionsSuccessStatus: 200,
 };
+app.use(cors(corsOptions));
 // Logging: Diferente formato según entorno
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+app.use(morgan(process.env["NODE_ENV"] === "production" ? "combined" : "dev"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 // Health check endpoint
@@ -22,19 +24,62 @@ app.get("/health", (_req, res) => {
         status: "ok",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        environment: process.env.NODE_ENV || "development",
+        environment: process.env["NODE_ENV"] || "development",
     });
 });
-app.get("/", (_req, res) => res.send({ message: "Bienvenido a la API de Tresa ContaFlow" }));
-// Middleware de manejo de errores centralizado (debe ir al final, después de todas las rutas)
+app.get("/", (_req, res) => res.send({ message: "Bienvenido a la API de CONANP - Gestión de Áreas Naturales Protegidas" }));
+/**
+ * Type guard para verificar si un error es AppError
+ */
+const isAppError = (error) => {
+    return error instanceof AppError;
+};
+/**
+ * Middleware de manejo de errores centralizado
+ *
+ * Reconoce errores personalizados (AppError) y retorna respuestas estructuradas
+ * con códigos HTTP apropiados. Para errores desconocidos, retorna 500.
+ */
 app.use((err, _req, res, _next) => {
-    // No exponer detalles del error en producción
-    const isDevelopment = process.env.NODE_ENV !== "production";
+    const isDevelopment = process.env["NODE_ENV"] !== "production";
+    // Verificar que es un Error
+    if (!(err instanceof Error)) {
+        res.status(500).json({
+            success: false,
+            error: "Error interno del servidor",
+            message: "Ocurrió un error inesperado. Por favor intenta nuevamente más tarde.",
+            code: "INTERNAL_SERVER_ERROR",
+        });
+        return;
+    }
+    // Si es un error personalizado (AppError), usar su estructura
+    if (isAppError(err)) {
+        const errorResponse = err.toJSON();
+        res.status(err.statusCode).json({
+            ...errorResponse,
+            ...(isDevelopment && { stack: err.stack }),
+        });
+        return;
+    }
+    // Para errores de validación de Zod (si se usan directamente)
+    if (err.name === "ZodError") {
+        res.status(400).json({
+            success: false,
+            error: "Error de validación",
+            message: "Los datos proporcionados no son válidos",
+            code: "VALIDATION_ERROR",
+            ...(isDevelopment && { details: err.message, stack: err.stack }),
+        });
+        return;
+    }
+    // Para errores desconocidos, retornar 500
     res.status(500).json({
+        success: false,
         error: "Error interno del servidor",
         message: isDevelopment
             ? err.message
             : "Ocurrió un error inesperado. Por favor intenta nuevamente más tarde.",
+        code: "INTERNAL_SERVER_ERROR",
         ...(isDevelopment && { stack: err.stack }),
     });
 });

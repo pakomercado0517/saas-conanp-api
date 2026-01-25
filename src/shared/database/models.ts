@@ -4,12 +4,13 @@
  */
 
 // Inicializar la conexión primero
-import './index';
+import './index.js';
 
 // Exportar modelos en orden de dependencias
 export { Organization } from '@/modules/organizations/models/organization.model';
 export { User } from '@/modules/users/models/user.model';
 export { Membership } from '@/modules/users/models/membership.model';
+export { RefreshToken } from '@/modules/auth/models/refresh-token.model';
 export { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model';
 export { Actividad } from '@/modules/actividades/models/actividad.model';
 export { Bloque } from '@/modules/actividades/models/bloque.model';

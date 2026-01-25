@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
 import { Organization } from '@/modules/organizations/models/organization.model';
@@ -83,9 +83,7 @@ PrestadorProfile.init(
       type: DataTypes.DATE,
       allowNull: true,
       validate: {
-        isDate: {
-          msg: 'La fecha de expiración debe ser una fecha válida',
-        },
+        isDate: true,
       },
     },
     createdAt: {

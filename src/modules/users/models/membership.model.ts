@@ -1,6 +1,6 @@
-import { DataTypes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
-import type { UUID, Role, Status } from '@/shared/database/types';
+import type { UUID, Role } from '@/shared/database/types';
 import { Organization } from '@/modules/organizations/models/organization.model';
 import { User } from './user.model';
 

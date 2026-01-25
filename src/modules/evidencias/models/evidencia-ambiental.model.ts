@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
 import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model';
@@ -74,12 +74,9 @@ EvidenciaAmbiental.init(
       type: DataTypes.TEXT,
       allowNull: true,
       validate: {
-        isUrl: {
-          msg: 'La URL del archivo debe ser una URL válida',
-          args: {
-            protocols: ['http', 'https'],
-            require_protocol: true,
-          },
+        isURL: {
+          protocols: ['http', 'https'],
+          require_protocol: true,
         },
       },
     },

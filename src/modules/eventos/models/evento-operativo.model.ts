@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
 import { Organization } from '@/modules/organizations/models/organization.model';
@@ -99,9 +99,7 @@ EventoOperativo.init(
       type: DataTypes.DATEONLY,
       allowNull: false,
       validate: {
-        isDate: {
-          msg: 'La fecha debe ser una fecha válida',
-        },
+        isDate: true,
       },
     },
     bloqueId: {
@@ -121,7 +119,7 @@ EventoOperativo.init(
       allowNull: true,
       validate: {
         isAfterStartTime(value: string | null): void {
-          if (this.startTime && value && value <= this.startTime) {
+          if (this['startTime'] && value && value <= this['startTime']) {
             throw new Error('La hora de fin debe ser posterior a la hora de inicio');
           }
         },

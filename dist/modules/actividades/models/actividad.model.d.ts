@@ -1,0 +1,31 @@
+import { Model, type Optional } from 'sequelize';
+import type { UUID, ActividadType, AgendaType } from '../../../shared/database/types';
+import { Organization } from '../../../modules/organizations/models/organization.model';
+export interface ActividadAttributes {
+    id: UUID;
+    organizationId: UUID;
+    name: string;
+    type: ActividadType;
+    agendaType: AgendaType;
+    requiresGuide: boolean;
+    impactLevel: string | null;
+    active: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+export interface ActividadCreationAttributes extends Optional<ActividadAttributes, 'id' | 'requiresGuide' | 'impactLevel' | 'active' | 'createdAt' | 'updatedAt'> {
+}
+export declare class Actividad extends Model<ActividadAttributes, ActividadCreationAttributes> implements ActividadAttributes {
+    id: UUID;
+    organizationId: UUID;
+    name: string;
+    type: ActividadType;
+    agendaType: AgendaType;
+    requiresGuide: boolean;
+    impactLevel: string | null;
+    active: boolean;
+    readonly createdAt: Date;
+    readonly updatedAt: Date;
+    Organization?: Organization;
+}
+//# sourceMappingURL=actividad.model.d.ts.map
