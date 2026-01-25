@@ -4,6 +4,7 @@ import { pinoHttp } from "pino-http";
 import dotenv from "dotenv";
 import { AppError } from "./shared/errors/index.js";
 import { logger } from "./shared/logger/index.js";
+import { now } from "./shared/dates/index.js";
 dotenv.config();
 const app = express();
 // CORS: Configurar según entorno
@@ -27,7 +28,7 @@ app.use(express.json());
 app.get("/health", (_req, res) => {
     res.status(200).json({
         status: "ok",
-        timestamp: new Date().toISOString(),
+        timestamp: now().toISO(),
         uptime: process.uptime(),
         environment: process.env["NODE_ENV"] || "development",
     });

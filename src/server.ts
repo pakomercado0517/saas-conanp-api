@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import type { Application, NextFunction, Request, Response } from "express";
 import { AppError } from "./shared/errors/index.js";
 import { logger } from "./shared/logger/index.js";
+import { now } from "./shared/dates/index.js";
 
 dotenv.config();
 
@@ -38,7 +39,7 @@ app.use(express.json());
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({
     status: "ok",
-    timestamp: new Date().toISOString(),
+    timestamp: now().toISO(),
     uptime: process.uptime(),
     environment: process.env["NODE_ENV"] || "development",
   });
