@@ -15,6 +15,7 @@ import { authenticate, requireOrganizationAccess } from '@/shared/middleware/ind
 import membershipRouter from '@/modules/users/routes/membership.routes.js';
 import actividadRouter from '@/modules/actividades/routes/actividad.routes.js';
 import prestadorRouter from '@/modules/prestadores/routes/prestador-profile.routes.js';
+import permisoRouter from '@/modules/permisos/routes/permiso.routes.js';
 
 /**
  * Router de organizaciones
@@ -156,5 +157,11 @@ organizationRouter.use('/:organizationId/actividades', actividadRouter);
  * Montadas bajo /api/v1/organizations/:organizationId/prestadores
  */
 organizationRouter.use('/:organizationId/prestadores', prestadorRouter);
+
+/**
+ * Rutas anidadas de permisos
+ * Montadas bajo /api/v1/organizations/:organizationId/permisos
+ */
+organizationRouter.use('/:organizationId/permisos', permisoRouter);
 
 export default organizationRouter;

@@ -217,30 +217,30 @@
 
 ### 2.3 Módulo Permisos
 
-- [ ] Crear schemas Zod (`validators/permiso.validator.ts`)
-  - [ ] Schema para crear permiso
-  - [ ] Schema para actualizar permiso
-  - [ ] Schema para listar permisos
-  - [ ] Validar fechas de vigencia (validFrom, validTo)
-- [ ] Crear service de permisos (`services/permiso.service.ts`)
-  - [ ] Función para crear permiso
-  - [ ] Función para obtener permiso por ID
-  - [ ] Función para listar permisos de un prestador
-  - [ ] Función para actualizar permiso
-  - [ ] Función para verificar si permiso está vigente
-  - [ ] Validación de fechas de vigencia
-  - [ ] Validar que prestador tenga permiso vigente para actividad
-- [ ] Crear controller de permisos (`controllers/permiso.controller.ts`)
-  - [ ] Endpoint para crear
-  - [ ] Endpoint para obtener por ID
-  - [ ] Endpoint para listar
-  - [ ] Endpoint para actualizar
-- [ ] Crear rutas de permisos (`routes/permiso.routes.ts`)
-  - [ ] POST `/api/v1/prestadores/:prestadorId/permisos`
-  - [ ] GET `/api/v1/prestadores/:prestadorId/permisos`
-  - [ ] GET `/api/v1/prestadores/:prestadorId/permisos/:permisoId`
-  - [ ] PATCH `/api/v1/prestadores/:prestadorId/permisos/:permisoId`
-- [ ] Integrar rutas en `server.ts`
+- [x] Crear schemas Zod (`validators/permiso.validator.ts`)
+  - [x] Schema para crear permiso
+  - [x] Schema para actualizar permiso
+  - [x] Schema para listar permisos
+  - [x] Validar fechas de vigencia (validFrom, validTo)
+- [x] Crear service de permisos (`services/permiso.service.ts`)
+  - [x] Función para crear permiso
+  - [x] Función para obtener permiso por ID
+  - [x] Función para listar permisos de un prestador
+  - [x] Función para actualizar permiso
+  - [x] Función para verificar si permiso está vigente
+  - [x] Validación de fechas de vigencia
+  - [x] Validar que prestador tenga permiso vigente para actividad
+- [x] Crear controller de permisos (`controllers/permiso.controller.ts`)
+  - [x] Endpoint para crear
+  - [x] Endpoint para obtener por ID
+  - [x] Endpoint para listar
+  - [x] Endpoint para actualizar
+- [x] Crear rutas de permisos (`routes/permiso.routes.ts`)
+  - [x] POST `/api/v1/prestadores/:prestadorId/permisos`
+  - [x] GET `/api/v1/prestadores/:prestadorId/permisos`
+  - [x] GET `/api/v1/prestadores/:prestadorId/permisos/:permisoId`
+  - [x] PATCH `/api/v1/prestadores/:prestadorId/permisos/:permisoId`
+- [x] Integrar rutas en `server.ts`
 
 **Notas**: Autoriza a prestadores para realizar actividades específicas con fechas de vigencia.
 
