@@ -190,28 +190,28 @@
 
 ### 2.2 Módulo Prestadores
 
-- [ ] Crear schemas Zod (`validators/prestador.validator.ts`)
-  - [ ] Schema para crear perfil de prestador
-  - [ ] Schema para actualizar perfil de prestador
-  - [ ] Schema para listar prestadores
-- [ ] Crear service de prestadores (`services/prestador.service.ts`)
-  - [ ] Función para crear perfil de prestador
-  - [ ] Función para obtener perfil por ID
-  - [ ] Función para listar prestadores
-  - [ ] Función para actualizar perfil
-  - [ ] Validar que usuario tenga membership en organización
-  - [ ] Validación de permisos (prestador solo puede ver/editar su perfil)
-- [ ] Crear controller de prestadores (`controllers/prestador.controller.ts`)
-  - [ ] Endpoint para crear
-  - [ ] Endpoint para obtener por ID
-  - [ ] Endpoint para listar
-  - [ ] Endpoint para actualizar
-- [ ] Crear rutas de prestadores (`routes/prestador.routes.ts`)
-  - [ ] POST `/api/v1/prestadores`
-  - [ ] GET `/api/v1/prestadores`
-  - [ ] GET `/api/v1/prestadores/:id`
-  - [ ] PATCH `/api/v1/prestadores/:id`
-- [ ] Integrar rutas en `server.ts`
+- [x] Crear schemas Zod (`validators/prestador.validator.ts`)
+  - [x] Schema para crear perfil de prestador
+  - [x] Schema para actualizar perfil de prestador
+  - [x] Schema para listar prestadores
+- [x] Crear service de prestadores (`services/prestador.service.ts`)
+  - [x] Función para crear perfil de prestador
+  - [x] Función para obtener perfil por ID
+  - [x] Función para listar prestadores
+  - [x] Función para actualizar perfil
+  - [x] Validar que usuario tenga membership en organización
+  - [x] Validación de permisos (prestador solo puede ver/editar su perfil)
+- [x] Crear controller de prestadores (`controllers/prestador.controller.ts`)
+  - [x] Endpoint para crear
+  - [x] Endpoint para obtener por ID
+  - [x] Endpoint para listar
+  - [x] Endpoint para actualizar
+- [x] Crear rutas de prestadores (`routes/prestador.routes.ts`)
+  - [x] POST `/api/v1/prestadores`
+  - [x] GET `/api/v1/prestadores`
+  - [x] GET `/api/v1/prestadores/:id`
+  - [x] PATCH `/api/v1/prestadores/:id`
+- [x] Integrar rutas en `server.ts`
 
 ---
 
