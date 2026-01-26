@@ -85,11 +85,11 @@
   - [x] GET `/api/v1/organizations/:id`
   - [x] PATCH `/api/v1/organizations/:id`
   - [x] DELETE `/api/v1/organizations/:id`
-- [ ] Crear middleware multi-tenant (`middleware/organization-access.ts`)
-  - [ ] Validar que usuario pertenezca a organización
-  - [ ] Extraer organizationId del request
-  - [ ] Agregar organizationId al request
-- [ ] Integrar rutas en `server.ts`
+- [x] Crear middleware multi-tenant (`middleware/organization-access.ts`)
+  - [x] Validar que usuario pertenezca a organización
+  - [x] Extraer organizationId del request
+  - [x] Agregar organizationId al request
+- [x] Integrar rutas en `server.ts`
 
 **Notas**: Base del sistema multi-tenant. Todo debe filtrarse por `organizationId`.
 
@@ -97,23 +97,26 @@
 
 ### 1.3 Módulo Users
 
-- [ ] Crear schemas Zod para usuarios (`validators/user.validator.ts`)
-  - [ ] Schema para actualizar perfil de usuario
-  - [ ] Schema para cambiar contraseña
-- [ ] Crear service de usuarios (`services/user.service.ts`)
-  - [ ] Función para obtener perfil del usuario actual
-  - [ ] Función para actualizar perfil
-  - [ ] Función para cambiar contraseña
-  - [ ] Validación de permisos (usuario solo puede editar su perfil)
-- [ ] Crear controller de usuarios (`controllers/user.controller.ts`)
-  - [ ] Endpoint para obtener perfil
-  - [ ] Endpoint para actualizar perfil
-  - [ ] Endpoint para cambiar contraseña
-- [ ] Crear rutas de usuarios (`routes/user.routes.ts`)
-  - [ ] GET `/api/v1/users/me`
-  - [ ] PATCH `/api/v1/users/me`
-  - [ ] PATCH `/api/v1/users/me/password`
-- [ ] Integrar rutas en `server.ts`
+- [x] Crear schemas Zod para usuarios (`validators/user.validator.ts`)
+  - [x] Schema para actualizar perfil de usuario
+  - [x] Schema para cambiar contraseña
+- [x] Crear service de usuarios (`services/user.service.ts`)
+  - [x] Función para obtener perfil del usuario actual
+  - [x] Función para actualizar perfil
+  - [x] Función para cambiar contraseña
+  - [x] Función para cambiar eliminar
+  - [x] Validación de permisos (usuario solo puede editar su perfil)
+- [x] Crear controller de usuarios (`controllers/user.controller.ts`)
+  - [x] Endpoint para obtener perfil
+  - [x] Endpoint para actualizar perfil
+  - [x] Endpoint para cambiar contraseña
+  - [x] Endpoint para cambiar eliminar perfil
+- [x] Crear rutas de usuarios (`routes/user.routes.ts`)
+  - [x] GET `/api/v1/users/me`
+  - [x] PATCH `/api/v1/users/me`
+  - [x] PATCH `/api/v1/users/me/password`
+  - [x] DELETE `/api/v1/users/profile`
+- [x] Integrar rutas en `server.ts`
 
 ---
 

@@ -58,11 +58,16 @@ User.init({
         allowNull: false,
         defaultValue: DataTypes.NOW,
     },
+    deletedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
 }, {
     sequelize,
     modelName: 'User',
     tableName: 'users',
     timestamps: true,
+    paranoid: true,
     underscored: false,
     indexes: [
         {

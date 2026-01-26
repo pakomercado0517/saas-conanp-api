@@ -7,8 +7,9 @@ export interface UserAttributes {
     name: string;
     createdAt: Date;
     updatedAt: Date;
+    deletedAt: Date | null;
 }
-export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'createdAt' | 'updatedAt'> {
+export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
 }
 export declare class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
     id: UUID;
@@ -17,5 +18,6 @@ export declare class User extends Model<UserAttributes, UserCreationAttributes> 
     name: string;
     readonly createdAt: Date;
     readonly updatedAt: Date;
+    deletedAt: Date | null;
 }
 //# sourceMappingURL=user.model.d.ts.map

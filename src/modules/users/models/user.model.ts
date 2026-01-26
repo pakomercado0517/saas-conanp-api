@@ -9,11 +9,12 @@ export interface UserAttributes {
   name: string;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
 }
 
 export interface UserCreationAttributes extends Optional<
   UserAttributes,
-  'id' | 'createdAt' | 'updatedAt'
+  'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
 > {}
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -23,6 +24,7 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare name: string;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+  declare deletedAt: Date | null;
 }
 
 User.init(
@@ -82,12 +84,17 @@ User.init(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
     modelName: 'User',
     tableName: 'users',
     timestamps: true,
+    paranoid: true,
     underscored: false,
     indexes: [
       {
