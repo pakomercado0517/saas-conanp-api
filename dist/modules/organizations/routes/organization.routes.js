@@ -4,6 +4,7 @@ import { validateCreateOrganization, validateUpdateOrganization, validateListOrg
 import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
 import membershipRouter from '../../../modules/users/routes/membership.routes.js';
 import actividadRouter from '../../../modules/actividades/routes/actividad.routes.js';
+import bloqueRouter, { bloqueActividadRouter } from '../../../modules/actividades/routes/bloque.routes.js';
 import prestadorRouter from '../../../modules/prestadores/routes/prestador-profile.routes.js';
 import permisoRouter from '../../../modules/permisos/routes/permiso.routes.js';
 import activoRouter from '../../../modules/activos/routes/activo.routes.js';
@@ -119,6 +120,16 @@ organizationRouter.use('/:organizationId/memberships', membershipRouter);
  * Montadas bajo /api/v1/organizations/:organizationId/actividades
  */
 organizationRouter.use('/:organizationId/actividades', actividadRouter);
+/**
+ * Rutas anidadas de bloques dentro de actividades
+ * Montadas bajo /api/v1/organizations/:organizationId/actividades/:actividadId/bloques
+ */
+organizationRouter.use('/:organizationId/actividades/:actividadId/bloques', bloqueActividadRouter);
+/**
+ * Rutas anidadas de bloques (generales)
+ * Montadas bajo /api/v1/organizations/:organizationId/bloques
+ */
+organizationRouter.use('/:organizationId/bloques', bloqueRouter);
 /**
  * Rutas anidadas de prestadores
  * Montadas bajo /api/v1/organizations/:organizationId/prestadores
