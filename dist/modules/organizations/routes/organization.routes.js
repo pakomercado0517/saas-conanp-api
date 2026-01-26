@@ -6,6 +6,8 @@ import membershipRouter from '../../../modules/users/routes/membership.routes.js
 import actividadRouter from '../../../modules/actividades/routes/actividad.routes.js';
 import prestadorRouter from '../../../modules/prestadores/routes/prestador-profile.routes.js';
 import permisoRouter from '../../../modules/permisos/routes/permiso.routes.js';
+import activoRouter from '../../../modules/activos/routes/activo.routes.js';
+import activoRequisitoRouter from '../../../modules/activos/routes/activo-requisito.routes.js';
 /**
  * Router de organizaciones
  *
@@ -127,5 +129,15 @@ organizationRouter.use('/:organizationId/prestadores', prestadorRouter);
  * Montadas bajo /api/v1/organizations/:organizationId/permisos
  */
 organizationRouter.use('/:organizationId/permisos', permisoRouter);
+/**
+ * Rutas anidadas de activos
+ * Montadas bajo /api/v1/organizations/:organizationId/activos
+ */
+organizationRouter.use('/:organizationId/activos', activoRouter);
+/**
+ * Rutas anidadas de requisitos de activos
+ * Montadas bajo /api/v1/organizations/:organizationId/activos/:activoId/requisitos
+ */
+organizationRouter.use('/:organizationId/activos/:activoId/requisitos', activoRequisitoRouter);
 export default organizationRouter;
 //# sourceMappingURL=organization.routes.js.map
