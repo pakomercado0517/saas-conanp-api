@@ -20,6 +20,7 @@ import prestadorRouter from '@/modules/prestadores/routes/prestador-profile.rout
 import permisoRouter from '@/modules/permisos/routes/permiso.routes.js';
 import activoRouter from '@/modules/activos/routes/activo.routes.js';
 import activoRequisitoRouter from '@/modules/activos/routes/activo-requisito.routes.js';
+import eventoRouter from '@/modules/eventos/routes/evento.routes.js';
 
 /**
  * Router de organizaciones
@@ -200,5 +201,11 @@ organizationRouter.use('/:organizationId/activos', activoRouter);
  * Montadas bajo /api/v1/organizations/:organizationId/activos/:activoId/requisitos
  */
 organizationRouter.use('/:organizationId/activos/:activoId/requisitos', activoRequisitoRouter);
+
+/**
+ * Rutas anidadas de eventos
+ * Montadas bajo /api/v1/organizations/:organizationId/eventos
+ */
+organizationRouter.use('/:organizationId/eventos', eventoRouter);
 
 export default organizationRouter;
