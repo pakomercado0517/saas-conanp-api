@@ -12,6 +12,7 @@ import {
   validateListOrganizations,
 } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess } from '@/shared/middleware/index.js';
+import membershipRouter from '@/modules/users/routes/membership.routes.js';
 
 /**
  * Router de organizaciones
@@ -135,5 +136,11 @@ organizationRouter.delete(
   requireOrganizationAccess,
   deleteOrganization
 );
+
+/**
+ * Rutas anidadas de memberships
+ * Montadas bajo /api/v1/organizations/:organizationId/memberships
+ */
+organizationRouter.use('/:organizationId/memberships', membershipRouter);
 
 export default organizationRouter;

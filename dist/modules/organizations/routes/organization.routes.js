@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createOrganization, getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, } from '../controllers/organization.controller.js';
 import { validateCreateOrganization, validateUpdateOrganization, validateListOrganizations, } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
+import membershipRouter from '../../../modules/users/routes/membership.routes.js';
 /**
  * Router de organizaciones
  *
@@ -103,5 +104,10 @@ organizationRouter.patch('/:organizationId', authenticate, requireOrganizationAc
  * Respuesta 204: No Content
  */
 organizationRouter.delete('/:organizationId', authenticate, requireOrganizationAccess, deleteOrganization);
+/**
+ * Rutas anidadas de memberships
+ * Montadas bajo /api/v1/organizations/:organizationId/memberships
+ */
+organizationRouter.use('/:organizationId/memberships', membershipRouter);
 export default organizationRouter;
 //# sourceMappingURL=organization.routes.js.map

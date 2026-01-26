@@ -122,31 +122,31 @@
 
 ### 1.4 Módulo Membership
 
-- [ ] Crear schemas Zod para memberships (`validators/membership.validator.ts`)
-  - [ ] Schema para crear/invitar membership
-  - [ ] Schema para actualizar membership (rol)
-  - [ ] Schema para listar memberships
-- [ ] Crear service de memberships (`services/membership.service.ts`)
-  - [ ] Función para invitar usuario a organización
-  - [ ] Función para actualizar rol de membership
-  - [ ] Función para eliminar membership
-  - [ ] Función para listar memberships de una organización
-  - [ ] Validación de roles (admin, prestador, etc.)
-  - [ ] Validación de que solo admins pueden gestionar memberships
-- [ ] Crear controller de memberships (`controllers/membership.controller.ts`)
-  - [ ] Endpoint para invitar
-  - [ ] Endpoint para listar
-  - [ ] Endpoint para actualizar rol
-  - [ ] Endpoint para eliminar
-- [ ] Crear rutas de memberships (`routes/membership.routes.ts`)
-  - [ ] POST `/api/v1/organizations/:orgId/memberships`
-  - [ ] GET `/api/v1/organizations/:orgId/memberships`
-  - [ ] PATCH `/api/v1/organizations/:orgId/memberships/:membershipId`
-  - [ ] DELETE `/api/v1/organizations/:orgId/memberships/:membershipId`
-- [ ] Crear middleware de autorización por roles (`middleware/authorize.ts`)
-  - [ ] Validar rol del usuario
-  - [ ] Verificar permisos según rol
-- [ ] Integrar rutas en `server.ts`
+- [x] Crear schemas Zod para memberships (`validators/membership.validator.ts`)
+  - [x] Schema para crear/invitar membership
+  - [x] Schema para actualizar membership (rol)
+  - [x] Schema para listar memberships
+- [x] Crear service de memberships (`services/membership.service.ts`)
+  - [x] Función para invitar usuario a organización
+  - [x] Función para actualizar rol de membership
+  - [x] Función para eliminar membership
+  - [x] Función para listar memberships de una organización
+  - [x] Validación de roles (admin, prestador, etc.)
+  - [x] Validación de que solo admins pueden gestionar memberships
+- [x] Crear controller de memberships (`controllers/membership.controller.ts`)
+  - [x] Endpoint para invitar
+  - [x] Endpoint para listar
+  - [x] Endpoint para actualizar rol
+  - [x] Endpoint para eliminar
+- [x] Crear rutas de memberships (`routes/membership.routes.ts`)
+  - [x] POST `/api/v1/organizations/:orgId/memberships`
+  - [x] GET `/api/v1/organizations/:orgId/memberships`
+  - [x] PATCH `/api/v1/organizations/:orgId/memberships/:membershipId`
+  - [x] DELETE `/api/v1/organizations/:orgId/memberships/:membershipId`
+- [x] Crear middleware de autorización por roles (`middleware/authorize.ts`)
+  - [x] Validar rol del usuario
+  - [x] Verificar permisos según rol
+- [x] Integrar rutas en `server.ts`
 
 **Notas**: Necesario para gestionar quién puede hacer qué en cada organización.
 
