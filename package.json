@@ -18,7 +18,8 @@
     "db:migrate:status": "sequelize-cli db:migrate:status",
     "db:seed:all": "sequelize-cli db:seed:all",
     "db:seed:undo": "sequelize-cli db:seed:undo",
-    "db:seed:status": "sequelize-cli db:seed:status"
+    "db:seed:status": "sequelize-cli db:seed:status",
+    "verify:code": "pnpm format && pnpm lint && pnpm build"
   },
   "keywords": [],
   "author": "",

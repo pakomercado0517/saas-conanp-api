@@ -5,6 +5,7 @@ import { authenticate, requireOrganizationAccess } from '../../../shared/middlew
 import membershipRouter from '../../../modules/users/routes/membership.routes.js';
 import actividadRouter from '../../../modules/actividades/routes/actividad.routes.js';
 import bloqueRouter, { bloqueActividadRouter } from '../../../modules/actividades/routes/bloque.routes.js';
+import capacidadActividadRouter from '../../../modules/actividades/routes/capacidad.routes.js';
 import prestadorRouter from '../../../modules/prestadores/routes/prestador-profile.routes.js';
 import permisoRouter from '../../../modules/permisos/routes/permiso.routes.js';
 import activoRouter from '../../../modules/activos/routes/activo.routes.js';
@@ -125,6 +126,11 @@ organizationRouter.use('/:organizationId/actividades', actividadRouter);
  * Montadas bajo /api/v1/organizations/:organizationId/actividades/:actividadId/bloques
  */
 organizationRouter.use('/:organizationId/actividades/:actividadId/bloques', bloqueActividadRouter);
+/**
+ * Rutas anidadas de capacidad dentro de actividades
+ * Montadas bajo /api/v1/organizations/:organizationId/actividades/:actividadId/capacidad
+ */
+organizationRouter.use('/:organizationId/actividades/:actividadId/capacidad', capacidadActividadRouter);
 /**
  * Rutas anidadas de bloques (generales)
  * Montadas bajo /api/v1/organizations/:organizationId/bloques

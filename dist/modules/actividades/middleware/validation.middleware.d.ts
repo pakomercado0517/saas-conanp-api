@@ -83,4 +83,30 @@ export declare const validateUpdateBloque: (req: Request, res: Response, next: N
  * @param next - NextFunction de Express
  */
 export declare const validateListBloques: (req: Request, res: Response, next: NextFunction) => void;
+/**
+ * Middleware de validación para crear/actualizar capacidad
+ *
+ * Valida el body de la request usando CreateCapacidadSchema de Zod.
+ * Inyecta actividadId desde params antes de validar.
+ * Si la validación es exitosa, actualiza req.body con los datos validados y transformados.
+ * Si falla, retorna un error 400 con los detalles de validación en español.
+ *
+ * @param req - Request de Express
+ * @param res - Response de Express
+ * @param next - NextFunction de Express
+ */
+export declare const validateCreateCapacidad: (req: Request, res: Response, next: NextFunction) => void;
+/**
+ * Middleware de validación para verificar disponibilidad
+ *
+ * Valida los query params usando VerificarDisponibilidadSchema de Zod.
+ * Inyecta actividadId desde params antes de validar.
+ * Si la validación es exitosa, actualiza req.validatedQuery con los datos validados.
+ * Si falla, retorna un error 400 con los detalles de validación en español.
+ *
+ * @param req - Request de Express
+ * @param res - Response de Express
+ * @param next - NextFunction de Express
+ */
+export declare const validateVerificarDisponibilidad: (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=validation.middleware.d.ts.map
