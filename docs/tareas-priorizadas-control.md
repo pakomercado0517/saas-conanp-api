@@ -61,30 +61,30 @@
 
 ### 1.2 Módulo Organizations (Base Multi-Tenant)
 
-- [ ] Crear schemas Zod para organizaciones (`validators/organization.validator.ts`)
-  - [ ] Schema para crear organización
-  - [ ] Schema para actualizar organización
-  - [ ] Schema para listar organizaciones (con filtros)
-- [ ] Crear service de organizaciones (`services/organization.service.ts`)
-  - [ ] Función para crear organización
-  - [ ] Función para obtener organización por ID
-  - [ ] Función para listar organizaciones
-  - [ ] Función para actualizar organización
-  - [ ] Función para eliminar organización (soft delete)
-  - [ ] Validación de acceso a organización
-  - [ ] Filtros multi-tenant obligatorios
-- [ ] Crear controller de organizaciones (`controllers/organization.controller.ts`)
-  - [ ] Endpoint para crear
-  - [ ] Endpoint para obtener por ID
-  - [ ] Endpoint para listar
-  - [ ] Endpoint para actualizar
-  - [ ] Endpoint para eliminar
-- [ ] Crear rutas de organizaciones (`routes/organization.routes.ts`)
-  - [ ] POST `/api/v1/organizations`
-  - [ ] GET `/api/v1/organizations`
-  - [ ] GET `/api/v1/organizations/:id`
-  - [ ] PATCH `/api/v1/organizations/:id`
-  - [ ] DELETE `/api/v1/organizations/:id`
+- [x] Crear schemas Zod para organizaciones (`validators/organization.validator.ts`)
+  - [x] Schema para crear organización
+  - [x] Schema para actualizar organización
+  - [x] Schema para listar organizaciones (con filtros)
+- [x] Crear service de organizaciones (`services/organization.service.ts`)
+  - [x] Función para crear organización
+  - [x] Función para obtener organización por ID
+  - [x] Función para listar organizaciones
+  - [x] Función para actualizar organización
+  - [x] Función para eliminar organización (soft delete)
+  - [x] Validación de acceso a organización
+  - [x] Filtros multi-tenant obligatorios
+- [x] Crear controller de organizaciones (`controllers/organization.controller.ts`)
+  - [x] Endpoint para crear
+  - [x] Endpoint para listar
+  - [x] Endpoint para obtener por ID
+  - [x] Endpoint para actualizar
+  - [x] Endpoint para eliminar
+- [x] Crear rutas de organizaciones (`routes/organization.routes.ts`)
+  - [x] POST `/api/v1/organizations`
+  - [x] GET `/api/v1/organizations`
+  - [x] GET `/api/v1/organizations/:id`
+  - [x] PATCH `/api/v1/organizations/:id`
+  - [x] DELETE `/api/v1/organizations/:id`
 - [ ] Crear middleware multi-tenant (`middleware/organization-access.ts`)
   - [ ] Validar que usuario pertenezca a organización
   - [ ] Extraer organizationId del request

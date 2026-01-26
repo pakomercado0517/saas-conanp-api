@@ -14,6 +14,10 @@ declare global {
        * ID de la organización del contexto multi-tenant
        */
       organizationId?: string;
+      /**
+       * Query params validados por middleware (ej. listar organizaciones)
+       */
+      validatedQuery?: unknown;
     }
   }
 }

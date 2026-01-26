@@ -54,11 +54,16 @@ Organization.init({
         allowNull: false,
         defaultValue: DataTypes.NOW,
     },
+    deletedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
 }, {
     sequelize,
     modelName: 'Organization',
     tableName: 'organizations',
     timestamps: true,
+    paranoid: true,
     underscored: false,
     indexes: [
         {

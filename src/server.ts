@@ -54,9 +54,9 @@ app.get('/', (_req: Request, res: Response) =>
 
 // Rutas de la aplicación
 import { authRoutes } from './modules/auth/routes/index.js';
+import { organizationsRoutes } from './modules/organizations/routes/index.js';
 app.use('/api/v1/auth', authRoutes);
-// app.use('/api/v1/organizations', organizationsRoutes);
-// etc.
+app.use('/api/v1/organizations', organizationsRoutes);
 
 // Middleware de manejo de errores globales
 // IMPORTANTE: Debe ir después de todas las rutas pero antes del 404

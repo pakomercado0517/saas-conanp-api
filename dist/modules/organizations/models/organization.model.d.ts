@@ -7,8 +7,9 @@ export interface OrganizationAttributes {
     settings: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
+    deletedAt: Date | null;
 }
-export interface OrganizationCreationAttributes extends Optional<OrganizationAttributes, 'id' | 'settings' | 'createdAt' | 'updatedAt'> {
+export interface OrganizationCreationAttributes extends Optional<OrganizationAttributes, 'id' | 'settings' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
 }
 export declare class Organization extends Model<OrganizationAttributes, OrganizationCreationAttributes> implements OrganizationAttributes {
     id: UUID;
@@ -17,5 +18,6 @@ export declare class Organization extends Model<OrganizationAttributes, Organiza
     settings: Record<string, unknown>;
     readonly createdAt: Date;
     readonly updatedAt: Date;
+    deletedAt: Date | null;
 }
 //# sourceMappingURL=organization.model.d.ts.map

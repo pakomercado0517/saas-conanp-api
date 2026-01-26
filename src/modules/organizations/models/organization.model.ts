@@ -9,11 +9,12 @@ export interface OrganizationAttributes {
   settings: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
 }
 
 export interface OrganizationCreationAttributes extends Optional<
   OrganizationAttributes,
-  'id' | 'settings' | 'createdAt' | 'updatedAt'
+  'id' | 'settings' | 'createdAt' | 'updatedAt' | 'deletedAt'
 > {}
 
 export class Organization
@@ -26,6 +27,7 @@ export class Organization
   declare settings: Record<string, unknown>;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+  declare deletedAt: Date | null;
 }
 
 Organization.init(
@@ -81,12 +83,17 @@ Organization.init(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
     modelName: 'Organization',
     tableName: 'organizations',
     timestamps: true,
+    paranoid: true,
     underscored: false,
     indexes: [
       {
