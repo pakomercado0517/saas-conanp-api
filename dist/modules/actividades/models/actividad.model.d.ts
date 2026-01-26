@@ -12,8 +12,9 @@ export interface ActividadAttributes {
     active: boolean;
     createdAt: Date;
     updatedAt: Date;
+    deletedAt: Date | null;
 }
-export interface ActividadCreationAttributes extends Optional<ActividadAttributes, 'id' | 'requiresGuide' | 'impactLevel' | 'active' | 'createdAt' | 'updatedAt'> {
+export interface ActividadCreationAttributes extends Optional<ActividadAttributes, 'id' | 'requiresGuide' | 'impactLevel' | 'active' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
 }
 export declare class Actividad extends Model<ActividadAttributes, ActividadCreationAttributes> implements ActividadAttributes {
     id: UUID;
@@ -26,6 +27,7 @@ export declare class Actividad extends Model<ActividadAttributes, ActividadCreat
     active: boolean;
     readonly createdAt: Date;
     readonly updatedAt: Date;
+    deletedAt: Date | null;
     Organization?: Organization;
 }
 //# sourceMappingURL=actividad.model.d.ts.map

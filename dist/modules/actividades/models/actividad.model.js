@@ -86,11 +86,16 @@ Actividad.init({
         allowNull: false,
         defaultValue: DataTypes.NOW,
     },
+    deletedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
 }, {
     sequelize,
     modelName: 'Actividad',
     tableName: 'actividades',
     timestamps: true,
+    paranoid: true,
     underscored: false,
     indexes: [
         {

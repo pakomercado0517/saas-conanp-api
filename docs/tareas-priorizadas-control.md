@@ -156,33 +156,33 @@
 
 ### 2.1 Módulo Actividades
 
-- [ ] Crear schemas Zod (`validators/actividad.validator.ts`)
-  - [ ] Schema para crear actividad
-  - [ ] Schema para actualizar actividad
-  - [ ] Schema para listar actividades (con filtros)
-  - [ ] Validar `agendaType` (BLOQUES | HORARIO_LIBRE)
-- [ ] Crear service de actividades (`services/actividad.service.ts`)
-  - [ ] Función para crear actividad
-  - [ ] Función para obtener actividad por ID
-  - [ ] Función para listar actividades (con paginación)
-  - [ ] Función para actualizar actividad
-  - [ ] Función para eliminar actividad (soft delete)
-  - [ ] Validación de tipo de agenda
-  - [ ] Filtros multi-tenant obligatorios
-  - [ ] Validar que solo admins pueden crear/editar actividades
-- [ ] Crear controller de actividades (`controllers/actividad.controller.ts`)
-  - [ ] Endpoint para crear
-  - [ ] Endpoint para obtener por ID
-  - [ ] Endpoint para listar
-  - [ ] Endpoint para actualizar
-  - [ ] Endpoint para eliminar
-- [ ] Crear rutas de actividades (`routes/actividad.routes.ts`)
-  - [ ] POST `/api/v1/actividades`
-  - [ ] GET `/api/v1/actividades`
-  - [ ] GET `/api/v1/actividades/:id`
-  - [ ] PATCH `/api/v1/actividades/:id`
-  - [ ] DELETE `/api/v1/actividades/:id`
-- [ ] Integrar rutas en `server.ts`
+- [x] Crear schemas Zod (`validators/actividad.validator.ts`)
+  - [x] Schema para crear actividad
+  - [x] Schema para actualizar actividad
+  - [x] Schema para listar actividades (con filtros)
+  - [x] Validar `agendaType` (BLOQUES | HORARIO_LIBRE)
+- [x] Crear service de actividades (`services/actividad.service.ts`)
+  - [x] Función para crear actividad
+  - [x] Función para obtener actividad por ID
+  - [x] Función para listar actividades (con paginación)
+  - [x] Función para actualizar actividad
+  - [x] Función para eliminar actividad (soft delete)
+  - [x] Validación de tipo de agenda
+  - [x] Filtros multi-tenant obligatorios
+  - [x] Validar que solo admins pueden crear/editar actividades
+- [x] Crear controller de actividades (`controllers/actividad.controller.ts`)
+  - [x] Endpoint para crear
+  - [x] Endpoint para obtener por ID
+  - [x] Endpoint para listar
+  - [x] Endpoint para actualizar
+  - [x] Endpoint para eliminar
+- [x] Crear rutas de actividades (`routes/actividad.routes.ts`)
+  - [x] POST `/api/v1/actividades`
+  - [x] GET `/api/v1/actividades`
+  - [x] GET `/api/v1/actividades/:id`
+  - [x] PATCH `/api/v1/actividades/:id`
+  - [x] DELETE `/api/v1/actividades/:id`
+- [x] Integrar rutas en `server.ts`
 
 **Notas**: Define qué actividades turísticas pueden realizarse y cómo se agendan (BLOQUES vs HORARIO_LIBRE).
 

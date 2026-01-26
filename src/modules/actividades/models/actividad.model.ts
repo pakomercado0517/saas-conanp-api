@@ -14,11 +14,12 @@ export interface ActividadAttributes {
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
 }
 
 export interface ActividadCreationAttributes extends Optional<
   ActividadAttributes,
-  'id' | 'requiresGuide' | 'impactLevel' | 'active' | 'createdAt' | 'updatedAt'
+  'id' | 'requiresGuide' | 'impactLevel' | 'active' | 'createdAt' | 'updatedAt' | 'deletedAt'
 > {}
 
 export class Actividad
@@ -35,6 +36,7 @@ export class Actividad
   declare active: boolean;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+  declare deletedAt: Date | null;
 
   // Relaciones
   declare Organization?: Organization;
@@ -124,12 +126,17 @@ Actividad.init(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
     modelName: 'Actividad',
     tableName: 'actividades',
     timestamps: true,
+    paranoid: true,
     underscored: false,
     indexes: [
       {

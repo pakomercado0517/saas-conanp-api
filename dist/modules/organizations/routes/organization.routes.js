@@ -3,6 +3,7 @@ import { createOrganization, getOrganizationById, listOrganizations, updateOrgan
 import { validateCreateOrganization, validateUpdateOrganization, validateListOrganizations, } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
 import membershipRouter from '../../../modules/users/routes/membership.routes.js';
+import actividadRouter from '../../../modules/actividades/routes/actividad.routes.js';
 /**
  * Router de organizaciones
  *
@@ -109,5 +110,10 @@ organizationRouter.delete('/:organizationId', authenticate, requireOrganizationA
  * Montadas bajo /api/v1/organizations/:organizationId/memberships
  */
 organizationRouter.use('/:organizationId/memberships', membershipRouter);
+/**
+ * Rutas anidadas de actividades
+ * Montadas bajo /api/v1/organizations/:organizationId/actividades
+ */
+organizationRouter.use('/:organizationId/actividades', actividadRouter);
 export default organizationRouter;
 //# sourceMappingURL=organization.routes.js.map
