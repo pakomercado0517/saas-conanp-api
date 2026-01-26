@@ -52,8 +52,9 @@ app.get('/', (_req: Request, res: Response) =>
   res.send({ message: 'Bienvenido a la API de CONANP - Gestión de Áreas Naturales Protegidas' })
 );
 
-// Aquí irían todas las rutas de la aplicación
-// app.use('/api/v1/auth', authRoutes);
+// Rutas de la aplicación
+import { authRoutes } from './modules/auth/routes/index.js';
+app.use('/api/v1/auth', authRoutes);
 // app.use('/api/v1/organizations', organizationsRoutes);
 // etc.
 

@@ -153,7 +153,7 @@ export const errorHandler = (err, req, res, _next) => {
         method: req.method,
         ip: req.ip || req.socket.remoteAddress,
         userAgent: req.get('user-agent'),
-        userId: req.user?.id,
+        userId: req.user?.userId,
         organizationId: req.organizationId,
         timestamp: new Date().toISOString(),
     };

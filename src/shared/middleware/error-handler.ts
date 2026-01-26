@@ -4,17 +4,6 @@ import { logger } from '../logger/index.js';
 import { AppError } from '../errors/index.js';
 
 /**
- * Interfaz para contexto de request extendido
- */
-interface RequestContext extends Request {
-  user?: {
-    id: string;
-    email?: string;
-  };
-  organizationId?: string;
-}
-
-/**
  * Formatea errores de Zod para respuesta API
  *
  * Convierte los errores de Zod en un formato estructurado con mensajes en español
@@ -258,7 +247,7 @@ const formatJWTError = (
  */
 export const errorHandler = (
   err: unknown,
-  req: RequestContext,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): Response | void => {
@@ -270,7 +259,7 @@ export const errorHandler = (
     method: req.method,
     ip: req.ip || req.socket.remoteAddress,
     userAgent: req.get('user-agent'),
-    userId: req.user?.id,
+    userId: req.user?.userId,
     organizationId: req.organizationId,
     timestamp: new Date().toISOString(),
   };

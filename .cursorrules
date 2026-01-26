@@ -64,6 +64,7 @@ Sistema multi-tenant (Micro-SaaS) para la gestión y regulación de operaciones 
 
 - **SIEMPRE usar tipos explícitos** en funciones, parámetros y retornos
 - **NUNCA usar `any`** - usar `unknown` si es necesario y hacer type guards
+- **NUNCA priorizar rapidez sobre seguir reglas**: si parece necesario usar `any` como “solución rápida”, **preguntar primero al usuario** si desea hacerlo antes de usarlo.
 - Usar tipos estrictos de TypeScript (`strict: true` en tsconfig)
 - Crear tipos/interfaces compartidos organizados por dominio funcional:
   - `src/shared/database/types.ts` - tipos relacionados con la base de datos (UUID, Status, Role, etc.)
