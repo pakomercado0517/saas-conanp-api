@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createEvento, getEventoById, listEventos, updateEvento, deleteEvento, } from '../controllers/evento.controller.js';
 import { validateCreateEvento, validateUpdateEvento, validateListEventos, } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
+import evidenciaRouter from '../../../modules/evidencias/routes/evidencia.routes.js';
 /**
  * Router de eventos
  *
@@ -137,5 +138,10 @@ eventoRouter.patch('/:eventoId', authenticate, requireOrganizationAccess, valida
  * Respuesta 204: No Content
  */
 eventoRouter.delete('/:eventoId', authenticate, requireOrganizationAccess, deleteEvento);
+/**
+ * Rutas anidadas de evidencias ambientales
+ * Montadas bajo /api/v1/organizations/:organizationId/eventos/:eventoId/evidencias
+ */
+eventoRouter.use('/:eventoId/evidencias', evidenciaRouter);
 export default eventoRouter;
 //# sourceMappingURL=evento.routes.js.map

@@ -12,6 +12,7 @@ import {
   validateListEventos,
 } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess } from '@/shared/middleware/index.js';
+import evidenciaRouter from '@/modules/evidencias/routes/evidencia.routes.js';
 
 /**
  * Router de eventos
@@ -159,5 +160,11 @@ eventoRouter.patch(
  * Respuesta 204: No Content
  */
 eventoRouter.delete('/:eventoId', authenticate, requireOrganizationAccess, deleteEvento);
+
+/**
+ * Rutas anidadas de evidencias ambientales
+ * Montadas bajo /api/v1/organizations/:organizationId/eventos/:eventoId/evidencias
+ */
+eventoRouter.use('/:eventoId/evidencias', evidenciaRouter);
 
 export default eventoRouter;
