@@ -20,3 +20,4 @@ export { Activo } from '@/modules/activos/models/activo.model';
 export { ActivoRequisito } from '@/modules/activos/models/activo-requisito.model';
 export { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model';
 export { EvidenciaAmbiental } from '@/modules/evidencias/models/evidencia-ambiental.model';
+export { Payment } from '@/modules/payments/models/payment.model';
