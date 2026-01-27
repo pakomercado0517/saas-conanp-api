@@ -24,6 +24,9 @@ import { logger } from './shared/logger/index.js';
 app.use(pinoHttp({
     logger,
 }));
+// Webhook Stripe: raw body para validar firma (antes de json/urlencoded)
+import stripeWebhookRoutes from './modules/payments/routes/stripe-webhook.routes.js';
+app.use('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhookRoutes);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 // Health check endpoint

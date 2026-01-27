@@ -12,6 +12,7 @@ import activoRouter from '../../../modules/activos/routes/activo.routes.js';
 import activoRequisitoRouter from '../../../modules/activos/routes/activo-requisito.routes.js';
 import eventoRouter from '../../../modules/eventos/routes/evento.routes.js';
 import reporteRouter from '../../../modules/reportes/routes/reporte.routes.js';
+import paymentRouter from '../../../modules/payments/routes/payment.routes.js';
 /**
  * Router de organizaciones
  *
@@ -168,5 +169,10 @@ organizationRouter.use('/:organizationId/eventos', eventoRouter);
  * Montadas bajo /api/v1/organizations/:organizationId/reportes
  */
 organizationRouter.use('/:organizationId/reportes', reporteRouter);
+/**
+ * Rutas anidadas de pagos
+ * Montadas bajo /api/v1/organizations/:organizationId/payments
+ */
+organizationRouter.use('/:organizationId/payments', paymentRouter);
 export default organizationRouter;
 //# sourceMappingURL=organization.routes.js.map
