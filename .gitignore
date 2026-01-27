@@ -3,6 +3,11 @@ node_modules
 # Archivos temporales de Windows
 nul
 
+# Variables de entorno (contienen secretos)
+.env
+.env.local
+.env.*.local
+
 # documentación
 docs/
 
