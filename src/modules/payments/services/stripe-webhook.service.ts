@@ -43,6 +43,7 @@ export const processWebhookEvent = async (event: Stripe.Event): Promise<ProcessW
   const eventId = event.id;
   const eventType = event.type;
 
+  // Solo loguear id y tipo; nunca el cuerpo del evento (puede contener datos sensibles)
   logger.info({ eventId, eventType }, 'Webhook Stripe recibido');
 
   const alreadyProcessed = await ensureEventIdempotency(eventId, eventType);
@@ -74,7 +75,16 @@ export const processWebhookEvent = async (event: Stripe.Event): Promise<ProcessW
       logger.warn({ eventId, eventType, error: err.message }, 'Webhook Stripe: pago no encontrado');
       return { received: true };
     }
-    logger.error({ err, eventId, eventType }, 'Webhook Stripe: error al procesar');
+    // No loguear el objeto err completo (puede contener datos sensibles de Stripe)
+    logger.error(
+      {
+        message: err instanceof Error ? err.message : String(err),
+        name: err instanceof Error ? err.name : undefined,
+        eventId,
+        eventType,
+      },
+      'Webhook Stripe: error al procesar'
+    );
     throw err;
   }
 

@@ -53,6 +53,9 @@ const validateEnvironmentVariables = (): StripeConfig => {
 // Validar y obtener configuración
 const config = validateEnvironmentVariables();
 
+// IMPORTANTE: config (y stripeConfig exportado) contiene secretKey y webhookSecret.
+// Nunca loguear ni exponer stripeConfig en respuestas o logs.
+
 /**
  * Cliente de Stripe configurado con opciones por defecto
  *
@@ -69,6 +72,7 @@ const stripeClient = new Stripe(config.secretKey, {
   timeout: 30000,
 });
 
+// Solo loguear datos no sensibles (nunca secretKey ni webhookSecret)
 logger.info(
   {
     apiVersion: config.apiVersion || DEFAULT_API_VERSION,
@@ -168,8 +172,17 @@ export const handleStripeError = (error: unknown): never => {
     throw new BadRequestError(`Error inesperado: ${error.message || 'Error desconocido'}`);
   }
 
-  // Error desconocido
-  logger.error({ error }, 'Error desconocido de Stripe');
+  // Error desconocido: no loguear el objeto completo (puede contener datos sensibles)
+  logger.error(
+    {
+      message:
+        error != null && typeof error === 'object' && 'message' in error
+          ? String((error as Error).message)
+          : String(error),
+      type: typeof error,
+    },
+    'Error desconocido de Stripe'
+  );
   throw new BadRequestError('Error desconocido al procesar la solicitud con Stripe');
 };
 
@@ -186,9 +199,11 @@ export const testStripeConnection = async (): Promise<void> => {
 
     logger.info('Conexión con Stripe verificada exitosamente');
   } catch (error) {
+    // No loguear el objeto error completo (puede contener respuestas de Stripe con datos sensibles)
     logger.error(
       {
-        error,
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : undefined,
       },
       'Error al verificar conexión con Stripe'
     );

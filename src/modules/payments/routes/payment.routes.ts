@@ -15,7 +15,9 @@ import {
 import {
   authenticate,
   requireOrganizationAccess,
+  requireRole,
   requireAdmin,
+  paymentCreateLimiter,
 } from '@/shared/middleware/index.js';
 
 /**
@@ -30,6 +32,8 @@ const paymentRouter: ExpressRouter = Router({ mergeParams: true });
  * POST /api/v1/organizations/:organizationId/payments/intent
  * Crea un Payment Intent en Stripe y guarda el pago en la base de datos.
  * El pago se crea con estado 'pending' y se actualiza cuando se confirma.
+ * Solo admins y prestadores pueden crear pagos; prestadores solo para eventos donde son el prestador asignado.
+ * Rate limiting estricto: 10 solicitudes por minuto por IP (producción).
  *
  * Headers:
  * - Authorization: Bearer <accessToken>
@@ -53,8 +57,10 @@ const paymentRouter: ExpressRouter = Router({ mergeParams: true });
  */
 paymentRouter.post(
   '/intent',
+  paymentCreateLimiter,
   authenticate,
   requireOrganizationAccess,
+  requireRole(['admin', 'prestador']),
   validateCreatePaymentIntent,
   createPaymentIntent
 );
@@ -62,6 +68,7 @@ paymentRouter.post(
 /**
  * POST /api/v1/organizations/:organizationId/payments/confirm
  * Confirma un pago actualizando el PaymentIntent en Stripe y el registro en la BD.
+ * Solo admins y prestadores pueden confirmar; prestadores solo para eventos donde son el prestador asignado.
  *
  * Headers:
  * - Authorization: Bearer <accessToken>
@@ -85,6 +92,7 @@ paymentRouter.post(
   '/confirm',
   authenticate,
   requireOrganizationAccess,
+  requireRole(['admin', 'prestador']),
   validateConfirmPayment,
   confirmPayment
 );
@@ -92,7 +100,7 @@ paymentRouter.post(
 /**
  * GET /api/v1/organizations/:organizationId/payments
  * Lista pagos con paginación y filtros.
- * Todos los filtros son opcionales, pero siempre se filtra por organización (multi-tenant).
+ * Solo se muestran pagos de la organización a la que el usuario tiene acceso.
  *
  * Headers:
  * - Authorization: Bearer <accessToken>
@@ -126,7 +134,7 @@ paymentRouter.get('/', authenticate, requireOrganizationAccess, validateListPaym
 /**
  * GET /api/v1/organizations/:organizationId/payments/:paymentId
  * Obtiene un pago por ID.
- * Valida que el pago pertenezca a la organización (multi-tenant).
+ * Solo se puede ver si el pago pertenece a la organización del usuario.
  *
  * Headers:
  * - Authorization: Bearer <accessToken>

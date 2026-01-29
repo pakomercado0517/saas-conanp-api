@@ -1,4 +1,5 @@
 import * as paymentService from '../services/payment.service.js';
+import { sanitizePaymentForResponse } from '../sanitizers/payment-sanitizer.js';
 import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
 /**
  * Crea un Payment Intent en Stripe y guarda el pago en la base de datos.
@@ -38,7 +39,11 @@ export const createPaymentIntent = async (req, res) => {
     const userId = req.user.userId;
     const data = req.body;
     const payment = await paymentService.createPaymentIntent(data, organizationId, userId);
-    return sendCreated(res, payment, 'Payment Intent creado exitosamente');
+    const sanitized = sanitizePaymentForResponse(payment, {
+        includeClientSecret: true,
+        includeMetadata: true,
+    });
+    return sendCreated(res, sanitized, 'Payment Intent creado exitosamente');
 };
 /**
  * Confirma un pago actualizando el PaymentIntent en Stripe y el registro en la BD.
@@ -75,7 +80,11 @@ export const confirmPayment = async (req, res) => {
     const userId = req.user.userId;
     const data = req.body;
     const payment = await paymentService.confirmPayment(data, organizationId, userId);
-    return sendSuccess(res, payment, 'Pago confirmado exitosamente');
+    const sanitized = sanitizePaymentForResponse(payment, {
+        includeClientSecret: false,
+        includeMetadata: false,
+    });
+    return sendSuccess(res, sanitized, 'Pago confirmado exitosamente');
 };
 /**
  * Obtiene un pago por ID.
@@ -109,7 +118,11 @@ export const getPaymentById = async (req, res) => {
     const paymentId = req.params['paymentId'];
     const userId = req.user.userId;
     const payment = await paymentService.getPaymentById(paymentId, organizationId, userId);
-    return sendSuccess(res, payment, 'Pago obtenido exitosamente');
+    const sanitized = sanitizePaymentForResponse(payment, {
+        includeClientSecret: false,
+        includeMetadata: false,
+    });
+    return sendSuccess(res, sanitized, 'Pago obtenido exitosamente');
 };
 /**
  * Lista pagos con paginación y filtros.
@@ -158,7 +171,11 @@ export const listPayments = async (req, res) => {
     const filters = req.validatedQuery ??
         req.query;
     const result = await paymentService.listPayments(organizationId, filters, userId);
-    return sendPaginated(res, result.data, result.pagination, 'Pagos obtenidos exitosamente');
+    const sanitizedData = result.data.map((payment) => sanitizePaymentForResponse(payment, {
+        includeClientSecret: false,
+        includeMetadata: false,
+    }));
+    return sendPaginated(res, sanitizedData, result.pagination, 'Pagos obtenidos exitosamente');
 };
 /**
  * Procesa un reembolso para un pago.
@@ -199,6 +216,10 @@ export const processRefund = async (req, res) => {
     const userId = req.user.userId;
     const data = req.body;
     const payment = await paymentService.processRefund(data, organizationId, userId);
-    return sendSuccess(res, payment, 'Reembolso procesado exitosamente');
+    const sanitized = sanitizePaymentForResponse(payment, {
+        includeClientSecret: false,
+        includeMetadata: false,
+    });
+    return sendSuccess(res, sanitized, 'Reembolso procesado exitosamente');
 };
 //# sourceMappingURL=payment.controller.js.map

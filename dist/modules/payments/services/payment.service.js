@@ -6,8 +6,10 @@ import { EventoOperativo } from '../../../modules/eventos/models/evento-operativ
 import { markEventoPaid, unmarkEventoPaid } from '../../../modules/eventos/services/evento.service.js';
 import { Organization } from '../../../modules/organizations/models/organization.model.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
 import { stripeClient, handleStripeError } from '../../../shared/stripe/index.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
+import { ForbiddenError, NotFoundError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
 import { DateTime } from 'luxon';
 /**
@@ -29,6 +31,94 @@ const getEventoWithOrganization = async (eventoId, organizationId) => {
         throw new NotFoundError('Evento', { eventoId, organizationId });
     }
     return evento;
+};
+/**
+ * Valida que el monto del pago en BD coincida con el monto en Stripe (integridad).
+ *
+ * @param paymentAmount - Monto en BD (centavos)
+ * @param stripeAmount - Monto en Stripe (centavos)
+ * @throws {ValidationError} Si los montos no coinciden
+ */
+const assertPaymentAmountMatchesStripe = (paymentAmount, stripeAmount) => {
+    if (paymentAmount !== stripeAmount) {
+        throw new ValidationError(`El monto del pago en la base de datos (${paymentAmount} centavos) no coincide con el monto en Stripe (${stripeAmount} centavos)`, 'amount');
+    }
+};
+/**
+ * Valida que el organizationId del pago sea consistente con el metadata de Stripe.
+ *
+ * @param paymentOrganizationId - organizationId del pago en BD
+ * @param stripeMetadataOrganizationId - organizationId en metadata del PaymentIntent (opcional)
+ * @throws {ValidationError} Si no coinciden cuando Stripe envía metadata
+ */
+const assertPaymentOrganizationConsistency = (paymentOrganizationId, stripeMetadataOrganizationId) => {
+    if (stripeMetadataOrganizationId != null && stripeMetadataOrganizationId !== '') {
+        if (paymentOrganizationId !== stripeMetadataOrganizationId) {
+            throw new ValidationError('El organizationId del pago no coincide con el registrado en Stripe', 'organizationId');
+        }
+    }
+};
+/**
+ * Valida que el evento del pago pertenezca a la organización del pago (integridad).
+ * Requiere que el pago tenga la relación EventoOperativo cargada.
+ *
+ * @param payment - Pago con EventoOperativo incluido
+ * @throws {ValidationError} Si el evento no pertenece a la organización del pago
+ */
+const assertPaymentEventBelongsToOrganization = (payment) => {
+    const evento = payment.EventoOperativo;
+    if (evento && evento.organizationId !== payment.organizationId) {
+        throw new ValidationError('El evento asociado al pago no pertenece a la organización del pago', 'eventoId');
+    }
+};
+/**
+ * Valida que el usuario pueda crear/confirmar pagos para el evento.
+ * Solo admins pueden para cualquier evento de la organización.
+ * Prestadores solo pueden para eventos donde ellos son el prestador asignado.
+ *
+ * @param userId - ID del usuario
+ * @param organizationId - ID de la organización
+ * @param evento - Evento operativo
+ * @throws {ForbiddenError} Si el usuario no tiene permiso para crear pago para este evento
+ */
+const assertCanCreatePaymentForEvent = async (userId, organizationId, evento) => {
+    const membership = await Membership.findOne({
+        where: {
+            userId,
+            organizationId,
+            status: 'activo',
+        },
+    });
+    if (!membership) {
+        throw new ForbiddenError('No tienes acceso a esta organización', {
+            organizationId,
+            userId,
+        });
+    }
+    if (membership.role === 'admin') {
+        return;
+    }
+    if (membership.role === 'prestador') {
+        const prestadorProfile = await PrestadorProfile.findOne({
+            where: {
+                userId,
+                organizationId,
+            },
+        });
+        if (!prestadorProfile || evento.prestadorId !== prestadorProfile.id) {
+            throw new ForbiddenError('Solo puedes crear o confirmar pagos para eventos donde eres el prestador asignado', {
+                eventoId: evento.id,
+                prestadorId: evento.prestadorId,
+                userId,
+            });
+        }
+        return;
+    }
+    throw new ForbiddenError('Solo administradores y prestadores pueden crear o confirmar pagos para eventos', {
+        organizationId,
+        userId,
+        currentRole: membership.role,
+    });
 };
 /**
  * Helper interno: Guarda un pago en la base de datos
@@ -61,18 +151,20 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
     // 1. Validar acceso a la organización
     await assertCanAccessOrganization(userId, organizationId);
     // 2. Validar que el evento existe y pertenece a la organización
-    await getEventoWithOrganization(data.eventoId, organizationId);
-    // 3. Validar que el monto es válido (ya validado por Zod, pero verificar)
+    const evento = await getEventoWithOrganization(data.eventoId, organizationId);
+    // 3. Validar que solo prestadores/admins pueden crear pagos; prestadores solo para sus eventos
+    await assertCanCreatePaymentForEvent(userId, organizationId, evento);
+    // 4. Validar que el monto es válido (ya validado por Zod, pero verificar)
     if (data.amount <= 0) {
         throw new ValidationError('El monto debe ser mayor a cero', 'amount');
     }
     if (data.amount < 1) {
         throw new ValidationError('El monto mínimo es 1 centavo', 'amount');
     }
-    // 4. Iniciar transacción
+    // 5. Iniciar transacción
     const transaction = await sequelize.transaction();
     try {
-        // 5. Guardar pago en BD primero (para tener el ID)
+        // 6. Guardar pago en BD primero (para tener el ID)
         const payment = await savePayment({
             organizationId,
             eventoId: data.eventoId,
@@ -82,7 +174,7 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
             paymentMethod: data.paymentMethod || null,
             status: 'pending',
         }, transaction);
-        // 6. Crear PaymentIntent en Stripe
+        // 7. Crear PaymentIntent en Stripe
         let paymentIntent;
         try {
             paymentIntent = await stripeClient.paymentIntents.create({
@@ -102,7 +194,14 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
             handleStripeError(error);
             throw error; // Nunca se ejecuta, pero TypeScript lo necesita
         }
-        // 7. Actualizar pago con stripePaymentIntentId
+        // 7a. Integridad: monto y organizationId enviados a Stripe coinciden con lo creado
+        const piAmount = typeof paymentIntent.amount === 'number'
+            ? paymentIntent.amount
+            : (paymentIntent.amount ?? 0);
+        assertPaymentAmountMatchesStripe(data.amount, piAmount);
+        const piMetadata = paymentIntent.metadata;
+        assertPaymentOrganizationConsistency(organizationId, piMetadata?.['organizationId'] ?? undefined);
+        // 8. Actualizar pago con stripePaymentIntentId
         await payment.update({
             stripePaymentIntentId: paymentIntent.id,
         }, { transaction });
@@ -124,7 +223,7 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
             stripePaymentIntentId: paymentIntent.id,
             userId,
         }, 'Payment Intent creado exitosamente');
-        // 10. Retornar pago con clientSecret
+        // 11. Retornar pago con clientSecret
         return {
             ...payment.toJSON(),
             clientSecret: paymentIntent.client_secret || '',
@@ -164,18 +263,23 @@ export const confirmPayment = async (data, organizationId, userId) => {
     if (!payment) {
         throw new NotFoundError('Pago', { paymentId: data.paymentId, organizationId });
     }
-    // 3. Validar que el stripePaymentIntentId coincide
+    // 3. Validar que solo prestadores/admins pueden confirmar; prestadores solo para sus eventos
+    const eventoConfirm = await getEventoWithOrganization(payment.eventoId, organizationId);
+    await assertCanCreatePaymentForEvent(userId, organizationId, eventoConfirm);
+    // 4. Validar que el stripePaymentIntentId coincide
     if (payment.stripePaymentIntentId !== data.stripePaymentIntentId) {
         throw new ValidationError('El ID de PaymentIntent no coincide con el pago', 'stripePaymentIntentId');
     }
-    // 4. Validar que el pago está en estado válido para confirmar
+    // 5. Validar que el pago está en estado válido para confirmar
     if (payment.status !== 'pending' && payment.status !== 'processing') {
         throw new ValidationError(`No se puede confirmar un pago en estado '${payment.status}'. Solo se pueden confirmar pagos en estado 'pending' o 'processing'`, 'status');
     }
-    // 5. Iniciar transacción
+    // 5b. Integridad: evento del pago pertenece a la organización del pago
+    assertPaymentEventBelongsToOrganization(payment);
+    // 6. Iniciar transacción
     const transaction = await sequelize.transaction();
     try {
-        // 6. Confirmar PaymentIntent en Stripe
+        // 7. Confirmar PaymentIntent en Stripe
         let confirmedPaymentIntent;
         try {
             confirmedPaymentIntent = await stripeClient.paymentIntents.confirm(data.stripePaymentIntentId, {
@@ -187,7 +291,14 @@ export const confirmPayment = async (data, organizationId, userId) => {
             handleStripeError(error);
             throw error; // Nunca se ejecuta
         }
-        // 7. Actualizar pago en BD
+        // 7a. Integridad: monto en BD debe coincidir con Stripe; organizationId consistente
+        const stripeAmount = typeof confirmedPaymentIntent.amount === 'number'
+            ? confirmedPaymentIntent.amount
+            : (confirmedPaymentIntent.amount ?? 0);
+        assertPaymentAmountMatchesStripe(payment.amount, stripeAmount);
+        const stripeMetadata = confirmedPaymentIntent.metadata;
+        assertPaymentOrganizationConsistency(payment.organizationId, stripeMetadata?.['organizationId']);
+        // 7b. Actualizar pago en BD
         const updateData = {
             status: confirmedPaymentIntent.status === 'succeeded' ? 'succeeded' : 'processing',
             paymentMethod: data.paymentMethod || payment.paymentMethod,
@@ -269,6 +380,7 @@ export const getPaymentById = async (paymentId, organizationId, userId) => {
     if (!payment) {
         throw new NotFoundError('Pago', { paymentId, organizationId });
     }
+    assertPaymentEventBelongsToOrganization(payment);
     return payment;
 };
 /**
@@ -340,6 +452,9 @@ export const listPayments = async (organizationId, filters, userId) => {
     });
     const total = result.count;
     const totalPages = Math.ceil(total / limit);
+    for (const payment of result.rows) {
+        assertPaymentEventBelongsToOrganization(payment);
+    }
     const pagination = {
         page: filters.page,
         limit,
@@ -399,6 +514,23 @@ export const processRefund = async (data, organizationId, userId) => {
     if (!payment.stripePaymentIntentId) {
         throw new ValidationError('No se puede procesar el reembolso: el pago no tiene un PaymentIntent de Stripe asociado', 'stripePaymentIntentId');
     }
+    // 7b. Integridad: evento del pago pertenece a la organización
+    assertPaymentEventBelongsToOrganization(payment);
+    // 7c. Integridad: verificar con Stripe que monto y organizationId coinciden antes de reembolsar
+    let stripePaymentIntent;
+    try {
+        stripePaymentIntent = await stripeClient.paymentIntents.retrieve(payment.stripePaymentIntentId);
+    }
+    catch (error) {
+        handleStripeError(error);
+        throw error;
+    }
+    const piAmount = typeof stripePaymentIntent.amount === 'number'
+        ? stripePaymentIntent.amount
+        : (stripePaymentIntent.amount ?? 0);
+    assertPaymentAmountMatchesStripe(payment.amount, piAmount);
+    const piMetadata = stripePaymentIntent.metadata;
+    assertPaymentOrganizationConsistency(payment.organizationId, piMetadata?.['organizationId']);
     // 8. Iniciar transacción
     const transaction = await sequelize.transaction();
     try {
@@ -509,6 +641,16 @@ export const handleChargeRefundedFromWebhook = async (charge) => {
         logger.warn({ stripePaymentIntentId: paymentIntent, chargeId: charge['id'] }, 'Webhook charge.refunded: pago no encontrado');
         return null;
     }
+    // Integridad: evento del pago pertenece a la organización; monto reembolsado no excede pago
+    assertPaymentEventBelongsToOrganization(payment);
+    if (amountRefunded > payment.amount) {
+        logger.error({
+            paymentId: payment.id,
+            paymentAmount: payment.amount,
+            amountRefunded,
+        }, 'Webhook charge.refunded: monto reembolsado excede el monto del pago, omitiendo actualización');
+        return payment;
+    }
     const transaction = await sequelize.transaction();
     try {
         const isFullRefund = amountRefunded >= payment.amount;
@@ -567,7 +709,15 @@ export const updatePaymentStatusFromWebhook = async (stripePaymentIntentId, even
     if (!payment) {
         throw new NotFoundError('Pago', { stripePaymentIntentId });
     }
-    // 2. Mapear eventos de Stripe a estados
+    // 2. Integridad: monto en BD debe coincidir con Stripe; organizationId consistente; evento en org
+    const stripeAmount = typeof eventData['amount'] === 'number'
+        ? eventData['amount']
+        : (eventData['amount'] ?? 0);
+    assertPaymentAmountMatchesStripe(payment.amount, stripeAmount);
+    const eventMetadata = eventData['metadata'];
+    assertPaymentOrganizationConsistency(payment.organizationId, eventMetadata?.['organizationId']);
+    assertPaymentEventBelongsToOrganization(payment);
+    // 3. Mapear eventos de Stripe a estados
     let newStatus = null;
     let failureReason = null;
     let stripeChargeId = null;
@@ -596,7 +746,7 @@ export const updatePaymentStatusFromWebhook = async (stripePaymentIntentId, even
             }, 'Tipo de evento de Stripe no reconocido para actualizar estado de pago');
             return payment;
     }
-    // 3. Extraer información adicional del evento
+    // 4. Extraer información adicional del evento
     if (eventData['latest_charge']) {
         stripeChargeId =
             typeof eventData['latest_charge'] === 'string'
@@ -609,10 +759,10 @@ export const updatePaymentStatusFromWebhook = async (stripePaymentIntentId, even
                 ? eventData['payment_method']
                 : eventData['payment_method']?.id || null;
     }
-    // 4. Iniciar transacción
+    // 5. Iniciar transacción
     const transaction = await sequelize.transaction();
     try {
-        // 5. Actualizar pago en BD
+        // 6. Actualizar pago en BD
         const updateData = {};
         if (newStatus) {
             updateData.status = newStatus;
@@ -627,9 +777,9 @@ export const updatePaymentStatusFromWebhook = async (stripePaymentIntentId, even
             updateData.failureReason = failureReason;
         }
         await payment.update(updateData, { transaction });
-        // 6. Commit de la transacción
+        // 7. Commit de la transacción
         await transaction.commit();
-        // 7. Recargar pago con relaciones
+        // 8. Recargar pago con relaciones
         await payment.reload({
             include: [
                 { model: EventoOperativo, as: 'EventoOperativo' },
