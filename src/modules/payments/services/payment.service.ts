@@ -8,6 +8,7 @@ import {
 } from '@/modules/payments/models/payment.model.js';
 import { StripeWebhookEvent } from '@/modules/payments/models/stripe-webhook-event.model.js';
 import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { markEventoPaid, unmarkEventoPaid } from '@/modules/eventos/services/evento.service.js';
 import { Organization } from '@/modules/organizations/models/organization.model.js';
 import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
 import { stripeClient, handleStripeError } from '@/shared/stripe/index.js';
@@ -312,6 +313,10 @@ export const confirmPayment = async (
       'Pago confirmado exitosamente'
     );
 
+    if (confirmedPaymentIntent.status === 'succeeded') {
+      await markEventoPaid(payment.eventoId, payment.organizationId);
+    }
+
     return payment;
   } catch (error) {
     // Rollback en caso de error
@@ -584,6 +589,10 @@ export const processRefund = async (
       'Reembolso procesado exitosamente'
     );
 
+    if (isFullRefund) {
+      await unmarkEventoPaid(payment.eventoId, payment.organizationId);
+    }
+
     return payment;
   } catch (error) {
     // Rollback en caso de error
@@ -692,6 +701,10 @@ export const handleChargeRefundedFromWebhook = async (
       },
       'Estado de pago actualizado desde webhook charge.refunded'
     );
+
+    if (isFullRefund) {
+      await unmarkEventoPaid(payment.eventoId, payment.organizationId);
+    }
 
     return payment;
   } catch (error) {
@@ -826,6 +839,10 @@ export const updatePaymentStatusFromWebhook = async (
       },
       'Estado de pago actualizado desde webhook de Stripe'
     );
+
+    if (eventType === 'payment_intent.succeeded' && payment.status === 'succeeded') {
+      await markEventoPaid(payment.eventoId, payment.organizationId);
+    }
 
     return payment;
   } catch (error) {

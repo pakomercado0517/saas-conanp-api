@@ -107,6 +107,15 @@ EventoOperativo.init({
             },
         },
     },
+    paymentRequired: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
+    paidAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -151,6 +160,10 @@ EventoOperativo.init({
         {
             name: 'idx_eventos_operativos_status',
             fields: ['status'],
+        },
+        {
+            name: 'idx_eventos_operativos_payment_required',
+            fields: ['paymentRequired'],
         },
     ],
 });

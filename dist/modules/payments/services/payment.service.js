@@ -3,6 +3,7 @@ import { sequelize } from '../../../shared/database/index.js';
 import { Payment, } from '../../../modules/payments/models/payment.model.js';
 import { StripeWebhookEvent } from '../../../modules/payments/models/stripe-webhook-event.model.js';
 import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import { markEventoPaid, unmarkEventoPaid } from '../../../modules/eventos/services/evento.service.js';
 import { Organization } from '../../../modules/organizations/models/organization.model.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { stripeClient, handleStripeError } from '../../../shared/stripe/index.js';
@@ -229,6 +230,9 @@ export const confirmPayment = async (data, organizationId, userId) => {
             status: payment.status,
             userId,
         }, 'Pago confirmado exitosamente');
+        if (confirmedPaymentIntent.status === 'succeeded') {
+            await markEventoPaid(payment.eventoId, payment.organizationId);
+        }
         return payment;
     }
     catch (error) {
@@ -441,6 +445,9 @@ export const processRefund = async (data, organizationId, userId) => {
             isFullRefund,
             userId,
         }, 'Reembolso procesado exitosamente');
+        if (isFullRefund) {
+            await unmarkEventoPaid(payment.eventoId, payment.organizationId);
+        }
         return payment;
     }
     catch (error) {
@@ -525,6 +532,9 @@ export const handleChargeRefundedFromWebhook = async (charge) => {
             isFullRefund,
             organizationId: payment.organizationId,
         }, 'Estado de pago actualizado desde webhook charge.refunded');
+        if (isFullRefund) {
+            await unmarkEventoPaid(payment.eventoId, payment.organizationId);
+        }
         return payment;
     }
     catch (error) {
@@ -633,6 +643,9 @@ export const updatePaymentStatusFromWebhook = async (stripePaymentIntentId, even
             newStatus,
             organizationId: payment.organizationId,
         }, 'Estado de pago actualizado desde webhook de Stripe');
+        if (eventType === 'payment_intent.succeeded' && payment.status === 'succeeded') {
+            await markEventoPaid(payment.eventoId, payment.organizationId);
+        }
         return payment;
     }
     catch (error) {

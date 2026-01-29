@@ -23,11 +23,15 @@ import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../.
  *   - startTime: string HH:mm:ss (requerido)
  *   - endTime: string HH:mm:ss (requerido, debe ser posterior a startTime)
  * - peopleCount: number (opcional, default: 1, mínimo: 1)
+ * - paymentRequired: boolean (opcional, default: false). Si true, el evento requiere pago
+ *   completado antes de confirmarse (en_curso/completado). Cuando paymentRequired = true
+ *   debe indicar al menos 1 persona (peopleCount >= 1).
  *
  * Respuesta 201:
  * {
  *   success: true,
- *   data: EventoOperativo con relaciones Actividad, PrestadorProfile, Bloque,
+ *   data: EventoOperativo con relaciones Actividad, PrestadorProfile, Bloque
+ *         (incluye paymentRequired, paidAt),
  *   message: "Evento creado exitosamente"
  * }
  */
@@ -61,7 +65,8 @@ export const createEvento = async (req, res) => {
  * Respuesta 200:
  * {
  *   success: true,
- *   data: EventoOperativo con relaciones Actividad, PrestadorProfile, Bloque,
+ *   data: EventoOperativo con relaciones Actividad, PrestadorProfile, Bloque
+ *         (incluye paymentRequired, paidAt),
  *   message: "Evento obtenido exitosamente"
  * }
  */
@@ -107,7 +112,8 @@ export const getEventoById = async (req, res) => {
  * Respuesta 200:
  * {
  *   success: true,
- *   data: EventoOperativo[] con relaciones Actividad, PrestadorProfile, Bloque,
+ *   data: EventoOperativo[] con relaciones Actividad, PrestadorProfile, Bloque
+ *         (cada uno incluye paymentRequired, paidAt),
  *   pagination: { page, limit, total, totalPages },
  *   message: "Eventos obtenidos exitosamente"
  * }
@@ -145,13 +151,16 @@ export const listEventos = async (req, res) => {
  * - bloqueId: UUID | null (opcional)
  * - startTime: string HH:mm:ss (opcional)
  * - endTime: string HH:mm:ss (opcional, debe ser posterior a startTime si ambos están presentes)
- * - peopleCount: number (opcional, mínimo: 1)
+ * - peopleCount: number (opcional, mínimo: 1; si paymentRequired = true, debe ser >= 1)
  * - status: 'programado' | 'en_curso' | 'completado' | 'cancelado' (opcional)
+ * - paymentRequired: boolean (opcional). No se puede confirmar (status en_curso o completado)
+ *   si el evento requiere pago y no hay pago completado.
  *
  * Respuesta 200:
  * {
  *   success: true,
- *   data: EventoOperativo actualizado con relaciones Actividad, PrestadorProfile, Bloque,
+ *   data: EventoOperativo actualizado con relaciones Actividad, PrestadorProfile, Bloque
+ *         (incluye paymentRequired, paidAt),
  *   message: "Evento actualizado exitosamente"
  * }
  */

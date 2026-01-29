@@ -4,12 +4,14 @@ import { z } from 'zod';
  *
  * - Si agendaType = BLOQUES → requiere bloqueId
  * - Si agendaType = HORARIO_LIBRE → requiere startTime y endTime (endTime > startTime)
+ * - Si paymentRequired = true → debe indicar al menos 1 persona (peopleCount >= 1)
  */
 export declare const CreateEventoSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
     actividadId: z.ZodString;
     prestadorId: z.ZodString;
     date: z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>;
     peopleCount: z.ZodDefault<z.ZodNumber>;
+    paymentRequired: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     agendaType: z.ZodLiteral<"BLOQUES">;
     bloqueId: z.ZodString;
 }, z.core.$strip>, z.ZodObject<{
@@ -17,6 +19,7 @@ export declare const CreateEventoSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
     prestadorId: z.ZodString;
     date: z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>;
     peopleCount: z.ZodDefault<z.ZodNumber>;
+    paymentRequired: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     agendaType: z.ZodLiteral<"HORARIO_LIBRE">;
     startTime: z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>;
     endTime: z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>;
@@ -37,6 +40,7 @@ export declare const UpdateEventoSchema: z.ZodObject<{
         completado: "completado";
         cancelado: "cancelado";
     }>>;
+    paymentRequired: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strip>;
 export type UpdateEventoDTO = z.infer<typeof UpdateEventoSchema>;
 /**

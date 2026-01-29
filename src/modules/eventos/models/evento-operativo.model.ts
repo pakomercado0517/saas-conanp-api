@@ -17,13 +17,24 @@ export interface EventoOperativoAttributes {
   endTime: string | null; // TIME se representa como string en formato HH:mm:ss
   peopleCount: number;
   status: 'programado' | 'en_curso' | 'completado' | 'cancelado';
+  paymentRequired: boolean;
+  paidAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface EventoOperativoCreationAttributes extends Optional<
   EventoOperativoAttributes,
-  'id' | 'bloqueId' | 'startTime' | 'endTime' | 'peopleCount' | 'status' | 'createdAt' | 'updatedAt'
+  | 'id'
+  | 'bloqueId'
+  | 'startTime'
+  | 'endTime'
+  | 'peopleCount'
+  | 'status'
+  | 'paymentRequired'
+  | 'paidAt'
+  | 'createdAt'
+  | 'updatedAt'
 > {}
 
 export class EventoOperativo
@@ -40,6 +51,8 @@ export class EventoOperativo
   declare endTime: string | null;
   declare peopleCount: number;
   declare status: 'programado' | 'en_curso' | 'completado' | 'cancelado';
+  declare paymentRequired: boolean;
+  declare paidAt: Date | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 
@@ -152,6 +165,15 @@ EventoOperativo.init(
         },
       },
     },
+    paymentRequired: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    paidAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -197,6 +219,10 @@ EventoOperativo.init(
       {
         name: 'idx_eventos_operativos_status',
         fields: ['status'],
+      },
+      {
+        name: 'idx_eventos_operativos_payment_required',
+        fields: ['paymentRequired'],
       },
     ],
   }

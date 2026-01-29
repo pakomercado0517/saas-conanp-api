@@ -66,4 +66,30 @@ export declare const updateEvento: (eventoId: UUID, organizationId: UUID, data: 
  * @throws {NotFoundError} Si el evento no existe o no pertenece a la organización
  */
 export declare const deleteEvento: (eventoId: UUID, organizationId: UUID, requestingUserId: UUID) => Promise<void>;
+/**
+ * Verifica si el evento tiene al menos un pago completado (status 'succeeded').
+ * Usa la tabla Payment como fuente de verdad, no paidAt.
+ *
+ * @param eventoId - ID del evento
+ * @param organizationId - ID de la organización (opcional, para multi-tenant)
+ * @returns true si existe al menos un pago succeeded para el evento
+ */
+export declare const eventoHasPagoCompletado: (eventoId: UUID, organizationId?: UUID) => Promise<boolean>;
+/**
+ * Marca el evento como pagado (paidAt = now).
+ * Idempotente. Se invoca desde el flujo de pagos al completar un pago.
+ *
+ * @param eventoId - ID del evento
+ * @param organizationId - ID de la organización (multi-tenant)
+ */
+export declare const markEventoPaid: (eventoId: UUID, organizationId: UUID) => Promise<void>;
+/**
+ * Desmarca el evento como pagado (paidAt = null) solo si no queda
+ * ningún otro pago succeeded para el mismo evento.
+ * Se invoca desde el flujo de pagos en reembolso total.
+ *
+ * @param eventoId - ID del evento
+ * @param organizationId - ID de la organización (multi-tenant)
+ */
+export declare const unmarkEventoPaid: (eventoId: UUID, organizationId: UUID) => Promise<void>;
 //# sourceMappingURL=evento.service.d.ts.map

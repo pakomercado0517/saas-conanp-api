@@ -15,10 +15,12 @@ export interface EventoOperativoAttributes {
     endTime: string | null;
     peopleCount: number;
     status: 'programado' | 'en_curso' | 'completado' | 'cancelado';
+    paymentRequired: boolean;
+    paidAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }
-export interface EventoOperativoCreationAttributes extends Optional<EventoOperativoAttributes, 'id' | 'bloqueId' | 'startTime' | 'endTime' | 'peopleCount' | 'status' | 'createdAt' | 'updatedAt'> {
+export interface EventoOperativoCreationAttributes extends Optional<EventoOperativoAttributes, 'id' | 'bloqueId' | 'startTime' | 'endTime' | 'peopleCount' | 'status' | 'paymentRequired' | 'paidAt' | 'createdAt' | 'updatedAt'> {
 }
 export declare class EventoOperativo extends Model<EventoOperativoAttributes, EventoOperativoCreationAttributes> implements EventoOperativoAttributes {
     id: UUID;
@@ -31,6 +33,8 @@ export declare class EventoOperativo extends Model<EventoOperativoAttributes, Ev
     endTime: string | null;
     peopleCount: number;
     status: 'programado' | 'en_curso' | 'completado' | 'cancelado';
+    paymentRequired: boolean;
+    paidAt: Date | null;
     readonly createdAt: Date;
     readonly updatedAt: Date;
     Organization?: Organization;

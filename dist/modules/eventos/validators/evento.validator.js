@@ -39,7 +39,15 @@ const CreateEventoBaseSchema = z.object({
         message: 'El número de personas debe ser al menos 1',
     })
         .default(1),
+    paymentRequired: z
+        .boolean({
+        message: 'paymentRequired debe ser true o false',
+    })
+        .optional()
+        .default(false),
 });
+/** Refine: si paymentRequired es true, debe indicar al menos 1 persona. */
+const createEventoPaymentRefine = (data) => !data.paymentRequired || (data.peopleCount != null && data.peopleCount >= 1);
 /**
  * Schema Zod para crear evento con tipo de agenda BLOQUES
  */
@@ -73,11 +81,14 @@ const CreateEventoHorarioLibreSchema = CreateEventoBaseSchema.extend({
  *
  * - Si agendaType = BLOQUES → requiere bloqueId
  * - Si agendaType = HORARIO_LIBRE → requiere startTime y endTime (endTime > startTime)
+ * - Si paymentRequired = true → debe indicar al menos 1 persona (peopleCount >= 1)
  */
-export const CreateEventoSchema = z.discriminatedUnion('agendaType', [
-    CreateEventoBloquesSchema,
-    CreateEventoHorarioLibreSchema,
-]);
+export const CreateEventoSchema = z
+    .discriminatedUnion('agendaType', [CreateEventoBloquesSchema, CreateEventoHorarioLibreSchema])
+    .refine(createEventoPaymentRefine, {
+    message: 'Si el evento requiere pago (paymentRequired: true), debe indicar al menos 1 persona (peopleCount >= 1).',
+    path: ['paymentRequired'],
+});
 /**
  * Schema Zod para actualizar evento
  */
@@ -110,6 +121,11 @@ export const UpdateEventoSchema = z
     })
         .optional(),
     status: eventoStatusEnum.optional(),
+    paymentRequired: z
+        .boolean({
+        message: 'paymentRequired debe ser true o false',
+    })
+        .optional(),
 })
     .refine((data) => {
     // Si se proporcionan ambos horarios, validar que endTime > startTime
@@ -123,6 +139,15 @@ export const UpdateEventoSchema = z
 })
     .refine((data) => Object.keys(data).some((k) => data[k] !== undefined), {
     message: 'Debe incluir al menos un campo para actualizar',
+})
+    .refine((data) => {
+    if (data.paymentRequired === true && data.peopleCount !== undefined) {
+        return data.peopleCount >= 1;
+    }
+    return true;
+}, {
+    message: 'Si paymentRequired es true, peopleCount debe ser al menos 1.',
+    path: ['peopleCount'],
 });
 // Campos permitidos para ordenamiento
 const SORT_FIELDS = [

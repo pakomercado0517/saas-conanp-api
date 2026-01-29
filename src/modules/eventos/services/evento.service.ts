@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import { sequelize } from '@/shared/database/index.js';
 import type { UUID } from '@/shared/database/types.js';
 import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { Payment } from '@/modules/payments/models/payment.model.js';
 import { Actividad } from '@/modules/actividades/models/actividad.model.js';
 import { Bloque } from '@/modules/actividades/models/bloque.model.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
@@ -262,6 +263,7 @@ export const createEvento = async (
         endTime: endTimeStr,
         peopleCount: data.peopleCount,
         status: 'programado',
+        paymentRequired: data.paymentRequired ?? false,
       },
       { transaction }
     );
@@ -590,6 +592,7 @@ export const updateEvento = async (
     endTime: string | null;
     peopleCount: number;
     status: 'programado' | 'en_curso' | 'completado' | 'cancelado';
+    paymentRequired: boolean;
   }> = {};
 
   // Actualizar date si se proporciona
@@ -623,7 +626,24 @@ export const updateEvento = async (
 
   // Actualizar status si se proporciona
   if (data.status !== undefined) {
+    const newStatus = data.status;
+    const requiresPayment = evento.paymentRequired || data.paymentRequired === true;
+    if ((newStatus === 'en_curso' || newStatus === 'completado') && requiresPayment) {
+      const hasPaid = await eventoHasPagoCompletado(eventoId, organizationId);
+      if (!hasPaid) {
+        throw new ValidationError(
+          'No se puede confirmar el evento sin pago completado cuando el evento requiere pago',
+          undefined,
+          { eventoId, organizationId }
+        );
+      }
+    }
     updateData.status = data.status;
+  }
+
+  // Actualizar paymentRequired si se proporciona
+  if (data.paymentRequired !== undefined) {
+    updateData.paymentRequired = data.paymentRequired;
   }
 
   // Actualizar el evento
@@ -700,4 +720,76 @@ export const deleteEvento = async (
     },
     'Evento eliminado exitosamente (soft delete)'
   );
+};
+
+/**
+ * Verifica si el evento tiene al menos un pago completado (status 'succeeded').
+ * Usa la tabla Payment como fuente de verdad, no paidAt.
+ *
+ * @param eventoId - ID del evento
+ * @param organizationId - ID de la organización (opcional, para multi-tenant)
+ * @returns true si existe al menos un pago succeeded para el evento
+ */
+export const eventoHasPagoCompletado = async (
+  eventoId: UUID,
+  organizationId?: UUID
+): Promise<boolean> => {
+  const where: Record<string, unknown> = {
+    eventoId,
+    status: 'succeeded',
+  };
+  if (organizationId) {
+    where['organizationId'] = organizationId;
+  }
+  const payment = await Payment.findOne({
+    where: where as Record<string, unknown>,
+  });
+  return !!payment;
+};
+
+/**
+ * Marca el evento como pagado (paidAt = now).
+ * Idempotente. Se invoca desde el flujo de pagos al completar un pago.
+ *
+ * @param eventoId - ID del evento
+ * @param organizationId - ID de la organización (multi-tenant)
+ */
+export const markEventoPaid = async (eventoId: UUID, organizationId: UUID): Promise<void> => {
+  const evento = await EventoOperativo.findOne({
+    where: { id: eventoId, organizationId },
+  });
+  if (!evento) {
+    return;
+  }
+  await evento.update({ paidAt: new Date() });
+  logger.info({ eventoId, organizationId }, 'Evento marcado como pagado (paidAt actualizado)');
+};
+
+/**
+ * Desmarca el evento como pagado (paidAt = null) solo si no queda
+ * ningún otro pago succeeded para el mismo evento.
+ * Se invoca desde el flujo de pagos en reembolso total.
+ *
+ * @param eventoId - ID del evento
+ * @param organizationId - ID de la organización (multi-tenant)
+ */
+export const unmarkEventoPaid = async (eventoId: UUID, organizationId: UUID): Promise<void> => {
+  const other = await Payment.findOne({
+    where: {
+      eventoId,
+      organizationId,
+      status: 'succeeded',
+    },
+  });
+  if (other) {
+    return;
+  }
+  const evento = await EventoOperativo.findOne({
+    where: { id: eventoId, organizationId },
+  });
+  if (!evento) {
+    return;
+  }
+  await evento.update({ paidAt: null });
+  logger.info({ eventoId, organizationId }, 'Evento desmarcado como pagado (paidAt limpiado)');
 };
