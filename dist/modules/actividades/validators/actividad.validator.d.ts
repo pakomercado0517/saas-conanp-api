@@ -46,10 +46,10 @@ export declare const ListActividadesSchema: z.ZodObject<{
     limit: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     sortBy: z.ZodOptional<z.ZodEnum<{
         name: "name";
+        active: "active";
         createdAt: "createdAt";
         updatedAt: "updatedAt";
         type: "type";
-        active: "active";
         agendaType: "agendaType";
     }>>;
     sortOrder: z.ZodDefault<z.ZodEnum<{

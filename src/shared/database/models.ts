@@ -22,3 +22,5 @@ export { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model
 export { EvidenciaAmbiental } from '@/modules/evidencias/models/evidencia-ambiental.model';
 export { Payment } from '@/modules/payments/models/payment.model';
 export { StripeWebhookEvent } from '@/modules/payments/models/stripe-webhook-event.model';
+export { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model';
+export { Subscription } from '@/modules/subscriptions/models/subscription.model';
