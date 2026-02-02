@@ -23,6 +23,7 @@ import activoRequisitoRouter from '@/modules/activos/routes/activo-requisito.rou
 import eventoRouter from '@/modules/eventos/routes/evento.routes.js';
 import reporteRouter from '@/modules/reportes/routes/reporte.routes.js';
 import paymentRouter from '@/modules/payments/routes/payment.routes.js';
+import { subscriptionOrgRouter } from '@/modules/subscriptions/routes/subscription.routes.js';
 
 /**
  * Router de organizaciones
@@ -221,5 +222,11 @@ organizationRouter.use('/:organizationId/reportes', reporteRouter);
  * Montadas bajo /api/v1/organizations/:organizationId/payments
  */
 organizationRouter.use('/:organizationId/payments', paymentRouter);
+
+/**
+ * Rutas anidadas de suscripciones
+ * Montadas bajo /api/v1/organizations/:organizationId/subscriptions
+ */
+organizationRouter.use('/:organizationId/subscriptions', subscriptionOrgRouter);
 
 export default organizationRouter;

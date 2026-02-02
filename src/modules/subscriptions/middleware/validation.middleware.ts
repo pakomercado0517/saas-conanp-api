@@ -5,6 +5,29 @@ import {
   UpdateSubscriptionPlanSchema,
   ListSubscriptionPlansSchema,
 } from '../validators/subscription-plan.validator.js';
+import {
+  CreateSubscriptionSchema,
+  UpdateSubscriptionSchema,
+  CancelSubscriptionSchema,
+  ReactivateSubscriptionSchema,
+} from '../validators/subscription.validator.js';
+
+const handleZodError = (error: z.ZodError, res: Response): boolean => {
+  const detalles = error.issues.map((err: z.ZodIssue) => ({
+    campo: err.path.join('.') || 'raíz',
+    mensaje: err.message,
+    codigo: err.code,
+  }));
+
+  res.status(400).json({
+    success: false,
+    error: 'Error de validación',
+    message: 'Los datos proporcionados no son válidos',
+    code: 'VALIDATION_ERROR',
+    detalles,
+  });
+  return false;
+};
 
 /**
  * Middleware de validación para crear plan de suscripción
@@ -19,22 +42,9 @@ export const validateCreateSubscriptionPlan = (
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const detalles = error.issues.map((err: z.ZodIssue) => ({
-        campo: err.path.join('.') || 'raíz',
-        mensaje: err.message,
-        codigo: err.code,
-      }));
-
-      res.status(400).json({
-        success: false,
-        error: 'Error de validación',
-        message: 'Los datos proporcionados no son válidos',
-        code: 'VALIDATION_ERROR',
-        detalles,
-      });
+      handleZodError(error, res);
       return;
     }
-
     next(error);
   }
 };
@@ -52,22 +62,9 @@ export const validateUpdateSubscriptionPlan = (
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const detalles = error.issues.map((err: z.ZodIssue) => ({
-        campo: err.path.join('.') || 'raíz',
-        mensaje: err.message,
-        codigo: err.code,
-      }));
-
-      res.status(400).json({
-        success: false,
-        error: 'Error de validación',
-        message: 'Los datos proporcionados no son válidos',
-        code: 'VALIDATION_ERROR',
-        detalles,
-      });
+      handleZodError(error, res);
       return;
     }
-
     next(error);
   }
 };
@@ -85,22 +82,89 @@ export const validateListSubscriptionPlans = (
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const detalles = error.issues.map((err: z.ZodIssue) => ({
-        campo: err.path.join('.') || 'raíz',
-        mensaje: err.message,
-        codigo: err.code,
-      }));
-
-      res.status(400).json({
-        success: false,
-        error: 'Error de validación',
-        message: 'Los datos proporcionados no son válidos',
-        code: 'VALIDATION_ERROR',
-        detalles,
-      });
+      handleZodError(error, res);
       return;
     }
+    next(error);
+  }
+};
 
+/**
+ * Middleware de validación para crear suscripción
+ */
+export const validateCreateSubscription = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.body = CreateSubscriptionSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      handleZodError(error, res);
+      return;
+    }
+    next(error);
+  }
+};
+
+/**
+ * Middleware de validación para actualizar suscripción (cambio de plan)
+ */
+export const validateUpdateSubscription = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.body = UpdateSubscriptionSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      handleZodError(error, res);
+      return;
+    }
+    next(error);
+  }
+};
+
+/**
+ * Middleware de validación para cancelar suscripción
+ */
+export const validateCancelSubscription = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.body = CancelSubscriptionSchema.parse(req.body ?? {});
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      handleZodError(error, res);
+      return;
+    }
+    next(error);
+  }
+};
+
+/**
+ * Middleware de validación para reactivar suscripción (body vacío)
+ */
+export const validateReactivateSubscription = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.body = ReactivateSubscriptionSchema.parse(req.body ?? {});
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      handleZodError(error, res);
+      return;
+    }
     next(error);
   }
 };
