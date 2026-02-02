@@ -4,6 +4,7 @@ import { Organization } from '../../../modules/organizations/models/organization
 import { ForbiddenError, NotFoundError, ConflictError, ValidationError, } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { checkUsersLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
 /**
  * Valida que el usuario tenga rol 'admin' en la organización especificada.
  * Verifica membresía activa con rol 'admin'.
@@ -81,6 +82,8 @@ export const inviteUserToOrganization = async (organizationId, data, inviterUser
             existingStatus: existingMembership.status,
         });
     }
+    // Validar límite de usuarios del plan de suscripción
+    await checkUsersLimit(organizationId);
     // Crear la membership
     let membership;
     try {

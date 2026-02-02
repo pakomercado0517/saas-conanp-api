@@ -3,7 +3,12 @@
  */
 
 // Tipos e interfaces
-export type { SuccessResponse, PaginatedResponse, PaginationMeta } from './types.js';
+export type {
+  SuccessResponse,
+  PaginatedResponse,
+  PaginationMeta,
+  SubscriptionLimitsInfo,
+} from './types.js';
 
 // Helpers
 export { sendSuccess, sendCreated, sendNoContent, sendPaginated } from './helpers.js';

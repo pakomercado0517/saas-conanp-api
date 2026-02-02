@@ -1,5 +1,18 @@
+import { SUBSCRIPTION_LIMITS_LOCALS_KEY } from '../../shared/middleware/subscription-limits.middleware.js';
+/** Convierte LimitsAndUsage a SubscriptionLimitsInfo para la respuesta. */
+const toLimitsInfo = (limitsAndUsage) => ({
+    limits: {
+        maxUsers: limitsAndUsage.limits.maxUsers,
+        maxEventos: limitsAndUsage.limits.maxEventos,
+        maxActividades: limitsAndUsage.limits.maxActividades,
+        planName: limitsAndUsage.limits.planName,
+    },
+    usage: limitsAndUsage.usage,
+});
 /**
- * Envía una respuesta exitosa estándar
+ * Envía una respuesta exitosa estándar.
+ * Si res.locals.subscriptionLimits está definido (por attachSubscriptionLimits),
+ * incluye la información de límites en la respuesta.
  *
  * @param res - Objeto Response de Express
  * @param data - Datos a enviar en la respuesta
@@ -13,10 +26,12 @@
  * ```
  */
 export const sendSuccess = (res, data, message, statusCode = 200) => {
+    const limitsData = res.locals?.[SUBSCRIPTION_LIMITS_LOCALS_KEY];
     const response = {
         success: true,
         data,
         ...(message && { message }),
+        ...(limitsData && { limits: toLimitsInfo(limitsData) }),
         timestamp: new Date().toISOString(),
     };
     return res.status(statusCode).json(response);
@@ -55,7 +70,9 @@ export const sendNoContent = (res) => {
     return res.status(204).send();
 };
 /**
- * Envía una respuesta paginada
+ * Envía una respuesta paginada.
+ * Si res.locals.subscriptionLimits está definido (por attachSubscriptionLimits),
+ * incluye la información de límites en la respuesta.
  *
  * @param res - Objeto Response de Express
  * @param data - Array de datos a enviar
@@ -75,11 +92,13 @@ export const sendNoContent = (res) => {
  * ```
  */
 export const sendPaginated = (res, data, pagination, message) => {
+    const limitsData = res.locals?.[SUBSCRIPTION_LIMITS_LOCALS_KEY];
     const response = {
         success: true,
         data,
         pagination,
         ...(message && { message }),
+        ...(limitsData && { limits: toLimitsInfo(limitsData) }),
         timestamp: new Date().toISOString(),
     };
     return res.status(200).json(response);

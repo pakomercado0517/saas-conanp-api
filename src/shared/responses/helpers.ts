@@ -1,8 +1,35 @@
 import type { Response } from 'express';
-import type { SuccessResponse, PaginatedResponse, PaginationMeta } from './types.js';
+import type {
+  SuccessResponse,
+  PaginatedResponse,
+  PaginationMeta,
+  SubscriptionLimitsInfo,
+} from './types.js';
+import { SUBSCRIPTION_LIMITS_LOCALS_KEY } from '@/shared/middleware/subscription-limits.middleware.js';
+
+/** Convierte LimitsAndUsage a SubscriptionLimitsInfo para la respuesta. */
+const toLimitsInfo = (limitsAndUsage: {
+  limits: {
+    maxUsers: number | null;
+    maxEventos: number | null;
+    maxActividades: number | null;
+    planName: string;
+  };
+  usage: { usersCount: number; eventosCount: number; actividadesCount: number };
+}): SubscriptionLimitsInfo => ({
+  limits: {
+    maxUsers: limitsAndUsage.limits.maxUsers,
+    maxEventos: limitsAndUsage.limits.maxEventos,
+    maxActividades: limitsAndUsage.limits.maxActividades,
+    planName: limitsAndUsage.limits.planName,
+  },
+  usage: limitsAndUsage.usage,
+});
 
 /**
- * Envía una respuesta exitosa estándar
+ * Envía una respuesta exitosa estándar.
+ * Si res.locals.subscriptionLimits está definido (por attachSubscriptionLimits),
+ * incluye la información de límites en la respuesta.
  *
  * @param res - Objeto Response de Express
  * @param data - Datos a enviar en la respuesta
@@ -21,10 +48,15 @@ export const sendSuccess = <T>(
   message?: string,
   statusCode: number = 200
 ): Response => {
+  const limitsData = res.locals?.[SUBSCRIPTION_LIMITS_LOCALS_KEY] as
+    | Parameters<typeof toLimitsInfo>[0]
+    | undefined;
+
   const response: SuccessResponse<T> = {
     success: true,
     data,
     ...(message && { message }),
+    ...(limitsData && { limits: toLimitsInfo(limitsData) }),
     timestamp: new Date().toISOString(),
   };
 
@@ -67,7 +99,9 @@ export const sendNoContent = (res: Response): Response => {
 };
 
 /**
- * Envía una respuesta paginada
+ * Envía una respuesta paginada.
+ * Si res.locals.subscriptionLimits está definido (por attachSubscriptionLimits),
+ * incluye la información de límites en la respuesta.
  *
  * @param res - Objeto Response de Express
  * @param data - Array de datos a enviar
@@ -92,11 +126,16 @@ export const sendPaginated = <T>(
   pagination: PaginationMeta,
   message?: string
 ): Response => {
+  const limitsData = res.locals?.[SUBSCRIPTION_LIMITS_LOCALS_KEY] as
+    | Parameters<typeof toLimitsInfo>[0]
+    | undefined;
+
   const response: PaginatedResponse<T> = {
     success: true,
     data,
     pagination,
     ...(message && { message }),
+    ...(limitsData && { limits: toLimitsInfo(limitsData) }),
     timestamp: new Date().toISOString(),
   };
 

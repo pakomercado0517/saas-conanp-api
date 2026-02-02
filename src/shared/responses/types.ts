@@ -6,6 +6,23 @@
  */
 
 /**
+ * Información de límites de suscripción para respuestas API
+ */
+export interface SubscriptionLimitsInfo {
+  limits: {
+    maxUsers: number | null;
+    maxEventos: number | null;
+    maxActividades: number | null;
+    planName: string;
+  };
+  usage: {
+    usersCount: number;
+    eventosCount: number;
+    actividadesCount: number;
+  };
+}
+
+/**
  * Respuesta exitosa estándar de la API
  *
  * @template T - Tipo de los datos retornados
@@ -14,6 +31,8 @@ export interface SuccessResponse<T> {
   success: true;
   data: T;
   message?: string;
+  /** Información de límites de suscripción (cuando está disponible) */
+  limits?: SubscriptionLimitsInfo;
   timestamp: string;
 }
 
@@ -37,5 +56,7 @@ export interface PaginatedResponse<T> {
   data: T[];
   pagination: PaginationMeta;
   message?: string;
+  /** Información de límites de suscripción (cuando está disponible) */
+  limits?: SubscriptionLimitsInfo;
   timestamp: string;
 }

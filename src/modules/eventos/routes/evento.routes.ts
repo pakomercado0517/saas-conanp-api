@@ -11,7 +11,11 @@ import {
   validateUpdateEvento,
   validateListEventos,
 } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess } from '@/shared/middleware/index.js';
+import {
+  authenticate,
+  requireOrganizationAccess,
+  attachSubscriptionLimits,
+} from '@/shared/middleware/index.js';
 import evidenciaRouter from '@/modules/evidencias/routes/evidencia.routes.js';
 
 /**
@@ -87,7 +91,14 @@ eventoRouter.post('/', authenticate, requireOrganizationAccess, validateCreateEv
  *   message: "Eventos obtenidos exitosamente"
  * }
  */
-eventoRouter.get('/', authenticate, requireOrganizationAccess, validateListEventos, listEventos);
+eventoRouter.get(
+  '/',
+  authenticate,
+  requireOrganizationAccess,
+  attachSubscriptionLimits,
+  validateListEventos,
+  listEventos
+);
 
 /**
  * GET /api/v1/organizations/:organizationId/eventos/:eventoId

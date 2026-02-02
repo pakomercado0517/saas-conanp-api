@@ -1,1 +1,1 @@
-{"version":3,"file":"evento.routes.d.ts","sourceRoot":"","sources":["../../../../src/modules/eventos/routes/evento.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAU,KAAK,MAAM,IAAI,aAAa,EAAE,MAAM,SAAS,CAAC;AAgB/D;;;;;;GAMG;AACH,QAAA,MAAM,YAAY,EAAE,aAA6C,CAAC;AAkJlE,eAAe,YAAY,CAAC"}
+{"version":3,"file":"evento.routes.d.ts","sourceRoot":"","sources":["../../../../src/modules/eventos/routes/evento.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAU,KAAK,MAAM,IAAI,aAAa,EAAE,MAAM,SAAS,CAAC;AAoB/D;;;;;;GAMG;AACH,QAAA,MAAM,YAAY,EAAE,aAA6C,CAAC;AAyJlE,eAAe,YAAY,CAAC"}

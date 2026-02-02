@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { inviteUser, listMemberships, updateMembershipRole, deleteMembership, } from '../controllers/membership.controller.js';
 import { validateCreateMembership, validateUpdateMembership, validateListMemberships, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, attachSubscriptionLimits, } from '../../../shared/middleware/index.js';
 /**
  * Router de memberships
  *
@@ -60,7 +60,8 @@ membershipRouter.post('/', authenticate, requireOrganizationAccess, requireAdmin
  *   message: "Memberships obtenidas exitosamente"
  * }
  */
-membershipRouter.get('/', authenticate, requireOrganizationAccess, validateListMemberships, listMemberships);
+membershipRouter.get('/', authenticate, requireOrganizationAccess, attachSubscriptionLimits, // Incluir límites en la respuesta
+validateListMemberships, listMemberships);
 /**
  * PATCH /api/v1/organizations/:organizationId/memberships/:membershipId
  * Actualiza el rol y/o estado de una membership existente.

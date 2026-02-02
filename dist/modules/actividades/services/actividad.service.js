@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from '../../../shared/errors';
 import { logger } from '../../../shared/logger';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service';
 import { assertIsAdmin } from '../../../modules/users/services/membership.service';
+import { checkActividadesLimit } from '../../../modules/subscriptions/services/subscription-limits.service';
 /**
  * Valida que el tipo de agenda sea válido
  *
@@ -36,6 +37,8 @@ export const createActividad = async (data, userId) => {
     await assertCanAccessOrganization(userId, data.organizationId);
     // Validar tipo de agenda
     validateAgendaType(data.agendaType);
+    // Validar límite de actividades del plan de suscripción
+    await checkActividadesLimit(data.organizationId);
     // Crear la actividad
     const actividad = await Actividad.create({
         organizationId: data.organizationId,

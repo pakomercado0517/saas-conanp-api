@@ -15,6 +15,7 @@ import {
   authenticate,
   requireOrganizationAccess,
   requireAdmin,
+  attachSubscriptionLimits,
 } from '@/shared/middleware/index.js';
 
 /**
@@ -94,6 +95,7 @@ actividadRouter.get(
   '/',
   authenticate,
   requireOrganizationAccess,
+  attachSubscriptionLimits,
   validateListActividades,
   listActividades
 );

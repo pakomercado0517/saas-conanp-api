@@ -11,6 +11,7 @@ import { logger } from '../../../shared/logger/index.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { validatePrestadorHasPermisoVigente } from '../../../modules/permisos/services/permiso.service.js';
 import { verificarDisponibilidadPorBloque, verificarDisponibilidadPorDia, } from '../../../modules/actividades/services/capacidad.service.js';
+import { checkEventosLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
 import { toDateOnlyDB, toTimeOnly, DateTime } from '../../../shared/dates/index.js';
 /**
  * Helper interno: Valida permisos granulares para acceder a un evento.
@@ -161,7 +162,9 @@ export const createEvento = async (data, organizationId, userId) => {
             peopleCount: data.peopleCount,
         });
     }
-    // 7. Validar activos aprobados (preparado para futuro)
+    // 7. Validar límite de eventos del plan de suscripción
+    await checkEventosLimit(organizationId);
+    // 8. Validar activos aprobados (preparado para futuro)
     // Si en el futuro los eventos requieren activos, validar aquí:
     // await validateActivoAprobado(activoId, organizationId);
     // Iniciar transacción

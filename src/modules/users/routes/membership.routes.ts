@@ -14,6 +14,7 @@ import {
   authenticate,
   requireOrganizationAccess,
   requireAdmin,
+  attachSubscriptionLimits,
 } from '@/shared/middleware/index.js';
 
 /**
@@ -87,6 +88,7 @@ membershipRouter.get(
   '/',
   authenticate,
   requireOrganizationAccess,
+  attachSubscriptionLimits, // Incluir límites en la respuesta
   validateListMemberships,
   listMemberships
 );

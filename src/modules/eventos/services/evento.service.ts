@@ -21,6 +21,7 @@ import {
   verificarDisponibilidadPorBloque,
   verificarDisponibilidadPorDia,
 } from '@/modules/actividades/services/capacidad.service.js';
+import { checkEventosLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
 import { toDateOnlyDB, toTimeOnly, DateTime } from '@/shared/dates/index.js';
 
 /**
@@ -233,7 +234,10 @@ export const createEvento = async (
     );
   }
 
-  // 7. Validar activos aprobados (preparado para futuro)
+  // 7. Validar límite de eventos del plan de suscripción
+  await checkEventosLimit(organizationId);
+
+  // 8. Validar activos aprobados (preparado para futuro)
   // Si en el futuro los eventos requieren activos, validar aquí:
   // await validateActivoAprobado(activoId, organizationId);
 

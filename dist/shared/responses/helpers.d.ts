@@ -1,7 +1,9 @@
 import type { Response } from 'express';
 import type { PaginationMeta } from './types.js';
 /**
- * Envía una respuesta exitosa estándar
+ * Envía una respuesta exitosa estándar.
+ * Si res.locals.subscriptionLimits está definido (por attachSubscriptionLimits),
+ * incluye la información de límites en la respuesta.
  *
  * @param res - Objeto Response de Express
  * @param data - Datos a enviar en la respuesta
@@ -45,7 +47,9 @@ export declare const sendCreated: <T>(res: Response, data: T, message?: string) 
  */
 export declare const sendNoContent: (res: Response) => Response;
 /**
- * Envía una respuesta paginada
+ * Envía una respuesta paginada.
+ * Si res.locals.subscriptionLimits está definido (por attachSubscriptionLimits),
+ * incluye la información de límites en la respuesta.
  *
  * @param res - Objeto Response de Express
  * @param data - Array de datos a enviar

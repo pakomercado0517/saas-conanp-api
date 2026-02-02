@@ -1,1 +1,1 @@
-{"version":3,"file":"actividad.routes.d.ts","sourceRoot":"","sources":["../../../../src/modules/actividades/routes/actividad.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAU,KAAK,MAAM,IAAI,aAAa,EAAE,MAAM,SAAS,CAAC;AAmB/D;;;;;GAKG;AACH,QAAA,MAAM,eAAe,EAAE,aAA6C,CAAC;AA0JrE,eAAe,eAAe,CAAC"}
+{"version":3,"file":"actividad.routes.d.ts","sourceRoot":"","sources":["../../../../src/modules/actividades/routes/actividad.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAU,KAAK,MAAM,IAAI,aAAa,EAAE,MAAM,SAAS,CAAC;AAoB/D;;;;;GAKG;AACH,QAAA,MAAM,eAAe,EAAE,aAA6C,CAAC;AA2JrE,eAAe,eAAe,CAAC"}

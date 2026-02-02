@@ -16,6 +16,7 @@ import {
 import type { PaginationMeta } from '@/shared/responses/types.js';
 import { logger } from '@/shared/logger/index.js';
 import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { checkUsersLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
 
 /**
  * Valida que el usuario tenga rol 'admin' en la organización especificada.
@@ -106,6 +107,9 @@ export const inviteUserToOrganization = async (
       existingStatus: existingMembership.status,
     });
   }
+
+  // Validar límite de usuarios del plan de suscripción
+  await checkUsersLimit(organizationId);
 
   // Crear la membership
   let membership: Membership;

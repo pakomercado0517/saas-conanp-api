@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createActividad, getActividadById, listActividades, updateActividad, deleteActividad, } from '../controllers/actividad.controller.js';
 import { validateCreateActividad, validateUpdateActividad, validateListActividades, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, attachSubscriptionLimits, } from '../../../shared/middleware/index.js';
 /**
  * Router de actividades
  *
@@ -66,7 +66,7 @@ actividadRouter.post('/', authenticate, requireOrganizationAccess, requireAdmin,
  *   message: "Actividades obtenidas exitosamente"
  * }
  */
-actividadRouter.get('/', authenticate, requireOrganizationAccess, validateListActividades, listActividades);
+actividadRouter.get('/', authenticate, requireOrganizationAccess, attachSubscriptionLimits, validateListActividades, listActividades);
 /**
  * GET /api/v1/organizations/:organizationId/actividades/:actividadId
  * Obtiene una actividad por ID.
