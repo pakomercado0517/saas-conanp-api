@@ -1,12 +1,16 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
-import type { UUID, EcosystemType } from '@/shared/database/types';
+import type { UUID, EcosystemType, SubscriptionStatus } from '@/shared/database/types';
 
 export interface OrganizationAttributes {
   id: UUID;
   name: string;
   ecosystem_type: EcosystemType;
   settings: Record<string, unknown>;
+  /** Derivado de la suscripción activa (cuando se incluye Subscription) */
+  subscriptionStatus?: SubscriptionStatus;
+  /** Derivado de la suscripción activa - currentPeriodEnd (cuando se incluye Subscription) */
+  subscriptionExpiresAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -25,6 +29,8 @@ export class Organization
   declare name: string;
   declare ecosystem_type: EcosystemType;
   declare settings: Record<string, unknown>;
+  declare subscriptionStatus?: SubscriptionStatus;
+  declare subscriptionExpiresAt?: Date | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
@@ -86,6 +92,20 @@ Organization.init(
     deletedAt: {
       type: DataTypes.DATE,
       allowNull: true,
+    },
+    subscriptionStatus: {
+      type: DataTypes.VIRTUAL,
+      get(): SubscriptionStatus | undefined {
+        const sub = this.get('Subscription') as { status: SubscriptionStatus } | undefined;
+        return sub?.status;
+      },
+    },
+    subscriptionExpiresAt: {
+      type: DataTypes.VIRTUAL,
+      get(): Date | null | undefined {
+        const sub = this.get('Subscription') as { currentPeriodEnd: Date } | undefined;
+        return sub?.currentPeriodEnd ?? null;
+      },
     },
   },
   {

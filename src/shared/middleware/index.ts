@@ -9,6 +9,7 @@ export { requireOrganizationAccess } from './organization-access.middleware.js';
 export { requireRole, requireAdmin } from './role-authorization.middleware.js';
 export { requireSuperAdmin } from './super-admin.middleware.js';
 export {
+  requireActiveSubscription,
   requireUsersLimit,
   requireEventosLimit,
   requireActividadesLimit,

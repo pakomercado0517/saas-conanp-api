@@ -5,6 +5,17 @@ export declare const SUBSCRIPTION_LIMITS_LOCALS_KEY: "subscriptionLimits";
 /** Tipo de la información de límites en res.locals */
 export type SubscriptionLimitsLocals = LimitsAndUsage;
 /**
+ * Middleware que exige suscripción activa (active o trialing) para continuar.
+ * Bloquea si la organización no tiene suscripción o está inactiva/past_due/cancelada.
+ * Úsalo en rutas que crean o modifican recursos (eventos, actividades, etc.).
+ *
+ * Debe ejecutarse después de: authenticate, requireOrganizationAccess.
+ *
+ * @throws {BadRequestError} Si no hay organizationId en el contexto
+ * @throws {ForbiddenError} Si no hay suscripción activa
+ */
+export declare const requireActiveSubscription: (req: Request, _res: Response, next: NextFunction) => Promise<void>;
+/**
  * Middleware que verifica el límite de usuarios antes de operaciones.
  * Debe ejecutarse después de: authenticate, requireOrganizationAccess.
  *

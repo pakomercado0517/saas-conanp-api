@@ -1,10 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError, BadRequestError } from '@/shared/errors/index.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import {
+  assertCanAccessOrganization,
+  assertActiveSubscription,
+} from '@/modules/organizations/services/organization.service.js';
 
 /**
- * Middleware multi-tenant: valida que el usuario pertenezca a la organización,
- * extrae organizationId del request (params o body) y lo agrega a req.organizationId.
+ * Middleware multi-tenant: valida que el usuario pertenezca a la organización
+ * y que la organización tenga suscripción activa (active o trialing).
+ * Extrae organizationId del request (params o body) y lo agrega a req.organizationId.
  *
  * Requiere que authenticate haya corrido antes (req.user debe existir).
  * organizationId se busca en req.params.organizationId primero, luego en req.body.organizationId.
@@ -12,6 +16,7 @@ import { assertCanAccessOrganization } from '@/modules/organizations/services/or
  * @throws {UnauthorizedError} Si no hay usuario autenticado
  * @throws {BadRequestError} Si no se encuentra organizationId
  * @throws {ForbiddenError} Si el usuario no tiene membresía activa en la organización
+ * @throws {ForbiddenError} Si la suscripción está inactiva o vencida
  */
 export const requireOrganizationAccess = async (
   req: Request,
@@ -31,6 +36,7 @@ export const requireOrganizationAccess = async (
   }
 
   await assertCanAccessOrganization(req.user.userId, organizationId);
+  await assertActiveSubscription(organizationId);
 
   req.organizationId = organizationId;
   next();

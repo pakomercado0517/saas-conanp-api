@@ -279,9 +279,9 @@ Subscription.belongsTo(SubscriptionPlan, {
   as: 'SubscriptionPlan',
 });
 
-Organization.hasMany(Subscription, {
+Organization.hasOne(Subscription, {
   foreignKey: 'organizationId',
-  as: 'Subscriptions',
+  as: 'Subscription',
 });
 
 SubscriptionPlan.hasMany(Subscription, {

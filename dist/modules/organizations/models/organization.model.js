@@ -58,6 +58,20 @@ Organization.init({
         type: DataTypes.DATE,
         allowNull: true,
     },
+    subscriptionStatus: {
+        type: DataTypes.VIRTUAL,
+        get() {
+            const sub = this.get('Subscription');
+            return sub?.status;
+        },
+    },
+    subscriptionExpiresAt: {
+        type: DataTypes.VIRTUAL,
+        get() {
+            const sub = this.get('Subscription');
+            return sub?.currentPeriodEnd ?? null;
+        },
+    },
 }, {
     sequelize,
     modelName: 'Organization',

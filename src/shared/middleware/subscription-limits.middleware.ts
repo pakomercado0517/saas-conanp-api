@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { BadRequestError } from '@/shared/errors/index.js';
+import { assertActiveSubscription } from '@/modules/organizations/services/organization.service.js';
 import {
   checkUsersLimit,
   checkEventosLimit,
@@ -20,6 +21,30 @@ export type SubscriptionLimitsLocals = LimitsAndUsage;
  */
 const getOrganizationId = (req: Request): string | undefined => {
   return req.organizationId ?? (req.params['organizationId'] as string | undefined);
+};
+
+/**
+ * Middleware que exige suscripción activa (active o trialing) para continuar.
+ * Bloquea si la organización no tiene suscripción o está inactiva/past_due/cancelada.
+ * Úsalo en rutas que crean o modifican recursos (eventos, actividades, etc.).
+ *
+ * Debe ejecutarse después de: authenticate, requireOrganizationAccess.
+ *
+ * @throws {BadRequestError} Si no hay organizationId en el contexto
+ * @throws {ForbiddenError} Si no hay suscripción activa
+ */
+export const requireActiveSubscription = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const organizationId = getOrganizationId(req);
+  if (!organizationId) {
+    throw new BadRequestError('organizationId es requerido para validar suscripción');
+  }
+
+  await assertActiveSubscription(organizationId);
+  next();
 };
 
 /**
