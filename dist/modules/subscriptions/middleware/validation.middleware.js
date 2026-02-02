@@ -1,0 +1,84 @@
+import { z } from 'zod';
+import { CreateSubscriptionPlanSchema, UpdateSubscriptionPlanSchema, ListSubscriptionPlansSchema, } from '../validators/subscription-plan.validator.js';
+/**
+ * Middleware de validación para crear plan de suscripción
+ */
+export const validateCreateSubscriptionPlan = (req, res, next) => {
+    try {
+        req.body = CreateSubscriptionPlanSchema.parse(req.body);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+/**
+ * Middleware de validación para actualizar plan de suscripción
+ */
+export const validateUpdateSubscriptionPlan = (req, res, next) => {
+    try {
+        req.body = UpdateSubscriptionPlanSchema.parse(req.body);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+/**
+ * Middleware de validación para listar planes de suscripción
+ */
+export const validateListSubscriptionPlans = (req, res, next) => {
+    try {
+        req.validatedQuery = ListSubscriptionPlansSchema.parse(req.query);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+//# sourceMappingURL=validation.middleware.js.map

@@ -43,9 +43,11 @@ app.get('/', (_req, res) => res.send({ message: 'Bienvenido a la API de CONANP -
 import { authRoutes } from './modules/auth/routes/index.js';
 import { organizationsRoutes } from './modules/organizations/routes/index.js';
 import { usersRoutes } from './modules/users/routes/index.js';
+import subscriptionPlanRouter from './modules/subscriptions/routes/subscription-plan.routes.js';
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/organizations', organizationsRoutes);
 app.use('/api/v1/users', usersRoutes);
+app.use('/api/v1/subscription-plans', subscriptionPlanRouter);
 // Middleware de manejo de errores globales
 // IMPORTANTE: Debe ir después de todas las rutas pero antes del 404
 app.use(errorHandler);
