@@ -3,12 +3,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-if (!process.env['DATABASE_PUBLIC_URL']) {
-  throw new Error('DATABASE_PUBLIC_URL no está definida en las variables de entorno');
+const isTest = process.env['NODE_ENV'] === 'test';
+const databaseUrl = isTest ? process.env['DATABASE_TEST_URL'] : process.env['DATABASE_PUBLIC_URL'];
+
+const requiredEnvVar = isTest ? 'DATABASE_TEST_URL' : 'DATABASE_PUBLIC_URL';
+if (!databaseUrl) {
+  throw new Error(`${requiredEnvVar} no está definida en las variables de entorno`);
 }
 
 /**
  * Configuración de Sequelize para PostgreSQL
+ *
+ * - En test (NODE_ENV=test) usa DATABASE_TEST_URL.
+ * - En desarrollo/producción usa DATABASE_PUBLIC_URL.
  *
  * Zonas horarias:
  * - Base de datos: UTC (America/New_York - Virginia, US)
@@ -16,7 +23,7 @@ if (!process.env['DATABASE_PUBLIC_URL']) {
  *
  * Las fechas se convierten a UTC antes de guardar y a Mexico_City al leer
  */
-const sequelize = new Sequelize(process.env['DATABASE_PUBLIC_URL'], {
+const sequelize = new Sequelize(databaseUrl, {
   dialect: 'postgres',
   dialectOptions: {
     ssl: {

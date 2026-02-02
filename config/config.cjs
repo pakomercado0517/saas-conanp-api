@@ -28,6 +28,26 @@ module.exports = {
     logging: false,
   },
 
+  test: {
+    url: process.env.DATABASE_TEST_URL,
+    dialect: "postgres",
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+      timezone: "+00:00", // UTC para la base de datos
+    },
+    timezone: "-06:00", // America/Mexico_City para la aplicación
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+    logging: false,
+  },
+
   production: {
     url: process.env.DATABASE_PUBLIC_URL,
     dialect: "postgres",
