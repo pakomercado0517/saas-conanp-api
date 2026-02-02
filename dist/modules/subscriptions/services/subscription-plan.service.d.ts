@@ -30,6 +30,15 @@ export declare const listPlans: (filters: ListSubscriptionPlansDTO) => Promise<{
  */
 export declare const getPlanById: (planId: UUID) => Promise<SubscriptionPlan>;
 /**
+ * Obtiene un plan por Stripe Price ID (monthly o yearly).
+ * Usado desde webhooks para resolver planId cuando solo se recibe price.id.
+ *
+ * @param stripePriceId - ID del precio en Stripe (price_xxx)
+ * @returns Plan encontrado
+ * @throws {NotFoundError} Si no existe un plan con ese precio
+ */
+export declare const getPlanByStripePriceId: (stripePriceId: string) => Promise<SubscriptionPlan>;
+/**
  * Crea un plan de suscripción en la base de datos.
  * La sincronización con Stripe es una operación separada (syncPlanToStripe).
  *

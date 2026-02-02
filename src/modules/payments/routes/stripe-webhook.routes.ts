@@ -54,7 +54,12 @@ stripeWebhookRouter.post('/', async (req: Request, res: Response): Promise<Respo
     await processWebhookEvent(event);
   } catch (err) {
     logger.error(
-      { err, eventId: event.id, eventType: event.type },
+      {
+        eventId: event.id,
+        eventType: event.type,
+        message: err instanceof Error ? err.message : String(err),
+        name: err instanceof Error ? err.name : undefined,
+      },
       'Webhook Stripe: respondiendo 500 por error al procesar'
     );
     return res.status(500).json({

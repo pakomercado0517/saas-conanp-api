@@ -148,6 +148,14 @@ export declare const cancelSubscription: (subscriptionId: UUID, organizationId: 
  */
 export declare const reactivateSubscription: (subscriptionId: UUID, organizationId: UUID, userId: UUID) => Promise<Subscription>;
 /**
+ * Crea o actualiza una suscripción en BD desde el webhook customer.subscription.created.
+ * Idempotente: si ya existe por stripeSubscriptionId, actualiza y retorna.
+ *
+ * @param stripeSubscription - Objeto subscription de Stripe (event.data.object)
+ * @returns Suscripción creada/actualizada o null si falta organización o no existe
+ */
+export declare const createSubscriptionFromWebhook: (stripeSubscription: Record<string, unknown>) => Promise<Subscription | null>;
+/**
  * Actualiza el estado de una suscripción desde un webhook de Stripe.
  * NO valida acceso a organización (se llama desde Stripe).
  *
@@ -155,6 +163,28 @@ export declare const reactivateSubscription: (subscriptionId: UUID, organization
  * @returns Suscripción actualizada o null si no existe
  */
 export declare const updateSubscriptionFromWebhook: (stripeSubscription: Record<string, unknown>) => Promise<Subscription | null>;
+/**
+ * Renueva el período de suscripción desde invoice.payment_succeeded.
+ * Solo actúa cuando billing_reason === 'subscription_cycle'.
+ *
+ * @param stripeInvoice - Objeto invoice de Stripe (event.data.object)
+ * @returns Suscripción actualizada o null
+ */
+export declare const renewSubscriptionPeriodFromWebhook: (stripeInvoice: Record<string, unknown>) => Promise<Subscription | null>;
+/**
+ * Marca la suscripción como past_due desde invoice.payment_failed.
+ *
+ * @param stripeInvoice - Objeto invoice de Stripe (event.data.object)
+ * @returns Suscripción actualizada o null
+ */
+export declare const markSubscriptionPastDueFromWebhook: (stripeInvoice: Record<string, unknown>) => Promise<Subscription | null>;
+/**
+ * Maneja customer.subscription.trial_will_end: log para auditoría y punto de extensión
+ * para notificación (email/push) cuando exista el servicio.
+ *
+ * @param stripeSubscription - Objeto subscription de Stripe (event.data.object)
+ */
+export declare const handleTrialWillEndFromWebhook: (stripeSubscription: Record<string, unknown>) => Promise<void>;
 /**
  * Lista suscripciones con paginación y filtros.
  * Si se proporciona organizationId, aplica filtro multi-tenant obligatorio.

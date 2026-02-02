@@ -6,7 +6,8 @@ import { Membership } from '../../../modules/users/models/membership.model.js';
 import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
 import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { getPlanById } from '../../../modules/subscriptions/services/subscription-plan.service.js';
+import { getPlanById, getPlanByStripePriceId, } from '../../../modules/subscriptions/services/subscription-plan.service.js';
+import { sequelize } from '../../../shared/database/index.js';
 import { stripeClient, handleStripeError } from '../../../shared/stripe/index.js';
 import { ConflictError, NotFoundError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
@@ -541,6 +542,147 @@ export const reactivateSubscription = async (subscriptionId, organizationId, use
     });
 };
 /**
+ * Crea o actualiza una suscripción en BD desde el webhook customer.subscription.created.
+ * Idempotente: si ya existe por stripeSubscriptionId, actualiza y retorna.
+ *
+ * @param stripeSubscription - Objeto subscription de Stripe (event.data.object)
+ * @returns Suscripción creada/actualizada o null si falta organización o no existe
+ */
+export const createSubscriptionFromWebhook = async (stripeSubscription) => {
+    const stripeSubscriptionId = stripeSubscription['id'];
+    if (!stripeSubscriptionId)
+        return null;
+    const metadata = stripeSubscription['metadata'];
+    const organizationId = metadata?.['organizationId'];
+    const metadataPlanId = metadata?.['planId'];
+    const items = stripeSubscription['items'];
+    const priceId = items?.data?.[0]?.price?.id;
+    if (!organizationId) {
+        logger.warn({ stripeSubscriptionId, metadata }, 'Webhook subscription.created: metadata.organizationId ausente');
+        return null;
+    }
+    const org = await Organization.findByPk(organizationId);
+    if (!org) {
+        logger.warn({ organizationId, stripeSubscriptionId }, 'Webhook subscription.created: organización no encontrada');
+        return null;
+    }
+    let planId;
+    let billingCycle;
+    if (metadataPlanId) {
+        try {
+            const plan = await getPlanById(metadataPlanId);
+            planId = plan.id;
+            billingCycle =
+                priceId === plan.stripePriceIdMonthly
+                    ? 'monthly'
+                    : priceId === plan.stripePriceIdYearly
+                        ? 'yearly'
+                        : 'monthly';
+        }
+        catch {
+            if (!priceId) {
+                logger.warn({ stripeSubscriptionId, metadataPlanId }, 'Webhook subscription.created: planId en metadata inválido y sin priceId');
+                return null;
+            }
+            try {
+                const plan = await getPlanByStripePriceId(priceId);
+                planId = plan.id;
+                billingCycle = priceId === plan.stripePriceIdMonthly ? 'monthly' : 'yearly';
+            }
+            catch {
+                logger.warn({ stripeSubscriptionId, priceId }, 'Webhook subscription.created: plan no encontrado por priceId');
+                return null;
+            }
+        }
+    }
+    else {
+        if (!priceId) {
+            logger.warn({ stripeSubscriptionId }, 'Webhook subscription.created: sin metadata.planId ni priceId');
+            return null;
+        }
+        try {
+            const plan = await getPlanByStripePriceId(priceId);
+            planId = plan.id;
+            billingCycle = priceId === plan.stripePriceIdMonthly ? 'monthly' : 'yearly';
+        }
+        catch {
+            logger.warn({ stripeSubscriptionId, priceId }, 'Webhook subscription.created: plan no encontrado por priceId');
+            return null;
+        }
+    }
+    const statusMap = {
+        active: 'active',
+        trialing: 'trialing',
+        past_due: 'past_due',
+        unpaid: 'unpaid',
+        incomplete: 'incomplete',
+        incomplete_expired: 'incomplete_expired',
+        canceled: 'canceled',
+    };
+    const stripeStatus = stripeSubscription['status'];
+    const status = stripeStatus ? (statusMap[stripeStatus] ?? 'incomplete') : 'incomplete';
+    const periodStart = stripeSubscription['current_period_start'];
+    const periodEnd = stripeSubscription['current_period_end'];
+    const currentPeriodStart = periodStart != null ? new Date(periodStart * 1000) : new Date();
+    const currentPeriodEnd = periodEnd != null
+        ? new Date(periodEnd * 1000)
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const customer = stripeSubscription['customer'];
+    const stripeCustomerId = typeof customer === 'string' ? customer : (customer?.id ?? null);
+    const trialEndStripe = stripeSubscription['trial_end'];
+    const trialEnd = trialEndStripe != null ? new Date(trialEndStripe * 1000) : null;
+    const cancelAtPeriodEnd = stripeSubscription['cancel_at_period_end'] ?? false;
+    const canceledAtStripe = stripeSubscription['canceled_at'];
+    const canceledAt = canceledAtStripe != null ? new Date(canceledAtStripe * 1000) : null;
+    const existing = await Subscription.findOne({
+        where: { stripeSubscriptionId },
+        include: [
+            { model: Organization, as: 'Organization' },
+            { model: SubscriptionPlan, as: 'SubscriptionPlan' },
+        ],
+    });
+    if (existing) {
+        return updateSubscriptionFromWebhook(stripeSubscription);
+    }
+    const transaction = await sequelize.transaction();
+    try {
+        const subscription = await createSubscriptionInDatabase({
+            organizationId,
+            planId,
+            status,
+            billingCycle,
+            currentPeriodStart,
+            currentPeriodEnd,
+            cancelAtPeriodEnd,
+            stripeSubscriptionId,
+            stripeCustomerId,
+            stripePriceId: priceId ?? null,
+            trialEnd,
+        }, transaction);
+        if (status === 'canceled' && canceledAt) {
+            await subscription.update({ canceledAt }, { transaction });
+        }
+        await transaction.commit();
+        logger.info({
+            subscriptionId: subscription.id,
+            stripeSubscriptionId,
+            organizationId,
+            planId,
+            status,
+        }, 'Webhook subscription.created: suscripción creada en BD');
+        return subscription.reload({
+            include: [
+                { model: Organization, as: 'Organization' },
+                { model: SubscriptionPlan, as: 'SubscriptionPlan' },
+            ],
+        });
+    }
+    catch (error) {
+        await transaction.rollback();
+        throw error;
+    }
+};
+/**
  * Actualiza el estado de una suscripción desde un webhook de Stripe.
  * NO valida acceso a organización (se llama desde Stripe).
  *
@@ -611,6 +753,117 @@ export const updateSubscriptionFromWebhook = async (stripeSubscription) => {
             { model: SubscriptionPlan, as: 'SubscriptionPlan' },
         ],
     });
+};
+/**
+ * Renueva el período de suscripción desde invoice.payment_succeeded.
+ * Solo actúa cuando billing_reason === 'subscription_cycle'.
+ *
+ * @param stripeInvoice - Objeto invoice de Stripe (event.data.object)
+ * @returns Suscripción actualizada o null
+ */
+export const renewSubscriptionPeriodFromWebhook = async (stripeInvoice) => {
+    const billingReason = stripeInvoice['billing_reason'];
+    if (billingReason !== 'subscription_cycle') {
+        return null;
+    }
+    const subscriptionId = stripeInvoice['subscription'];
+    const stripeSubscriptionId = typeof subscriptionId === 'string' ? subscriptionId : subscriptionId?.id;
+    if (!stripeSubscriptionId)
+        return null;
+    const subscription = await Subscription.findOne({
+        where: { stripeSubscriptionId },
+        include: [
+            { model: Organization, as: 'Organization' },
+            { model: SubscriptionPlan, as: 'SubscriptionPlan' },
+        ],
+    });
+    if (!subscription) {
+        logger.warn({ stripeSubscriptionId }, 'Webhook invoice.payment_succeeded: suscripción no encontrada en BD');
+        return null;
+    }
+    const periodStart = stripeInvoice['period_start'];
+    const periodEnd = stripeInvoice['period_end'];
+    if (periodStart == null || periodEnd == null)
+        return subscription;
+    const updateData = {
+        currentPeriodStart: new Date(periodStart * 1000),
+        currentPeriodEnd: new Date(periodEnd * 1000),
+    };
+    if (subscription.status === 'past_due') {
+        updateData['status'] = 'active';
+    }
+    await subscription.update(updateData);
+    logger.info({
+        subscriptionId: subscription.id,
+        stripeSubscriptionId,
+        currentPeriodStart: updateData['currentPeriodStart'],
+        currentPeriodEnd: updateData['currentPeriodEnd'],
+    }, 'Webhook invoice.payment_succeeded: período de suscripción renovado');
+    return subscription.reload({
+        include: [
+            { model: Organization, as: 'Organization' },
+            { model: SubscriptionPlan, as: 'SubscriptionPlan' },
+        ],
+    });
+};
+/**
+ * Marca la suscripción como past_due desde invoice.payment_failed.
+ *
+ * @param stripeInvoice - Objeto invoice de Stripe (event.data.object)
+ * @returns Suscripción actualizada o null
+ */
+export const markSubscriptionPastDueFromWebhook = async (stripeInvoice) => {
+    const subscriptionId = stripeInvoice['subscription'];
+    const stripeSubscriptionId = typeof subscriptionId === 'string' ? subscriptionId : subscriptionId?.id;
+    if (!stripeSubscriptionId)
+        return null;
+    const subscription = await Subscription.findOne({
+        where: { stripeSubscriptionId },
+        include: [
+            { model: Organization, as: 'Organization' },
+            { model: SubscriptionPlan, as: 'SubscriptionPlan' },
+        ],
+    });
+    if (!subscription) {
+        logger.warn({ stripeSubscriptionId }, 'Webhook invoice.payment_failed: suscripción no encontrada en BD');
+        return null;
+    }
+    await subscription.update({ status: 'past_due' });
+    logger.info({ subscriptionId: subscription.id, stripeSubscriptionId }, 'Webhook invoice.payment_failed: suscripción marcada past_due');
+    return subscription.reload({
+        include: [
+            { model: Organization, as: 'Organization' },
+            { model: SubscriptionPlan, as: 'SubscriptionPlan' },
+        ],
+    });
+};
+/**
+ * Maneja customer.subscription.trial_will_end: log para auditoría y punto de extensión
+ * para notificación (email/push) cuando exista el servicio.
+ *
+ * @param stripeSubscription - Objeto subscription de Stripe (event.data.object)
+ */
+export const handleTrialWillEndFromWebhook = async (stripeSubscription) => {
+    const stripeSubscriptionId = stripeSubscription['id'];
+    const trialEndStripe = stripeSubscription['trial_end'];
+    const metadata = stripeSubscription['metadata'];
+    const organizationId = metadata?.['organizationId'];
+    let subscriptionOrganizationId;
+    if (stripeSubscriptionId) {
+        const sub = await Subscription.findOne({
+            where: { stripeSubscriptionId },
+            attributes: ['organizationId'],
+        });
+        subscriptionOrganizationId = sub?.organizationId;
+    }
+    const organizationIdResolved = organizationId ?? subscriptionOrganizationId;
+    const trialEnd = trialEndStripe != null ? new Date(trialEndStripe * 1000).toISOString() : undefined;
+    logger.info({
+        stripeSubscriptionId,
+        trialEnd: trialEndStripe,
+        trialEndDate: trialEnd,
+        organizationId: organizationIdResolved,
+    }, 'Webhook subscription.trial_will_end: fin de prueba próximo. Integrar notificación (email/push) cuando exista el servicio.');
 };
 /**
  * Lista suscripciones con paginación y filtros.

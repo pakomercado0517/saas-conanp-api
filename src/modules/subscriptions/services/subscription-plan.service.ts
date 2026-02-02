@@ -92,6 +92,26 @@ export const getPlanById = async (planId: UUID): Promise<SubscriptionPlan> => {
 };
 
 /**
+ * Obtiene un plan por Stripe Price ID (monthly o yearly).
+ * Usado desde webhooks para resolver planId cuando solo se recibe price.id.
+ *
+ * @param stripePriceId - ID del precio en Stripe (price_xxx)
+ * @returns Plan encontrado
+ * @throws {NotFoundError} Si no existe un plan con ese precio
+ */
+export const getPlanByStripePriceId = async (stripePriceId: string): Promise<SubscriptionPlan> => {
+  const plan = await SubscriptionPlan.findOne({
+    where: {
+      [Op.or]: [{ stripePriceIdMonthly: stripePriceId }, { stripePriceIdYearly: stripePriceId }],
+    },
+  });
+  if (!plan) {
+    throw new NotFoundError('Plan de suscripción', { stripePriceId });
+  }
+  return plan;
+};
+
+/**
  * Crea un plan de suscripción en la base de datos.
  * La sincronización con Stripe es una operación separada (syncPlanToStripe).
  *

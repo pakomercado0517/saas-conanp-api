@@ -1,12 +1,20 @@
+import { setTimeout as sleep } from 'node:timers/promises';
 import type Stripe from 'stripe';
 import { stripeClient, stripeConfig } from '@/shared/stripe/index.js';
 import { logger } from '@/shared/logger/index.js';
-import { NotFoundError } from '@/shared/errors/index.js';
+import { AppError } from '@/shared/errors/index.js';
 import {
   ensureEventIdempotency,
   updatePaymentStatusFromWebhook,
   handleChargeRefundedFromWebhook,
 } from './payment.service.js';
+import {
+  createSubscriptionFromWebhook,
+  updateSubscriptionFromWebhook,
+  renewSubscriptionPeriodFromWebhook,
+  markSubscriptionPastDueFromWebhook,
+  handleTrialWillEndFromWebhook,
+} from '@/modules/subscriptions/services/subscription.service.js';
 
 export interface ProcessWebhookResult {
   received: true;
@@ -18,6 +26,77 @@ const PAYMENT_INTENT_EVENTS = [
   'payment_intent.payment_failed',
   'payment_intent.canceled',
 ] as const;
+
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 500;
+
+/**
+ * Ejecuta el handler correspondiente al tipo de evento.
+ * Lanza AppError en errores de negocio; lanza Error u otros en fallos transitorios.
+ */
+const dispatchWebhookEvent = async (event: Stripe.Event): Promise<void> => {
+  const eventType = event.type;
+  if (PAYMENT_INTENT_EVENTS.includes(eventType as (typeof PAYMENT_INTENT_EVENTS)[number])) {
+    const obj = event.data.object as Stripe.PaymentIntent;
+    const piId = typeof obj === 'object' && obj?.id ? obj.id : null;
+    if (piId) {
+      await updatePaymentStatusFromWebhook(
+        piId,
+        eventType,
+        obj as unknown as Record<string, unknown>
+      );
+    }
+  } else if (eventType === 'charge.refunded') {
+    await handleChargeRefundedFromWebhook(event.data.object as unknown as Record<string, unknown>);
+  } else if (eventType === 'customer.subscription.created') {
+    const obj = event.data.object as unknown as Record<string, unknown>;
+    const stripeSubscriptionId = obj['id'] as string | undefined;
+    await createSubscriptionFromWebhook(obj);
+    logger.info(
+      { eventId: event.id, eventType, stripeSubscriptionId },
+      'Webhook Stripe: suscripción creada en BD'
+    );
+  } else if (eventType === 'customer.subscription.updated') {
+    await updateSubscriptionFromWebhook(event.data.object as unknown as Record<string, unknown>);
+    logger.info({ eventId: event.id, eventType }, 'Webhook Stripe: suscripción actualizada');
+  } else if (eventType === 'customer.subscription.deleted') {
+    await updateSubscriptionFromWebhook(event.data.object as unknown as Record<string, unknown>);
+    logger.info({ eventId: event.id, eventType }, 'Webhook Stripe: suscripción cancelada');
+  } else if (eventType === 'invoice.payment_succeeded') {
+    const obj = event.data.object as unknown as Record<string, unknown>;
+    const sub = await renewSubscriptionPeriodFromWebhook(obj);
+    if (sub) {
+      logger.info(
+        { eventId: event.id, eventType, subscriptionId: sub.id },
+        'Webhook Stripe: período de suscripción renovado'
+      );
+    }
+  } else if (eventType === 'invoice.payment_failed') {
+    await markSubscriptionPastDueFromWebhook(
+      event.data.object as unknown as Record<string, unknown>
+    );
+    logger.info({ eventId: event.id, eventType }, 'Webhook Stripe: suscripción marcada past_due');
+  } else if (eventType === 'customer.subscription.trial_will_end') {
+    const obj = event.data.object as unknown as Record<string, unknown>;
+    const trialEnd = obj['trial_end'] as number | undefined;
+    await handleTrialWillEndFromWebhook(obj);
+    logger.info(
+      { eventId: event.id, eventType, trialEnd },
+      'Webhook Stripe: fin de prueba próximo'
+    );
+  } else {
+    logger.info({ eventId: event.id, eventType }, 'Webhook Stripe: evento no manejado');
+  }
+};
+
+// const SUBSCRIPTION_EVENTS = [
+//   'customer.subscription.created',
+//   'customer.subscription.updated',
+//   'customer.subscription.deleted',
+//   'customer.subscription.trial_will_end',
+// ] as const;
+
+// const INVOICE_EVENTS = ['invoice.payment_succeeded', 'invoice.payment_failed'] as const;
 
 /**
  * Valida la firma del webhook de Stripe y devuelve el evento parseado.
@@ -52,41 +131,51 @@ export const processWebhookEvent = async (event: Stripe.Event): Promise<ProcessW
     return { received: true, duplicate: true };
   }
 
-  try {
-    if (PAYMENT_INTENT_EVENTS.includes(eventType as (typeof PAYMENT_INTENT_EVENTS)[number])) {
-      const obj = event.data.object as Stripe.PaymentIntent;
-      const piId = typeof obj === 'object' && obj?.id ? obj.id : null;
-      if (piId) {
-        await updatePaymentStatusFromWebhook(
-          piId,
-          eventType,
-          obj as unknown as Record<string, unknown>
-        );
-      }
-    } else if (eventType === 'charge.refunded') {
-      await handleChargeRefundedFromWebhook(
-        event.data.object as unknown as Record<string, unknown>
-      );
-    } else {
-      logger.info({ eventId, eventType }, 'Webhook Stripe: evento no manejado');
-    }
-  } catch (err) {
-    if (err instanceof NotFoundError) {
-      logger.warn({ eventId, eventType, error: err.message }, 'Webhook Stripe: pago no encontrado');
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      await dispatchWebhookEvent(event);
       return { received: true };
+    } catch (err) {
+      lastError = err;
+      if (err instanceof AppError) {
+        logger.warn(
+          {
+            eventId,
+            eventType,
+            error: err.message,
+            errorName: err.name,
+          },
+          'Webhook Stripe: error de negocio, no se reintentará'
+        );
+        return { received: true };
+      }
+      if (attempt < MAX_RETRIES) {
+        logger.warn(
+          {
+            eventId,
+            eventType,
+            attempt: attempt + 1,
+            maxRetries: MAX_RETRIES,
+            message: err instanceof Error ? err.message : String(err),
+          },
+          'Webhook Stripe: error transitorio, reintentando'
+        );
+        await sleep(RETRY_DELAY_MS);
+      } else {
+        logger.error(
+          {
+            message: err instanceof Error ? err.message : String(err),
+            name: err instanceof Error ? err.name : undefined,
+            eventId,
+            eventType,
+          },
+          'Webhook Stripe: error al procesar tras reintentos'
+        );
+        throw lastError;
+      }
     }
-    // No loguear el objeto err completo (puede contener datos sensibles de Stripe)
-    logger.error(
-      {
-        message: err instanceof Error ? err.message : String(err),
-        name: err instanceof Error ? err.name : undefined,
-        eventId,
-        eventType,
-      },
-      'Webhook Stripe: error al procesar'
-    );
-    throw err;
   }
 
-  return { received: true };
+  throw lastError;
 };
