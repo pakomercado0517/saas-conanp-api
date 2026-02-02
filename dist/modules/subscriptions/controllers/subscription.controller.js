@@ -1,4 +1,5 @@
 import * as subscriptionService from '../services/subscription.service.js';
+import { sanitizeSubscriptionForResponse } from '../sanitizers/subscription-sanitizer.js';
 import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
 /**
  * Crea una suscripción para la organización.
@@ -19,7 +20,8 @@ export const createSubscription = async (req, res) => {
     const userId = req.user.userId;
     const data = req.body;
     const subscription = await subscriptionService.createSubscription(data, organizationId, userId);
-    return sendCreated(res, subscription, 'Suscripción creada exitosamente');
+    const sanitized = sanitizeSubscriptionForResponse(subscription);
+    return sendCreated(res, sanitized, 'Suscripción creada exitosamente');
 };
 /**
  * Obtiene la suscripción actual de la organización.
@@ -42,7 +44,8 @@ export const getCurrentSubscription = async (req, res) => {
     if (!subscription) {
         return sendSuccess(res, null, 'La organización no tiene suscripción activa');
     }
-    return sendSuccess(res, subscription, 'Suscripción obtenida exitosamente');
+    const sanitized = sanitizeSubscriptionForResponse(subscription);
+    return sendSuccess(res, sanitized, 'Suscripción obtenida exitosamente');
 };
 /**
  * Cambia el plan de una suscripción (upgrade/downgrade).
@@ -64,7 +67,8 @@ export const changePlan = async (req, res) => {
     const data = req.body;
     const subscription = await subscriptionService.getSubscriptionById(subscriptionId, userId);
     const result = await subscriptionService.changePlan(subscriptionId, subscription.organizationId, userId, data);
-    return sendSuccess(res, result, 'Plan actualizado exitosamente');
+    const sanitized = sanitizeSubscriptionForResponse(result);
+    return sendSuccess(res, sanitized, 'Plan actualizado exitosamente');
 };
 /**
  * Cancela una suscripción.
@@ -86,7 +90,8 @@ export const cancelSubscription = async (req, res) => {
     const data = req.body;
     const subscription = await subscriptionService.getSubscriptionById(subscriptionId, userId);
     const result = await subscriptionService.cancelSubscription(subscriptionId, subscription.organizationId, userId, data);
-    return sendSuccess(res, result, 'Suscripción cancelada exitosamente');
+    const sanitized = sanitizeSubscriptionForResponse(result);
+    return sendSuccess(res, sanitized, 'Suscripción cancelada exitosamente');
 };
 /**
  * Reactiva una suscripción programada para cancelarse al final del período.
@@ -107,7 +112,8 @@ export const reactivateSubscription = async (req, res) => {
     const userId = req.user.userId;
     const subscription = await subscriptionService.getSubscriptionById(subscriptionId, userId);
     const result = await subscriptionService.reactivateSubscription(subscriptionId, subscription.organizationId, userId);
-    return sendSuccess(res, result, 'Suscripción reactivada exitosamente');
+    const sanitized = sanitizeSubscriptionForResponse(result);
+    return sendSuccess(res, sanitized, 'Suscripción reactivada exitosamente');
 };
 /**
  * Obtiene el historial de facturación (invoices) de una suscripción.
@@ -133,6 +139,7 @@ export const getBillingHistory = async (req, res) => {
     const page = Math.max(1, Number(req.query['page']) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query['limit']) || 20));
     const result = await subscriptionService.getBillingHistory(subscriptionId, userId, page, limit);
+    // result.data ya está mapeado explícitamente a campos seguros (id, number=invoice#, status, amounts, urls)
     return sendPaginated(res, result.data, result.pagination, 'Historial de facturación obtenido exitosamente');
 };
 //# sourceMappingURL=subscription.controller.js.map

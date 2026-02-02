@@ -1,57 +1,5 @@
 import type { Payment } from '../models/payment.model.js';
-
-/** Claves que no deben exponerse en respuestas de API (secretos, datos sensibles) */
-const SENSITIVE_KEYS = new Set([
-  'clientSecret',
-  'client_secret',
-  'secretKey',
-  'secret_key',
-  'apiKey',
-  'api_key',
-  'password',
-  'cvc',
-  'cvv',
-  'card_number',
-  'number', // en contexto de tarjeta
-]);
-
-/**
- * Comprueba si una clave es sensible (no debe exponerse en respuestas ni logs).
- */
-const isSensitiveKey = (key: string): boolean => {
-  const lower = key.toLowerCase();
-  return (
-    SENSITIVE_KEYS.has(key) ||
-    SENSITIVE_KEYS.has(lower) ||
-    lower.includes('secret') ||
-    lower.includes('_secret') ||
-    lower.includes('card_number') ||
-    lower.includes('cvc') ||
-    lower.includes('cvv')
-  );
-};
-
-/**
- * Sanitiza un objeto recursivamente eliminando claves sensibles.
- * No modifica el objeto original.
- */
-const stripSensitiveKeys = (obj: Record<string, unknown>): Record<string, unknown> => {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (isSensitiveKey(key)) continue;
-    if (
-      value != null &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      !(value instanceof Date)
-    ) {
-      result[key] = stripSensitiveKeys(value as Record<string, unknown>);
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-};
+import { stripSensitiveKeys } from '@/shared/sanitizers/stripe-sanitizer.js';
 
 export interface SanitizePaymentOptions {
   /** Incluir clientSecret solo en la respuesta de creación de Payment Intent (uso único en frontend). */

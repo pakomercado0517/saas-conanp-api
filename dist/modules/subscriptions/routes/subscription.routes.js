@@ -1,24 +1,26 @@
 import { Router } from 'express';
 import { createSubscription, getCurrentSubscription, changePlan, cancelSubscription, reactivateSubscription, getBillingHistory, } from '../controllers/subscription.controller.js';
 import { validateCreateSubscription, validateUpdateSubscription, validateCancelSubscription, validateReactivateSubscription, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccessOnly, requireAdmin, subscriptionCreateLimiter, subscriptionChangePlanLimiter, } from '../../../shared/middleware/index.js';
 /**
  * Router de suscripciones anidadas en organizaciones
  *
  * Montado bajo /api/v1/organizations/:organizationId/subscriptions
- * Requiere autenticación y acceso a la organización.
+ * Crear y obtener suscripción actual usan solo membresía (sin exigir suscripción activa).
  */
 const subscriptionOrgRouter = Router({ mergeParams: true });
 /**
  * POST /api/v1/organizations/:organizationId/subscriptions
  * Crea una suscripción para la organización.
+ * Solo admins de la organización pueden crear suscripciones.
  */
-subscriptionOrgRouter.post('/', authenticate, requireOrganizationAccess, validateCreateSubscription, createSubscription);
+subscriptionOrgRouter.post('/', subscriptionCreateLimiter, authenticate, requireOrganizationAccessOnly, requireAdmin, validateCreateSubscription, createSubscription);
 /**
  * GET /api/v1/organizations/:organizationId/subscriptions/current
  * Obtiene la suscripción actual de la organización.
+ * Solo admins pueden gestionar/ver la suscripción (puede devolver null si no hay).
  */
-subscriptionOrgRouter.get('/current', authenticate, requireOrganizationAccess, getCurrentSubscription);
+subscriptionOrgRouter.get('/current', authenticate, requireOrganizationAccessOnly, requireAdmin, getCurrentSubscription);
 /**
  * Router de suscripciones por ID
  *
@@ -30,7 +32,7 @@ const subscriptionRouter = Router();
  * PATCH /api/v1/subscriptions/:subscriptionId/plan
  * Cambia el plan de una suscripción (upgrade/downgrade).
  */
-subscriptionRouter.patch('/:subscriptionId/plan', authenticate, validateUpdateSubscription, changePlan);
+subscriptionRouter.patch('/:subscriptionId/plan', subscriptionChangePlanLimiter, authenticate, validateUpdateSubscription, changePlan);
 /**
  * POST /api/v1/subscriptions/:subscriptionId/cancel
  * Cancela una suscripción (inmediato o al final del período).

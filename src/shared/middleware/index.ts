@@ -3,7 +3,14 @@
  */
 
 export { errorHandler } from './error-handler.js';
-export { apiLimiter, authLimiter, paymentCreateLimiter, webhookLimiter } from './rate-limiter.js';
+export {
+  apiLimiter,
+  authLimiter,
+  paymentCreateLimiter,
+  webhookLimiter,
+  subscriptionCreateLimiter,
+  subscriptionChangePlanLimiter,
+} from './rate-limiter.js';
 export { authenticate, optionalAuthenticate } from './auth.middleware.js';
 export {
   requireOrganizationAccess,

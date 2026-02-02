@@ -30,6 +30,15 @@ export declare const listPlans: (filters: ListSubscriptionPlansDTO) => Promise<{
  */
 export declare const getPlanById: (planId: UUID) => Promise<SubscriptionPlan>;
 /**
+ * Valida que el plan exista y esté activo.
+ *
+ * @param planId - ID del plan
+ * @returns Plan encontrado y activo
+ * @throws {NotFoundError} Si el plan no existe
+ * @throws {ValidationError} Si el plan no está activo
+ */
+export declare const assertPlanExistsAndActive: (planId: UUID) => Promise<SubscriptionPlan>;
+/**
  * Obtiene un plan por Stripe Price ID (monthly o yearly).
  * Usado desde webhooks para resolver planId cuando solo se recibe price.id.
  *

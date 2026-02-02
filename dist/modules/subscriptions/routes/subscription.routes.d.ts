@@ -3,7 +3,7 @@ import { type Router as ExpressRouter } from 'express';
  * Router de suscripciones anidadas en organizaciones
  *
  * Montado bajo /api/v1/organizations/:organizationId/subscriptions
- * Requiere autenticación y acceso a la organización.
+ * Crear y obtener suscripción actual usan solo membresía (sin exigir suscripción activa).
  */
 declare const subscriptionOrgRouter: ExpressRouter;
 /**

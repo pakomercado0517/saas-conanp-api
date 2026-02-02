@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import * as subscriptionService from '../services/subscription.service.js';
+import { sanitizeSubscriptionForResponse } from '../sanitizers/subscription-sanitizer.js';
 import { sendSuccess, sendCreated, sendPaginated } from '@/shared/responses/helpers.js';
 import type {
   CreateSubscriptionDTO,
@@ -28,7 +29,8 @@ export const createSubscription = async (req: Request, res: Response): Promise<R
   const data = req.body as CreateSubscriptionDTO;
 
   const subscription = await subscriptionService.createSubscription(data, organizationId, userId);
-  return sendCreated(res, subscription, 'Suscripción creada exitosamente');
+  const sanitized = sanitizeSubscriptionForResponse(subscription);
+  return sendCreated(res, sanitized, 'Suscripción creada exitosamente');
 };
 
 /**
@@ -59,7 +61,8 @@ export const getCurrentSubscription = async (req: Request, res: Response): Promi
     return sendSuccess(res, null, 'La organización no tiene suscripción activa');
   }
 
-  return sendSuccess(res, subscription, 'Suscripción obtenida exitosamente');
+  const sanitized = sanitizeSubscriptionForResponse(subscription);
+  return sendSuccess(res, sanitized, 'Suscripción obtenida exitosamente');
 };
 
 /**
@@ -90,7 +93,8 @@ export const changePlan = async (req: Request, res: Response): Promise<Response>
     userId,
     data
   );
-  return sendSuccess(res, result, 'Plan actualizado exitosamente');
+  const sanitized = sanitizeSubscriptionForResponse(result);
+  return sendSuccess(res, sanitized, 'Plan actualizado exitosamente');
 };
 
 /**
@@ -121,7 +125,8 @@ export const cancelSubscription = async (req: Request, res: Response): Promise<R
     userId,
     data
   );
-  return sendSuccess(res, result, 'Suscripción cancelada exitosamente');
+  const sanitized = sanitizeSubscriptionForResponse(result);
+  return sendSuccess(res, sanitized, 'Suscripción cancelada exitosamente');
 };
 
 /**
@@ -150,7 +155,8 @@ export const reactivateSubscription = async (req: Request, res: Response): Promi
     subscription.organizationId,
     userId
   );
-  return sendSuccess(res, result, 'Suscripción reactivada exitosamente');
+  const sanitized = sanitizeSubscriptionForResponse(result);
+  return sendSuccess(res, sanitized, 'Suscripción reactivada exitosamente');
 };
 
 /**
@@ -180,6 +186,7 @@ export const getBillingHistory = async (req: Request, res: Response): Promise<Re
   const limit = Math.min(100, Math.max(1, Number(req.query['limit']) || 20));
 
   const result = await subscriptionService.getBillingHistory(subscriptionId, userId, page, limit);
+  // result.data ya está mapeado explícitamente a campos seguros (id, number=invoice#, status, amounts, urls)
   return sendPaginated(
     res,
     result.data,

@@ -6,12 +6,14 @@ import { Membership } from '../../../modules/users/models/membership.model.js';
 import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
 import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { getPlanById, getPlanByStripePriceId, } from '../../../modules/subscriptions/services/subscription-plan.service.js';
+import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
+import { getPlanById, getPlanByStripePriceId, assertPlanExistsAndActive, } from '../../../modules/subscriptions/services/subscription-plan.service.js';
 import { sequelize } from '../../../shared/database/index.js';
 import { stripeClient, handleStripeError } from '../../../shared/stripe/index.js';
 import { ConflictError, NotFoundError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
 const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
+const CANCELABLE_STATUSES = ['active', 'trialing', 'past_due', 'unpaid'];
 /**
  * Valida que la organización no tenga una suscripción activa.
  * Estados "activos" considerados: active, trialing.
@@ -28,6 +30,23 @@ export const assertNoActiveSubscription = async (organizationId) => {
     });
     if (existing) {
         throw new ConflictError('La organización ya tiene una suscripción activa. Debe cancelarla antes de crear una nueva.', { organizationId, subscriptionId: existing.id });
+    }
+};
+/**
+ * Valida que la organización no tenga ninguna suscripción existente (incluye cancelada, incompleta).
+ * Evita suscripciones duplicadas por organización (una org = una suscripción).
+ *
+ * @param organizationId - ID de la organización
+ * @throws {ConflictError} Si ya existe una suscripción (cualquier estado)
+ */
+export const assertNoExistingSubscription = async (organizationId) => {
+    const existing = await Subscription.findOne({
+        where: { organizationId },
+    });
+    if (existing) {
+        throw new ConflictError(existing.status === 'active' || existing.status === 'trialing'
+            ? 'La organización ya tiene una suscripción activa. Debe cancelarla antes de crear una nueva.'
+            : `La organización ya tiene una suscripción en estado '${existing.status}'. Para reactivar, cancele la actual primero o contacte soporte.`, { organizationId, subscriptionId: existing.id, status: existing.status });
     }
 };
 /**
@@ -206,8 +225,9 @@ export const createSubscriptionInDatabase = async (data, transaction) => {
  * @returns Suscripción creada con relaciones
  */
 export const createSubscription = async (data, organizationId, userId) => {
-    await assertCanAccessOrganization(userId, organizationId);
-    await assertNoActiveSubscription(organizationId);
+    await assertIsAdmin(userId, organizationId);
+    await assertNoExistingSubscription(organizationId);
+    await assertPlanExistsAndActive(data.planId);
     await assertPlanLimits(data.planId, organizationId);
     const org = await Organization.findByPk(organizationId);
     if (!org) {
@@ -248,7 +268,7 @@ export const createSubscription = async (data, organizationId, userId) => {
  * @returns Suscripción actual o null
  */
 export const getSubscriptionByOrganization = async (organizationId, userId) => {
-    await assertCanAccessOrganization(userId, organizationId);
+    await assertIsAdmin(userId, organizationId);
     const subscription = await Subscription.findOne({
         where: {
             organizationId, // Multi-tenant obligatorio
@@ -281,7 +301,7 @@ export const getSubscriptionById = async (subscriptionId, userId) => {
     if (!subscription) {
         throw new NotFoundError('Suscripción', { subscriptionId });
     }
-    await assertCanAccessOrganization(userId, subscription.organizationId);
+    await assertIsAdmin(userId, subscription.organizationId);
     return subscription;
 };
 /**
@@ -350,7 +370,7 @@ export const getBillingHistory = async (subscriptionId, userId, page = 1, limit 
  * @returns Suscripción actualizada
  */
 export const changePlan = async (subscriptionId, organizationId, userId, data) => {
-    await assertCanAccessOrganization(userId, organizationId);
+    await assertIsAdmin(userId, organizationId);
     const subscription = await Subscription.findOne({
         where: {
             id: subscriptionId,
@@ -369,6 +389,7 @@ export const changePlan = async (subscriptionId, organizationId, userId, data) =
     }
     const planId = data.planId ?? subscription.planId;
     const billingCycle = data.billingCycle ?? subscription.billingCycle;
+    await assertPlanExistsAndActive(planId);
     await assertPlanLimits(planId, organizationId);
     const plan = await getPlanById(planId);
     const stripePriceId = billingCycle === 'monthly' ? plan.stripePriceIdMonthly : plan.stripePriceIdYearly;
@@ -426,7 +447,7 @@ export const changePlan = async (subscriptionId, organizationId, userId, data) =
  * @returns Suscripción actualizada
  */
 export const cancelSubscription = async (subscriptionId, organizationId, userId, data) => {
-    await assertCanAccessOrganization(userId, organizationId);
+    await assertIsAdmin(userId, organizationId);
     const subscription = await Subscription.findOne({
         where: {
             id: subscriptionId,
@@ -442,6 +463,9 @@ export const cancelSubscription = async (subscriptionId, organizationId, userId,
     }
     if (subscription.status === 'canceled') {
         throw new ValidationError('La suscripción ya está cancelada', 'status');
+    }
+    if (!CANCELABLE_STATUSES.includes(subscription.status)) {
+        throw new ValidationError(`No se puede cancelar una suscripción en estado '${subscription.status}'. Solo se pueden cancelar suscripciones activas, en prueba, past_due o unpaid.`, 'status');
     }
     if (subscription.stripeSubscriptionId) {
         try {
@@ -504,7 +528,7 @@ export const cancelSubscription = async (subscriptionId, organizationId, userId,
  * @returns Suscripción actualizada
  */
 export const reactivateSubscription = async (subscriptionId, organizationId, userId) => {
-    await assertCanAccessOrganization(userId, organizationId);
+    await assertIsAdmin(userId, organizationId);
     const subscription = await Subscription.findOne({
         where: {
             id: subscriptionId,

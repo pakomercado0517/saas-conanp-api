@@ -12,6 +12,14 @@ import type { CreateSubscriptionDTO, UpdateSubscriptionDTO, CancelSubscriptionDT
  */
 export declare const assertNoActiveSubscription: (organizationId: UUID) => Promise<void>;
 /**
+ * Valida que la organización no tenga ninguna suscripción existente (incluye cancelada, incompleta).
+ * Evita suscripciones duplicadas por organización (una org = una suscripción).
+ *
+ * @param organizationId - ID de la organización
+ * @throws {ConflictError} Si ya existe una suscripción (cualquier estado)
+ */
+export declare const assertNoExistingSubscription: (organizationId: UUID) => Promise<void>;
+/**
  * Obtiene el uso actual de una organización (usuarios, eventos, actividades).
  *
  * @param organizationId - ID de la organización

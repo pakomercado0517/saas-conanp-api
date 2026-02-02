@@ -19,6 +19,20 @@ export declare const authLimiter: import("express-rate-limit").RateLimitRequestH
  */
 export declare const paymentCreateLimiter: import("express-rate-limit").RateLimitRequestHandler;
 /**
+ * Rate limiter para creación de suscripciones
+ *
+ * Limita solicitudes para reducir abuso y carga en Stripe.
+ * Solo se aplica en producción.
+ */
+export declare const subscriptionCreateLimiter: import("express-rate-limit").RateLimitRequestHandler;
+/**
+ * Rate limiter para cambio de plan de suscripción
+ *
+ * Limita solicitudes para reducir abuso y carga en Stripe.
+ * Solo se aplica en producción.
+ */
+export declare const subscriptionChangePlanLimiter: import("express-rate-limit").RateLimitRequestHandler;
+/**
  * Rate limiter para el webhook de Stripe
  *
  * Stripe ya controla la frecuencia de envío; este límite protege contra

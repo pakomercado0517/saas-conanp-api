@@ -16,6 +16,9 @@ import {
 import {
   authenticate,
   requireOrganizationAccessOnly,
+  requireAdmin,
+  subscriptionCreateLimiter,
+  subscriptionChangePlanLimiter,
 } from '@/shared/middleware/index.js';
 
 /**
@@ -29,12 +32,14 @@ const subscriptionOrgRouter: ExpressRouter = Router({ mergeParams: true });
 /**
  * POST /api/v1/organizations/:organizationId/subscriptions
  * Crea una suscripción para la organización.
- * Solo requiere membresía (la organización puede no tener suscripción aún).
+ * Solo admins de la organización pueden crear suscripciones.
  */
 subscriptionOrgRouter.post(
   '/',
+  subscriptionCreateLimiter,
   authenticate,
   requireOrganizationAccessOnly,
+  requireAdmin,
   validateCreateSubscription,
   createSubscription
 );
@@ -42,12 +47,13 @@ subscriptionOrgRouter.post(
 /**
  * GET /api/v1/organizations/:organizationId/subscriptions/current
  * Obtiene la suscripción actual de la organización.
- * Solo requiere membresía (puede devolver null si no hay suscripción).
+ * Solo admins pueden gestionar/ver la suscripción (puede devolver null si no hay).
  */
 subscriptionOrgRouter.get(
   '/current',
   authenticate,
   requireOrganizationAccessOnly,
+  requireAdmin,
   getCurrentSubscription
 );
 
@@ -65,6 +71,7 @@ const subscriptionRouter: ExpressRouter = Router();
  */
 subscriptionRouter.patch(
   '/:subscriptionId/plan',
+  subscriptionChangePlanLimiter,
   authenticate,
   validateUpdateSubscription,
   changePlan

@@ -9,7 +9,7 @@ import type {
 } from '@/modules/subscriptions/validators/subscription-plan.validator';
 import type { PaginationMeta } from '@/shared/responses/types';
 import { stripeClient, handleStripeError, getDefaultCurrency } from '@/shared/stripe';
-import { ConflictError, NotFoundError } from '@/shared/errors';
+import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors';
 import { logger } from '@/shared/logger';
 
 /**
@@ -87,6 +87,26 @@ export const getPlanById = async (planId: UUID): Promise<SubscriptionPlan> => {
   const plan = await SubscriptionPlan.findByPk(planId);
   if (!plan) {
     throw new NotFoundError('Plan de suscripción', { planId });
+  }
+  return plan;
+};
+
+/**
+ * Valida que el plan exista y esté activo.
+ *
+ * @param planId - ID del plan
+ * @returns Plan encontrado y activo
+ * @throws {NotFoundError} Si el plan no existe
+ * @throws {ValidationError} Si el plan no está activo
+ */
+export const assertPlanExistsAndActive = async (planId: UUID): Promise<SubscriptionPlan> => {
+  const plan = await getPlanById(planId);
+  if (!plan.active) {
+    throw new ValidationError(
+      'El plan no está activo y no puede utilizarse para suscripciones',
+      'planId',
+      { planId, planName: plan.name }
+    );
   }
   return plan;
 };

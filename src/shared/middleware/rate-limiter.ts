@@ -45,6 +45,36 @@ export const paymentCreateLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter para creación de suscripciones
+ *
+ * Limita solicitudes para reducir abuso y carga en Stripe.
+ * Solo se aplica en producción.
+ */
+export const subscriptionCreateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 10, // 10 creaciones de suscripción por minuto por IP
+  message: 'Demasiadas solicitudes de creación de suscripción. Intenta nuevamente en un minuto.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env['NODE_ENV'] !== 'production',
+});
+
+/**
+ * Rate limiter para cambio de plan de suscripción
+ *
+ * Limita solicitudes para reducir abuso y carga en Stripe.
+ * Solo se aplica en producción.
+ */
+export const subscriptionChangePlanLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 10, // 10 cambios de plan por minuto por IP
+  message: 'Demasiadas solicitudes de cambio de plan. Intenta nuevamente en un minuto.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env['NODE_ENV'] !== 'production',
+});
+
+/**
  * Rate limiter para el webhook de Stripe
  *
  * Stripe ya controla la frecuencia de envío; este límite protege contra
