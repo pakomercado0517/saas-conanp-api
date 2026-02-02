@@ -5,7 +5,10 @@
 export { errorHandler } from './error-handler.js';
 export { apiLimiter, authLimiter, paymentCreateLimiter, webhookLimiter } from './rate-limiter.js';
 export { authenticate, optionalAuthenticate } from './auth.middleware.js';
-export { requireOrganizationAccess } from './organization-access.middleware.js';
+export {
+  requireOrganizationAccess,
+  requireOrganizationAccessOnly,
+} from './organization-access.middleware.js';
 export { requireRole, requireAdmin } from './role-authorization.middleware.js';
 export { requireSuperAdmin } from './super-admin.middleware.js';
 export {

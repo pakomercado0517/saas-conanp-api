@@ -13,24 +13,28 @@ import {
   validateCancelSubscription,
   validateReactivateSubscription,
 } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess } from '@/shared/middleware/index.js';
+import {
+  authenticate,
+  requireOrganizationAccessOnly,
+} from '@/shared/middleware/index.js';
 
 /**
  * Router de suscripciones anidadas en organizaciones
  *
  * Montado bajo /api/v1/organizations/:organizationId/subscriptions
- * Requiere autenticación y acceso a la organización.
+ * Crear y obtener suscripción actual usan solo membresía (sin exigir suscripción activa).
  */
 const subscriptionOrgRouter: ExpressRouter = Router({ mergeParams: true });
 
 /**
  * POST /api/v1/organizations/:organizationId/subscriptions
  * Crea una suscripción para la organización.
+ * Solo requiere membresía (la organización puede no tener suscripción aún).
  */
 subscriptionOrgRouter.post(
   '/',
   authenticate,
-  requireOrganizationAccess,
+  requireOrganizationAccessOnly,
   validateCreateSubscription,
   createSubscription
 );
@@ -38,11 +42,12 @@ subscriptionOrgRouter.post(
 /**
  * GET /api/v1/organizations/:organizationId/subscriptions/current
  * Obtiene la suscripción actual de la organización.
+ * Solo requiere membresía (puede devolver null si no hay suscripción).
  */
 subscriptionOrgRouter.get(
   '/current',
   authenticate,
-  requireOrganizationAccess,
+  requireOrganizationAccessOnly,
   getCurrentSubscription
 );
 

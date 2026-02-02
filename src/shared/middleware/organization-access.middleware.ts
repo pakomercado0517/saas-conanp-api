@@ -41,3 +41,37 @@ export const requireOrganizationAccess = async (
   req.organizationId = organizationId;
   next();
 };
+
+/**
+ * Middleware multi-tenant: valida solo que el usuario pertenezca a la organización
+ * (membresía activa). No valida suscripción activa.
+ * Úsalo en rutas que deben ser accesibles sin suscripción (ej. crear suscripción, obtener suscripción actual).
+ *
+ * Requiere que authenticate haya corrido antes.
+ *
+ * @throws {UnauthorizedError} Si no hay usuario autenticado
+ * @throws {BadRequestError} Si no se encuentra organizationId
+ * @throws {ForbiddenError} Si el usuario no tiene membresía activa en la organización
+ */
+export const requireOrganizationAccessOnly = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  if (!req.user) {
+    throw new UnauthorizedError('Token de autenticación requerido');
+  }
+
+  const organizationId =
+    (req.params['organizationId'] as string | undefined) ||
+    (typeof req.body?.organizationId === 'string' ? req.body.organizationId : undefined);
+
+  if (!organizationId) {
+    throw new BadRequestError('organizationId es requerido');
+  }
+
+  await assertCanAccessOrganization(req.user.userId, organizationId);
+
+  req.organizationId = organizationId;
+  next();
+};
