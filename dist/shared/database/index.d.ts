@@ -2,6 +2,9 @@ import { Sequelize } from 'sequelize';
 /**
  * Configuración de Sequelize para PostgreSQL
  *
+ * - En test (NODE_ENV=test) usa DATABASE_TEST_URL.
+ * - En desarrollo/producción usa DATABASE_PUBLIC_URL.
+ *
  * Zonas horarias:
  * - Base de datos: UTC (America/New_York - Virginia, US)
  * - Aplicación: America/Mexico_City (México)

@@ -26,54 +26,56 @@ const mockMembershipFindOne = vi.fn();
 const mockSequelizeTransaction = vi.fn();
 
 vi.mock('@/modules/organizations/services/organization.service.js', () => ({
-  assertCanAccessOrganization: (...args: unknown[]) => mockAssertCanAccessOrganization(...args),
+  assertCanAccessOrganization: (...args: unknown[]): unknown =>
+    mockAssertCanAccessOrganization(...args),
 }));
 
 vi.mock('@/modules/permisos/services/permiso.service.js', () => ({
-  validatePrestadorHasPermisoVigente: (...args: unknown[]) =>
+  validatePrestadorHasPermisoVigente: (...args: unknown[]): unknown =>
     mockValidatePrestadorHasPermisoVigente(...args),
 }));
 
 vi.mock('@/modules/actividades/services/capacidad.service.js', () => ({
-  verificarDisponibilidadPorBloque: (...args: unknown[]) =>
+  verificarDisponibilidadPorBloque: (...args: unknown[]): unknown =>
     mockVerificarDisponibilidadPorBloque(...args),
-  verificarDisponibilidadPorDia: (...args: unknown[]) => mockVerificarDisponibilidadPorDia(...args),
+  verificarDisponibilidadPorDia: (...args: unknown[]): unknown =>
+    mockVerificarDisponibilidadPorDia(...args),
 }));
 
 vi.mock('@/modules/subscriptions/services/subscription-limits.service.js', () => ({
-  checkEventosLimit: (...args: unknown[]) => mockCheckEventosLimit(...args),
+  checkEventosLimit: (...args: unknown[]): unknown => mockCheckEventosLimit(...args),
 }));
 
 vi.mock('@/modules/actividades/models/actividad.model.js', () => ({
   Actividad: {
-    findOne: (...args: unknown[]) => mockActividadFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockActividadFindOne(...args),
     findByPk: vi.fn(),
   },
 }));
 
 vi.mock('@/modules/actividades/models/bloque.model.js', () => ({
   Bloque: {
-    findOne: (...args: unknown[]) => mockBloqueFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockBloqueFindOne(...args),
   },
 }));
 
 vi.mock('@/modules/prestadores/models/prestador-profile.model.js', () => ({
   PrestadorProfile: {
-    findOne: (...args: unknown[]) => mockPrestadorFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockPrestadorFindOne(...args),
   },
 }));
 
 vi.mock('@/modules/eventos/models/evento-operativo.model.js', () => ({
   EventoOperativo: {
-    findOne: (...args: unknown[]) => mockEventoOperativoFindOne(...args),
-    findAndCountAll: (...args: unknown[]) => mockEventoOperativoFindAndCountAll(...args),
-    create: (...args: unknown[]) => mockEventoOperativoCreate(...args),
+    findOne: (...args: unknown[]): unknown => mockEventoOperativoFindOne(...args),
+    findAndCountAll: (...args: unknown[]): unknown => mockEventoOperativoFindAndCountAll(...args),
+    create: (...args: unknown[]): unknown => mockEventoOperativoCreate(...args),
   },
 }));
 
 vi.mock('@/modules/users/models/membership.model.js', () => ({
   Membership: {
-    findOne: (...args: unknown[]) => mockMembershipFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockMembershipFindOne(...args),
   },
 }));
 
@@ -85,7 +87,7 @@ vi.mock('@/modules/payments/models/payment.model.js', () => ({
 
 vi.mock('@/shared/database/index.js', () => ({
   sequelize: {
-    transaction: (...args: unknown[]) => mockSequelizeTransaction(...args),
+    transaction: (...args: unknown[]): unknown => mockSequelizeTransaction(...args),
   },
 }));
 
@@ -94,7 +96,7 @@ vi.mock('@/shared/logger/index.js', () => ({
 }));
 
 describe('evento.service', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     mockAssertCanAccessOrganization.mockResolvedValue(undefined);
     mockCheckEventosLimit.mockResolvedValue(undefined);
@@ -133,6 +135,7 @@ describe('evento.service', () => {
             agendaType: 'BLOQUES',
             bloqueId: BLOQUE_ID,
             peopleCount: 1,
+            paymentRequired: false,
           },
           ORG_ID,
           USER_ID
@@ -152,6 +155,7 @@ describe('evento.service', () => {
             agendaType: 'BLOQUES',
             bloqueId: BLOQUE_ID,
             peopleCount: 1,
+            paymentRequired: false,
           },
           ORG_ID,
           USER_ID
@@ -175,6 +179,7 @@ describe('evento.service', () => {
             agendaType: 'BLOQUES',
             bloqueId: BLOQUE_ID,
             peopleCount: 1,
+            paymentRequired: false,
           },
           ORG_ID,
           USER_ID
@@ -208,6 +213,7 @@ describe('evento.service', () => {
             agendaType: 'BLOQUES',
             bloqueId: BLOQUE_ID,
             peopleCount: 1,
+            paymentRequired: false,
           },
           ORG_ID,
           USER_ID
@@ -247,6 +253,7 @@ describe('evento.service', () => {
             agendaType: 'BLOQUES',
             bloqueId: BLOQUE_ID,
             peopleCount: 1,
+            paymentRequired: false,
           },
           ORG_ID,
           USER_ID
@@ -291,6 +298,7 @@ describe('evento.service', () => {
           agendaType: 'BLOQUES',
           bloqueId: BLOQUE_ID,
           peopleCount: 1,
+          paymentRequired: false,
         },
         ORG_ID,
         USER_ID
@@ -345,6 +353,7 @@ describe('evento.service', () => {
           startTime: DateTime.fromISO('2025-02-01T09:00:00'),
           endTime: DateTime.fromISO('2025-02-01T10:00:00'),
           peopleCount: 1,
+          paymentRequired: false,
         },
         ORG_ID,
         USER_ID
@@ -440,7 +449,21 @@ describe('evento.service', () => {
         count: 1,
       });
 
-      const result = await eventoService.listEventos(ORG_ID, { page: 1, limit: 10 }, USER_ID);
+      const result = await eventoService.listEventos(
+        ORG_ID,
+        {
+          page: 1,
+          limit: 10,
+          sortOrder: 'desc',
+          actividadId: undefined,
+          prestadorId: undefined,
+          date: undefined,
+          dateFrom: undefined,
+          dateTo: undefined,
+          bloqueId: undefined,
+        },
+        USER_ID
+      );
 
       expect(result.data).toHaveLength(1);
       expect(result.pagination.total).toBe(1);
@@ -465,7 +488,21 @@ describe('evento.service', () => {
         count: 0,
       });
 
-      const result = await eventoService.listEventos(ORG_ID, { page: 1, limit: 10 }, USER_ID);
+      const result = await eventoService.listEventos(
+        ORG_ID,
+        {
+          page: 1,
+          limit: 10,
+          sortOrder: 'desc',
+          actividadId: undefined,
+          prestadorId: undefined,
+          date: undefined,
+          dateFrom: undefined,
+          dateTo: undefined,
+          bloqueId: undefined,
+        },
+        USER_ID
+      );
 
       expect(result.data).toHaveLength(0);
       expect(result.pagination.total).toBe(0);

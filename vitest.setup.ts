@@ -9,7 +9,7 @@ const mockTransaction = {
   rollback: vi.fn().mockResolvedValue(undefined),
 };
 
-const createMockModel = () => ({
+const createMockModel = (): unknown => ({
   findOne: vi.fn().mockResolvedValue(null),
   findAll: vi.fn().mockResolvedValue([]),
   findByPk: vi.fn().mockResolvedValue(null),
@@ -49,7 +49,8 @@ vi.mock('@/shared/database', () => ({
 // Mock: Stripe
 // ---------------------------------------------------------------------------
 
-const createStripeMethod = (defaultId: string) => vi.fn().mockResolvedValue({ id: defaultId });
+const createStripeMethod = (defaultId: string): unknown =>
+  vi.fn().mockResolvedValue({ id: defaultId });
 
 export const mockStripeClient = {
   customers: {

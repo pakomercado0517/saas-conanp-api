@@ -15,8 +15,8 @@ const mockGetPlanById = vi.fn();
 
 vi.mock('@/modules/subscriptions/models/subscription.model.js', () => ({
   Subscription: {
-    findOne: (...args: unknown[]) => mockSubscriptionFindOne(...args),
-    count: (...args: unknown[]) => mockSubscriptionCount(...args),
+    findOne: (...args: unknown[]): unknown => mockSubscriptionFindOne(...args),
+    count: (...args: unknown[]): unknown => mockSubscriptionCount(...args),
   },
 }));
 
@@ -26,28 +26,28 @@ vi.mock('@/modules/subscriptions/models/subscription-plan.model.js', () => ({
 
 vi.mock('@/modules/users/models/membership.model.js', () => ({
   Membership: {
-    count: (...args: unknown[]) => mockMembershipCount(...args),
+    count: (...args: unknown[]): unknown => mockMembershipCount(...args),
   },
 }));
 
 vi.mock('@/modules/eventos/models/evento-operativo.model.js', () => ({
   EventoOperativo: {
-    count: (...args: unknown[]) => mockEventoOperativoCount(...args),
+    count: (...args: unknown[]): unknown => mockEventoOperativoCount(...args),
   },
 }));
 
 vi.mock('@/modules/actividades/models/actividad.model.js', () => ({
   Actividad: {
-    count: (...args: unknown[]) => mockActividadCount(...args),
+    count: (...args: unknown[]): unknown => mockActividadCount(...args),
   },
 }));
 
 vi.mock('@/modules/subscriptions/services/subscription-plan.service.js', () => ({
-  getPlanById: (...args: unknown[]) => mockGetPlanById(...args),
+  getPlanById: (...args: unknown[]): unknown => mockGetPlanById(...args),
 }));
 
 describe('subscription-limits.service', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     mockMembershipCount.mockResolvedValue(0);
     mockEventoOperativoCount.mockResolvedValue(0);
@@ -61,7 +61,7 @@ describe('subscription-limits.service', () => {
     maxEventos?: number | null;
     maxActividades?: number | null;
     maxOrganizations?: number | null;
-  }) => ({
+  }): unknown => ({
     organizationId: ORG_ID,
     status: 'active',
     currentPeriodStart: new Date(),

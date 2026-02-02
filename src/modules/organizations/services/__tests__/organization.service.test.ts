@@ -16,14 +16,14 @@ const mockOrganizationFindAndCountAll = vi.fn();
 
 vi.mock('@/modules/users/models/membership.model.js', () => ({
   Membership: {
-    findOne: (...args: unknown[]) => mockMembershipFindOne(...args),
-    findAll: (...args: unknown[]) => mockMembershipFindAll(...args),
+    findOne: (...args: unknown[]): unknown => mockMembershipFindOne(...args),
+    findAll: (...args: unknown[]): unknown => mockMembershipFindAll(...args),
   },
 }));
 
 vi.mock('@/modules/subscriptions/models/subscription.model.js', () => ({
   Subscription: {
-    findOne: (...args: unknown[]) => mockSubscriptionFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockSubscriptionFindOne(...args),
   },
 }));
 
@@ -33,9 +33,9 @@ vi.mock('@/modules/subscriptions/models/subscription-plan.model.js', () => ({
 
 vi.mock('@/modules/organizations/models/organization.model.js', () => ({
   Organization: {
-    create: (...args: unknown[]) => mockOrganizationCreate(...args),
-    findByPk: (...args: unknown[]) => mockOrganizationFindByPk(...args),
-    findAndCountAll: (...args: unknown[]) => mockOrganizationFindAndCountAll(...args),
+    create: (...args: unknown[]): unknown => mockOrganizationCreate(...args),
+    findByPk: (...args: unknown[]): unknown => mockOrganizationFindByPk(...args),
+    findAndCountAll: (...args: unknown[]): unknown => mockOrganizationFindAndCountAll(...args),
   },
 }));
 
@@ -44,7 +44,7 @@ vi.mock('@/shared/logger/index.js', () => ({
 }));
 
 describe('organization.service', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
   });
 
@@ -186,6 +186,7 @@ describe('organization.service', () => {
       const result = await organizationService.createOrganization({
         name: 'Test Org',
         ecosystem_type: 'terrestre',
+        settings: {},
       });
 
       expect(mockOrganizationCreate).toHaveBeenCalledWith(
@@ -254,7 +255,10 @@ describe('organization.service', () => {
     it('returns empty list when user has no memberships', async () => {
       mockMembershipFindAll.mockResolvedValueOnce([]);
 
-      const result = await organizationService.listOrganizations({ page: 1, limit: 10 }, USER_ID);
+      const result = await organizationService.listOrganizations(
+        { page: 1, limit: 10, sortOrder: 'desc', name: undefined },
+        USER_ID
+      );
 
       expect(result.data).toEqual([]);
       expect(result.pagination.total).toBe(0);
@@ -275,10 +279,13 @@ describe('organization.service', () => {
         count: 1,
       });
 
-      const result = await organizationService.listOrganizations({ page: 1, limit: 10 }, USER_ID);
+      const result = await organizationService.listOrganizations(
+        { page: 1, limit: 10, sortOrder: 'desc', name: undefined },
+        USER_ID
+      );
 
       expect(result.data).toHaveLength(1);
-      expect(result.data[0].id).toBe(ORG_ID);
+      expect(result.data[0]?.id).toBe(ORG_ID);
       expect(result.pagination).toMatchObject({
         page: 1,
         limit: 10,

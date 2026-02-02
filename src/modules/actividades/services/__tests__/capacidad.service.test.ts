@@ -19,35 +19,36 @@ const mockBloqueFindOne = vi.fn();
 const mockEventoOperativoSum = vi.fn();
 
 vi.mock('@/modules/users/services/membership.service.js', () => ({
-  assertIsAdmin: (...args: unknown[]) => mockAssertIsAdmin(...args),
+  assertIsAdmin: (...args: unknown[]): unknown => mockAssertIsAdmin(...args),
 }));
 
 vi.mock('@/modules/organizations/services/organization.service.js', () => ({
-  assertCanAccessOrganization: (...args: unknown[]) => mockAssertCanAccessOrganization(...args),
+  assertCanAccessOrganization: (...args: unknown[]): unknown =>
+    mockAssertCanAccessOrganization(...args),
 }));
 
 vi.mock('@/modules/actividades/models/capacidad.model.js', () => ({
   Capacidad: {
-    findOne: (...args: unknown[]) => mockCapacidadFindOne(...args),
-    create: (...args: unknown[]) => mockCapacidadCreate(...args),
+    findOne: (...args: unknown[]): unknown => mockCapacidadFindOne(...args),
+    create: (...args: unknown[]): unknown => mockCapacidadCreate(...args),
   },
 }));
 
 vi.mock('@/modules/actividades/models/actividad.model.js', () => ({
   Actividad: {
-    findOne: (...args: unknown[]) => mockActividadFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockActividadFindOne(...args),
   },
 }));
 
 vi.mock('@/modules/actividades/models/bloque.model.js', () => ({
   Bloque: {
-    findOne: (...args: unknown[]) => mockBloqueFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockBloqueFindOne(...args),
   },
 }));
 
 vi.mock('@/modules/eventos/models/evento-operativo.model.js', () => ({
   EventoOperativo: {
-    sum: (...args: unknown[]) => mockEventoOperativoSum(...args),
+    sum: (...args: unknown[]): unknown => mockEventoOperativoSum(...args),
   },
 }));
 
@@ -56,7 +57,7 @@ vi.mock('@/shared/logger/index.js', () => ({
 }));
 
 describe('capacidad.service', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     mockAssertIsAdmin.mockResolvedValue(undefined);
     mockAssertCanAccessOrganization.mockResolvedValue(undefined);

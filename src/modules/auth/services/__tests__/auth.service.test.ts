@@ -23,24 +23,24 @@ const mockBcryptCompare = vi.fn();
 
 vi.mock('@/modules/users/models/user.model.js', () => ({
   User: {
-    findOne: (...args: unknown[]) => mockUserFindOne(...args),
-    create: (...args: unknown[]) => mockUserCreate(...args),
-    findByPk: (...args: unknown[]) => mockUserFindByPk(...args),
+    findOne: (...args: unknown[]): unknown => mockUserFindOne(...args),
+    create: (...args: unknown[]): unknown => mockUserCreate(...args),
+    findByPk: (...args: unknown[]): unknown => mockUserFindByPk(...args),
   },
 }));
 
 vi.mock('@/modules/auth/models/refresh-token.model.js', () => ({
   RefreshToken: {
-    findAll: (...args: unknown[]) => mockRefreshTokenFindAll(...args),
-    create: (...args: unknown[]) => mockRefreshTokenCreate(...args),
-    update: (...args: unknown[]) => mockRefreshTokenUpdate(...args),
+    findAll: (...args: unknown[]): unknown => mockRefreshTokenFindAll(...args),
+    create: (...args: unknown[]): unknown => mockRefreshTokenCreate(...args),
+    update: (...args: unknown[]): unknown => mockRefreshTokenUpdate(...args),
   },
 }));
 
 vi.mock('bcrypt', () => ({
   default: {
-    hash: (...args: unknown[]) => mockBcryptHash(...args),
-    compare: (...args: unknown[]) => mockBcryptCompare(...args),
+    hash: (...args: unknown[]): unknown => mockBcryptHash(...args),
+    compare: (...args: unknown[]): unknown => mockBcryptCompare(...args),
   },
 }));
 
@@ -49,7 +49,7 @@ vi.mock('@/shared/logger/index.js', () => ({
 }));
 
 describe('auth.service', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     mockBcryptHash.mockResolvedValue(HASHED_PASSWORD);
     mockBcryptCompare.mockResolvedValue(true);

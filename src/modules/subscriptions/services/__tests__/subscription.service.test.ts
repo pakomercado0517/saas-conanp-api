@@ -27,9 +27,9 @@ const mockStripeSubscriptionsUpdate = vi.fn();
 
 vi.mock('@/modules/subscriptions/models/subscription.model.js', () => ({
   Subscription: {
-    findOne: (...args: unknown[]) => mockSubscriptionFindOne(...args),
-    create: (...args: unknown[]) => mockSubscriptionCreate(...args),
-    findAll: (...args: unknown[]) => mockSubscriptionFindAll(...args),
+    findOne: (...args: unknown[]): unknown => mockSubscriptionFindOne(...args),
+    create: (...args: unknown[]): unknown => mockSubscriptionCreate(...args),
+    findAll: (...args: unknown[]): unknown => mockSubscriptionFindAll(...args),
   },
 }));
 
@@ -39,25 +39,25 @@ vi.mock('@/modules/subscriptions/models/subscription-plan.model.js', () => ({
 
 vi.mock('@/modules/organizations/models/organization.model.js', () => ({
   Organization: {
-    findByPk: (...args: unknown[]) => mockOrganizationFindByPk(...args),
+    findByPk: (...args: unknown[]): unknown => mockOrganizationFindByPk(...args),
   },
 }));
 
 vi.mock('@/modules/users/models/membership.model.js', () => ({
   Membership: {
-    count: (...args: unknown[]) => mockMembershipCount(...args),
+    count: (...args: unknown[]): unknown => mockMembershipCount(...args),
   },
 }));
 
 vi.mock('@/modules/eventos/models/evento-operativo.model.js', () => ({
   EventoOperativo: {
-    count: (...args: unknown[]) => mockEventoOperativoCount(...args),
+    count: (...args: unknown[]): unknown => mockEventoOperativoCount(...args),
   },
 }));
 
 vi.mock('@/modules/actividades/models/actividad.model.js', () => ({
   Actividad: {
-    count: (...args: unknown[]) => mockActividadCount(...args),
+    count: (...args: unknown[]): unknown => mockActividadCount(...args),
   },
 }));
 
@@ -66,30 +66,31 @@ vi.mock('@/modules/organizations/services/organization.service.js', () => ({
 }));
 
 vi.mock('@/modules/users/services/membership.service.js', () => ({
-  assertIsAdmin: (...args: unknown[]) => mockAssertIsAdmin(...args),
+  assertIsAdmin: (...args: unknown[]): unknown => mockAssertIsAdmin(...args),
 }));
 
 vi.mock('@/modules/subscriptions/services/subscription-plan.service.js', () => ({
-  getPlanById: (...args: unknown[]) => mockGetPlanById(...args),
-  getPlanByStripePriceId: (...args: unknown[]) => mockGetPlanByStripePriceId(...args),
-  assertPlanExistsAndActive: (...args: unknown[]) => mockAssertPlanExistsAndActive(...args),
+  getPlanById: (...args: unknown[]): unknown => mockGetPlanById(...args),
+  getPlanByStripePriceId: (...args: unknown[]): unknown => mockGetPlanByStripePriceId(...args),
+  assertPlanExistsAndActive: (...args: unknown[]): unknown =>
+    mockAssertPlanExistsAndActive(...args),
 }));
 
 vi.mock('@/shared/database/index.js', () => ({
   sequelize: {
-    transaction: (...args: unknown[]) => mockSequelizeTransaction(...args),
+    transaction: (...args: unknown[]): unknown => mockSequelizeTransaction(...args),
   },
 }));
 
 vi.mock('@/shared/stripe/index.js', () => ({
   stripeClient: {
     customers: {
-      create: (...args: unknown[]) => mockStripeCustomersCreate(...args),
+      create: (...args: unknown[]): unknown => mockStripeCustomersCreate(...args),
     },
     subscriptions: {
-      create: (...args: unknown[]) => mockStripeSubscriptionsCreate(...args),
-      retrieve: (...args: unknown[]) => mockStripeSubscriptionsRetrieve(...args),
-      update: (...args: unknown[]) => mockStripeSubscriptionsUpdate(...args),
+      create: (...args: unknown[]): unknown => mockStripeSubscriptionsCreate(...args),
+      retrieve: (...args: unknown[]): unknown => mockStripeSubscriptionsRetrieve(...args),
+      update: (...args: unknown[]): unknown => mockStripeSubscriptionsUpdate(...args),
     },
   },
   handleStripeError: vi.fn().mockImplementation((err: unknown) => {
@@ -102,7 +103,7 @@ vi.mock('@/shared/logger/index.js', () => ({
 }));
 
 describe('subscription.service', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     mockMembershipCount.mockResolvedValue(0);
     mockEventoOperativoCount.mockResolvedValue(0);

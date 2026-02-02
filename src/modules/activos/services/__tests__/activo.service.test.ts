@@ -16,20 +16,21 @@ const mockActivoFindAndCountAll = vi.fn();
 const mockPrestadorFindOne = vi.fn();
 
 vi.mock('@/modules/organizations/services/organization.service.js', () => ({
-  assertCanAccessOrganization: (...args: unknown[]) => mockAssertCanAccessOrganization(...args),
+  assertCanAccessOrganization: (...args: unknown[]): unknown =>
+    mockAssertCanAccessOrganization(...args),
 }));
 
 vi.mock('@/modules/activos/models/activo.model.js', () => ({
   Activo: {
-    findOne: (...args: unknown[]) => mockActivoFindOne(...args),
-    create: (...args: unknown[]) => mockActivoCreate(...args),
-    findAndCountAll: (...args: unknown[]) => mockActivoFindAndCountAll(...args),
+    findOne: (...args: unknown[]): unknown => mockActivoFindOne(...args),
+    create: (...args: unknown[]): unknown => mockActivoCreate(...args),
+    findAndCountAll: (...args: unknown[]): unknown => mockActivoFindAndCountAll(...args),
   },
 }));
 
 vi.mock('@/modules/prestadores/models/prestador-profile.model.js', () => ({
   PrestadorProfile: {
-    findOne: (...args: unknown[]) => mockPrestadorFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockPrestadorFindOne(...args),
   },
 }));
 
@@ -42,7 +43,7 @@ vi.mock('@/shared/logger/index.js', () => ({
 }));
 
 describe('activo.service', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     mockAssertCanAccessOrganization.mockResolvedValue(undefined);
   });
@@ -217,7 +218,11 @@ describe('activo.service', () => {
       ];
       mockActivoFindAndCountAll.mockResolvedValueOnce({ rows, count: 1 });
 
-      const result = await activoService.listActivos(ORG_ID, { page: 1, limit: 10 }, USER_ID);
+      const result = await activoService.listActivos(
+        ORG_ID,
+        { page: 1, limit: 10, sortOrder: 'desc', ownerId: undefined },
+        USER_ID
+      );
 
       expect(result.data).toHaveLength(1);
       expect(result.pagination).toMatchObject({

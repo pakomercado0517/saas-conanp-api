@@ -18,26 +18,27 @@ const mockPrestadorFindOne = vi.fn();
 const mockActividadFindOne = vi.fn();
 
 vi.mock('@/modules/organizations/services/organization.service.js', () => ({
-  assertCanAccessOrganization: (...args: unknown[]) => mockAssertCanAccessOrganization(...args),
+  assertCanAccessOrganization: (...args: unknown[]): unknown =>
+    mockAssertCanAccessOrganization(...args),
 }));
 
 vi.mock('@/modules/permisos/models/permiso.model.js', () => ({
   Permiso: {
-    findOne: (...args: unknown[]) => mockPermisoFindOne(...args),
-    create: (...args: unknown[]) => mockPermisoCreate(...args),
-    findAndCountAll: (...args: unknown[]) => mockPermisoFindAndCountAll(...args),
+    findOne: (...args: unknown[]): unknown => mockPermisoFindOne(...args),
+    create: (...args: unknown[]): unknown => mockPermisoCreate(...args),
+    findAndCountAll: (...args: unknown[]): unknown => mockPermisoFindAndCountAll(...args),
   },
 }));
 
 vi.mock('@/modules/prestadores/models/prestador-profile.model.js', () => ({
   PrestadorProfile: {
-    findOne: (...args: unknown[]) => mockPrestadorFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockPrestadorFindOne(...args),
   },
 }));
 
 vi.mock('@/modules/actividades/models/actividad.model.js', () => ({
   Actividad: {
-    findOne: (...args: unknown[]) => mockActividadFindOne(...args),
+    findOne: (...args: unknown[]): unknown => mockActividadFindOne(...args),
   },
 }));
 
@@ -46,7 +47,7 @@ vi.mock('@/shared/logger/index.js', () => ({
 }));
 
 describe('permiso.service', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     vi.clearAllMocks();
     mockAssertCanAccessOrganization.mockResolvedValue(undefined);
   });
@@ -294,7 +295,14 @@ describe('permiso.service', () => {
         permisoService.listPermisosByPrestador(
           PRESTADOR_ID,
           ORG_ID,
-          { page: 1, limit: 10 },
+          {
+            page: 1,
+            limit: 10,
+            sortOrder: 'desc',
+            prestadorId: undefined,
+            actividadId: undefined,
+            documentUrl: undefined,
+          },
           USER_ID
         )
       ).rejects.toThrow(NotFoundError);
@@ -310,7 +318,14 @@ describe('permiso.service', () => {
       const result = await permisoService.listPermisosByPrestador(
         PRESTADOR_ID,
         ORG_ID,
-        { page: 1, limit: 10 },
+        {
+          page: 1,
+          limit: 10,
+          sortOrder: 'desc',
+          prestadorId: undefined,
+          actividadId: undefined,
+          documentUrl: undefined,
+        },
         USER_ID
       );
 

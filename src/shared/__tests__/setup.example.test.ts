@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { sequelize, testConnection } from '@/shared/database';
 import { stripeClient, getDefaultCurrency } from '@/shared/stripe';
 import {
