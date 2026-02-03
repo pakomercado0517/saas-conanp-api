@@ -11,4 +11,5 @@ import '../../modules/organizations/swagger/organization.swagger.js';
 import '../../modules/actividades/swagger/actividad.swagger.js';
 import '../../modules/bloques/swagger/bloque.swagger.js';
 import '../../modules/capacidad/swagger/capacidad.swagger.js';
+import '../../modules/prestadores/swagger/prestador.swagger.js';
 //# sourceMappingURL=loader.d.ts.map

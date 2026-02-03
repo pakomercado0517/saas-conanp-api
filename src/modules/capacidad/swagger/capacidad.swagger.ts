@@ -1,7 +1,10 @@
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 import { registry, commonErrorResponses } from '@/shared/swagger/index.js';
-import { CreateCapacidadSchema, VerificarDisponibilidadSchema } from '../validators/capacidad.validator.js';
+import {
+  CreateCapacidadSchema,
+  VerificarDisponibilidadSchema,
+} from '../validators/capacidad.validator.js';
 
 // Extender Zod con funcionalidad OpenAPI
 extendZodWithOpenApi(z);

@@ -15,4 +15,5 @@ import '../../modules/actividades/swagger/actividad.swagger.js';
 // TODO: Importar documentación de otros módulos aquí cuando se creen
 import '../../modules/bloques/swagger/bloque.swagger.js';
 import '../../modules/capacidad/swagger/capacidad.swagger.js';
+import '../../modules/prestadores/swagger/prestador.swagger.js';
 // etc...
