@@ -1,8 +1,4 @@
-import { z } from 'zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-
-// Extender Zod con funcionalidad OpenAPI
-extendZodWithOpenApi(z);
+import { z } from './config.js';
 
 /**
  * Schema de respuesta exitosa genérica

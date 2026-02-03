@@ -72,9 +72,12 @@ export const UpdateCapacidadSchema = registry.register(
         .optional()
         .describe('Nuevo límite (opcional)'),
     })
-    .refine((data) => Object.keys(data).some((k) => (data as any)[k] !== undefined), {
-      message: 'Debe incluir al menos un campo para actualizar',
-    })
+    .refine(
+      (data) => Object.keys(data).some((k) => (data as Record<string, unknown>)[k] !== undefined),
+      {
+        message: 'Debe incluir al menos un campo para actualizar',
+      }
+    )
     .openapi({
       example: {
         limit: 25,

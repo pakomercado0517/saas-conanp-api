@@ -1,6 +1,11 @@
+// This file does not contain code fence markers to remove.
+// The following code is the actual content of the file.
 import { z } from 'zod';
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+import { registry } from '../../../shared/swagger/index.js';
 import { dateTimeSchema, optionalDateTimeSchema } from '../../../shared/dates/zod-schemas.js';
 import { URL } from 'url';
+extendZodWithOpenApi(z);
 // Constantes para enums reutilizables
 const STATUS_VALUES = ['activo', 'inactivo', 'vencido', 'suspendido'];
 // Enum Zod para status
@@ -31,7 +36,7 @@ const urlSchema = z
 /**
  * Schema Zod para crear permiso
  */
-export const CreatePermisoSchema = z
+export const CreatePermisoSchema = registry.register('CreatePermiso', z
     .object({
     prestadorId: z
         .string({
@@ -52,14 +57,24 @@ export const CreatePermisoSchema = z
     status: statusEnum.optional().default('activo'),
     documentUrl: urlSchema.optional().nullable(),
 })
+    .openapi({
+    example: {
+        prestadorId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        actividadId: 'b1c2d3e4-f5a6-7890-abcd-1234567890ab',
+        validFrom: '2026-03-01T00:00:00Z',
+        validTo: '2026-12-31T23:59:59Z',
+        status: 'activo',
+        documentUrl: 'https://example.com/document.pdf',
+    },
+})
     .refine((data) => data.validTo > data.validFrom, {
     message: 'La fecha de fin (validTo) debe ser posterior a la fecha de inicio (validFrom)',
     path: ['validTo'],
-});
+}));
 /**
  * Schema Zod para actualizar permiso
  */
-export const UpdatePermisoSchema = z
+export const UpdatePermisoSchema = registry.register('UpdatePermiso', z
     .object({
     validFrom: optionalDateTimeSchema,
     validTo: optionalDateTimeSchema,
@@ -75,9 +90,14 @@ export const UpdatePermisoSchema = z
     message: 'La fecha de fin (validTo) debe ser posterior a la fecha de inicio (validFrom)',
     path: ['validTo'],
 })
+    .openapi({
+    example: {
+        status: 'suspendido',
+    },
+})
     .refine((data) => Object.keys(data).some((k) => data[k] !== undefined), {
     message: 'Debe incluir al menos un campo para actualizar',
-});
+}));
 // Campos permitidos para ordenamiento
 const SORT_FIELDS = ['validFrom', 'validTo', 'status', 'createdAt', 'updatedAt'];
 /**

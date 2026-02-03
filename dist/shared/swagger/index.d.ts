@@ -1,8 +1,8 @@
-import { registry } from './config.js';
+import { registry, z } from './config.js';
 /**
- * Exporta el registry para registrar schemas desde otros módulos
+ * Exporta el registry y z extendido para registrar schemas desde otros módulos
  */
-export { registry };
+export { registry, z };
 /**
  * Exporta schemas comunes
  */

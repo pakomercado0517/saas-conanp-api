@@ -38,7 +38,9 @@ export const CreatePrestadorProfileSchema = registry.register(
         })
         .describe('ID de la organización'),
       status: statusEnum.optional().default('activo').describe('Estado del prestador'),
-      permitExpiresAt: optionalDateTimeSchema.describe('Fecha de expiración del permiso (opcional)'),
+      permitExpiresAt: optionalDateTimeSchema.describe(
+        'Fecha de expiración del permiso (opcional)'
+      ),
     })
     .openapi({
       example: {
@@ -62,9 +64,12 @@ export const UpdatePrestadorProfileSchema = registry.register(
       status: statusEnum.optional().describe('Nuevo estado del prestador'),
       permitExpiresAt: optionalDateTimeSchema.describe('Nueva fecha de expiración del permiso'),
     })
-    .refine((data) => Object.keys(data).some((k) => (data as any)[k] !== undefined), {
-      message: 'Debe incluir al menos un campo para actualizar',
-    })
+    .refine(
+      (data) => Object.keys(data).some((k) => (data as Record<string, unknown>)[k] !== undefined),
+      {
+        message: 'Debe incluir al menos un campo para actualizar',
+      }
+    )
     .openapi({
       example: {
         status: 'suspendido',
@@ -118,7 +123,9 @@ export const ListPrestadoresSchema = registry.register(
         .optional()
         .transform((val) => (val === '' ? undefined : val))
         .describe('ID del usuario (opcional)'),
-      permitExpiresAt: optionalDateTimeSchema.describe('Filtrar por fecha de expiración del permiso'),
+      permitExpiresAt: optionalDateTimeSchema.describe(
+        'Filtrar por fecha de expiración del permiso'
+      ),
     })
     .openapi({
       example: {

@@ -1,3 +1,6 @@
+// IMPORTANTE: Importar setup de Zod OpenAPI ANTES que cualquier otro módulo
+import './shared/swagger/setup.js';
+
 import app from './server.js';
 import { testConnection } from './shared/database/index.js';
 import { logger } from './shared/logger/index.js';

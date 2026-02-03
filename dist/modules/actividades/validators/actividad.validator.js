@@ -95,10 +95,7 @@ export const UpdateActividadSchema = registry.register('UpdateActividad', z
         .describe('Nuevo nombre de la actividad (opcional)'),
     type: actividadTypeEnum.optional().describe('Nuevo tipo de actividad (opcional)'),
     agendaType: agendaTypeEnum.optional().describe('Nuevo tipo de agenda (opcional)'),
-    requiresGuide: z
-        .boolean()
-        .optional()
-        .describe('Actualizar si requiere guía (opcional)'),
+    requiresGuide: z.boolean().optional().describe('Actualizar si requiere guía (opcional)'),
     impactLevel: z
         .string()
         .max(50, {
@@ -159,13 +156,7 @@ export const ListActividadesSchema = registry.register('ListActividades', z.obje
         .describe('Filtrar por nombre (búsqueda parcial)'),
     type: actividadTypeEnum.optional().describe('Filtrar por tipo de actividad'),
     agendaType: agendaTypeEnum.optional().describe('Filtrar por tipo de agenda'),
-    active: z.coerce
-        .boolean()
-        .optional()
-        .describe('Filtrar por estado activo/inactivo'),
-    requiresGuide: z.coerce
-        .boolean()
-        .optional()
-        .describe('Filtrar por si requiere guía'),
+    active: z.coerce.boolean().optional().describe('Filtrar por estado activo/inactivo'),
+    requiresGuide: z.coerce.boolean().optional().describe('Filtrar por si requiere guía'),
 }));
 //# sourceMappingURL=actividad.validator.js.map

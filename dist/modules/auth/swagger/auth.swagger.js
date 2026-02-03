@@ -1,9 +1,5 @@
-import { z } from 'zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { RegisterSchema, LoginSchema, RefreshTokenSchema } from '../validators/auth.validator.js';
-// Extender Zod con funcionalidad OpenAPI
-extendZodWithOpenApi(z);
 /**
  * Schema de datos de usuario en respuestas
  */

@@ -1,4 +1,14 @@
-import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
+import { OpenAPIRegistry, OpenApiGeneratorV3, extendZodWithOpenApi, } from '@asteasolutions/zod-to-openapi';
+import { z } from 'zod';
+/**
+ * Extender Zod con funcionalidad OpenAPI (UNA sola vez, globalmente)
+ * IMPORTANTE: Debe ejecutarse ANTES de crear cualquier schema con .openapi()
+ */
+extendZodWithOpenApi(z);
+/**
+ * Exportar z extendido para uso en archivos swagger de módulos
+ */
+export { z };
 /**
  * Configuración base de OpenAPI para la documentación de la API
  */

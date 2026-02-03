@@ -1,9 +1,5 @@
-import { z } from 'zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { CreateOrganizationSchema, UpdateOrganizationSchema, ListOrganizationsSchema, } from '../validators/organization.validator.js';
-// Extender Zod con funcionalidad OpenAPI
-extendZodWithOpenApi(z);
 /**
  * Schema de organización en respuestas
  */

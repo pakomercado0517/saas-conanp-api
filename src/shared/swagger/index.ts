@@ -1,9 +1,9 @@
-import { registry, OpenApiGeneratorV3, apiConfig } from './config.js';
+import { registry, OpenApiGeneratorV3, apiConfig, z } from './config.js';
 
 /**
- * Exporta el registry para registrar schemas desde otros módulos
+ * Exporta el registry y z extendido para registrar schemas desde otros módulos
  */
-export { registry };
+export { registry, z };
 
 /**
  * Exporta schemas comunes

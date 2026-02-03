@@ -1,8 +1,5 @@
-import { z } from 'zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { CreateBloqueSchema, CreateBloqueFromTemplateSchema, UpdateBloqueSchema, ListBloquesSchema, } from '../../actividades/validators/bloque.validator.js';
-extendZodWithOpenApi(z);
 const BloqueSchema = registry.register('Bloque', z.object({
     id: z.string().uuid().describe('ID único del bloque'),
     organizationId: z.string().uuid().describe('ID de la organización (ANP)'),

@@ -1,19 +1,33 @@
 import { z } from 'zod';
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+import { registry } from '../../../shared/swagger/index.js';
 import { URL } from 'url';
+// Extender Zod con funcionalidad OpenAPI
+extendZodWithOpenApi(z);
 // Constantes para enums reutilizables
 const ACTIVO_TYPE_VALUES = ['embarcacion', 'vehiculo', 'guia', 'equipo'];
 const ACTIVO_STATUS_VALUES = ['pendiente', 'aprobado', 'rechazado', 'suspendido'];
 // Enums Zod
-const activoTypeEnum = z.enum(ACTIVO_TYPE_VALUES, {
+const activoTypeEnum = z
+    .enum(ACTIVO_TYPE_VALUES, {
     error: 'El tipo debe ser: embarcacion, vehiculo, guia o equipo',
+})
+    .openapi({
+    description: 'Tipo de activo: embarcacion, vehiculo, guia o equipo',
+    example: 'embarcacion',
 });
-const activoStatusEnum = z.enum(ACTIVO_STATUS_VALUES, {
+const activoStatusEnum = z
+    .enum(ACTIVO_STATUS_VALUES, {
     error: 'El estado debe ser: pendiente, aprobado, rechazado o suspendido',
+})
+    .openapi({
+    description: 'Estado del activo: pendiente, aprobado, rechazado o suspendido',
+    example: 'pendiente',
 });
 /**
  * Schema Zod para validar URL con protocolos http/https
  */
-const urlSchema = z
+const urlSchema = registry.register('Url', z
     .string({
     message: 'La URL del documento debe ser un texto',
 })
@@ -30,87 +44,102 @@ const urlSchema = z
     }
 }, {
     message: 'La URL del documento debe usar el protocolo http o https',
-});
+})
+    .openapi({
+    description: 'URL del documento con protocolo http o https',
+    example: 'https://example.com/document.pdf',
+}));
 /**
  * Schema Zod para crear activo
  */
-export const CreateActivoSchema = z.object({
+export const CreateActivoSchema = registry.register('CreateActivo', z.object({
     organizationId: z
         .string({
         message: 'El ID de organización es requerido y debe ser un texto',
     })
         .uuid({
         message: 'El ID de organización debe ser un UUID válido',
-    }),
+    })
+        .describe('ID de la organización (ANP) a la que pertenece el activo'),
     ownerId: z
         .string({
         message: 'El ID del propietario es requerido y debe ser un texto',
     })
         .uuid({
         message: 'El ID del propietario debe ser un UUID válido',
-    }),
-    type: activoTypeEnum,
-    status: activoStatusEnum.optional().default('pendiente'),
-});
+    })
+        .describe('ID del usuario propietario del activo'),
+    type: activoTypeEnum.describe('Tipo de activo'),
+    status: activoStatusEnum
+        .optional()
+        .default('pendiente')
+        .describe('Estado del activo (por defecto: pendiente)'),
+}));
 /**
  * Schema Zod para actualizar activo
  */
-export const UpdateActivoSchema = z
+export const UpdateActivoSchema = registry.register('UpdateActivo', z
     .object({
-    type: activoTypeEnum.optional(),
-    status: activoStatusEnum.optional(),
+    type: activoTypeEnum.optional().describe('Tipo de activo (opcional)'),
+    status: activoStatusEnum.optional().describe('Estado del activo (opcional)'),
 })
     .refine((data) => Object.keys(data).some((k) => data[k] !== undefined), {
     message: 'Debe incluir al menos un campo para actualizar',
-});
+}));
 // Campos permitidos para ordenamiento
 const SORT_FIELDS = ['type', 'status', 'createdAt', 'updatedAt'];
 /**
  * Schema Zod para listar activos (query params: paginación y filtros)
  */
-export const ListActivosSchema = z.object({
+export const ListActivosSchema = registry.register('ListActivos', z.object({
     page: z.coerce
         .number('La página debe ser un número')
         .int('La página debe ser un número entero')
         .positive('La página debe ser mayor a cero')
-        .default(1),
+        .default(1)
+        .describe('Número de página para la paginación'),
     limit: z.coerce
         .number('El límite debe ser un número')
         .int('El límite debe ser un número entero')
         .positive('El límite debe ser mayor a cero')
         .max(100, 'El límite no puede exceder 100')
-        .default(20),
+        .default(20)
+        .describe('Cantidad de elementos por página (máximo 100)'),
     sortBy: z
         .enum(SORT_FIELDS, {
         error: `Ordenar por debe ser uno de: ${SORT_FIELDS.join(', ')}`,
     })
-        .optional(),
+        .optional()
+        .describe('Campo por el cual ordenar los resultados'),
     sortOrder: z
         .enum(['asc', 'desc'], {
         error: 'El orden debe ser asc o desc',
     })
-        .default('desc'),
+        .default('desc')
+        .describe('Orden ascendente (asc) o descendente (desc)'),
     ownerId: z
         .string()
         .uuid({
         message: 'El ID del propietario debe ser un UUID válido',
     })
         .optional()
-        .transform((val) => (val === '' ? undefined : val)),
-    type: activoTypeEnum.optional(),
-    status: activoStatusEnum.optional(),
-});
+        .transform((val) => (val === '' ? undefined : val))
+        .describe('Filtrar por ID del propietario'),
+    type: activoTypeEnum.optional().describe('Filtrar por tipo de activo'),
+    status: activoStatusEnum.optional().describe('Filtrar por estado del activo'),
+}));
 /**
  * Schema Zod para crear requisito de activo
  */
-export const CreateActivoRequisitoSchema = z.object({
+export const CreateActivoRequisitoSchema = registry.register('CreateActivoRequisito', z.object({
     activoId: z
         .string({
         message: 'El ID de activo es requerido y debe ser un texto',
     })
         .uuid({
         message: 'El ID de activo debe ser un UUID válido',
-    }),
+    })
+        .describe('ID del activo al que pertenece el requisito'),
     key: z
         .string({
         message: 'La clave del requisito es requerida',
@@ -121,52 +150,66 @@ export const CreateActivoRequisitoSchema = z.object({
         .max(255, {
         message: 'La clave no puede exceder 255 caracteres',
     })
-        .trim(),
-    value: z.string().trim().optional().nullable(),
-    documentUrl: urlSchema.optional().nullable(),
+        .trim()
+        .describe('Clave única del requisito dentro del activo'),
+    value: z.string().trim().optional().nullable().describe('Valor del requisito (opcional)'),
+    documentUrl: urlSchema.optional().nullable().describe('URL del documento adjunto (opcional)'),
     validated: z
         .boolean({
         message: 'validated debe ser un valor booleano',
     })
         .optional()
-        .default(false),
-});
+        .default(false)
+        .describe('Indica si el requisito ha sido validado (por defecto: false)'),
+}));
 /**
  * Schema Zod para actualizar requisito de activo
  * No se actualiza `key` (forma parte del único activoId+key).
  */
-export const UpdateActivoRequisitoSchema = z
+export const UpdateActivoRequisitoSchema = registry.register('UpdateActivoRequisito', z
     .object({
-    value: z.string().trim().optional().nullable(),
-    documentUrl: urlSchema.optional().nullable(),
-    validated: z.boolean({ message: 'validated debe ser un valor booleano' }).optional(),
+    value: z.string().trim().optional().nullable().describe('Valor del requisito (opcional)'),
+    documentUrl: urlSchema.optional().nullable().describe('URL del documento adjunto (opcional)'),
+    validated: z
+        .boolean({ message: 'validated debe ser un valor booleano' })
+        .optional()
+        .describe('Indica si el requisito ha sido validado'),
 })
     .refine((data) => Object.keys(data).some((k) => data[k] !== undefined), {
     message: 'Debe incluir al menos un campo para actualizar',
-});
+}));
 const REQUISITO_SORT_FIELDS = ['key', 'validated', 'createdAt', 'updatedAt'];
 /**
  * Schema Zod para listar requisitos de un activo (query params)
  * activoId se recibe por ruta.
  */
-export const ListActivoRequisitosSchema = z.object({
+export const ListActivoRequisitosSchema = registry.register('ListActivoRequisitos', z.object({
     page: z.coerce
         .number('La página debe ser un número')
         .int('La página debe ser un número entero')
         .positive('La página debe ser mayor a cero')
-        .default(1),
+        .default(1)
+        .describe('Número de página para la paginación'),
     limit: z.coerce
         .number('El límite debe ser un número')
         .int('El límite debe ser un número entero')
         .positive('El límite debe ser mayor a cero')
         .max(100, 'El límite no puede exceder 100')
-        .default(20),
+        .default(20)
+        .describe('Cantidad de elementos por página (máximo 100)'),
     sortBy: z
         .enum(REQUISITO_SORT_FIELDS, {
         error: `Ordenar por debe ser uno de: ${REQUISITO_SORT_FIELDS.join(', ')}`,
     })
-        .optional(),
-    sortOrder: z.enum(['asc', 'desc'], { error: 'El orden debe ser asc o desc' }).default('asc'),
-    validated: z.coerce.boolean({ message: 'validated debe ser un valor booleano' }).optional(),
-});
+        .optional()
+        .describe('Campo por el cual ordenar los resultados'),
+    sortOrder: z
+        .enum(['asc', 'desc'], { error: 'El orden debe ser asc o desc' })
+        .default('asc')
+        .describe('Orden ascendente (asc) o descendente (desc)'),
+    validated: z.coerce
+        .boolean({ message: 'validated debe ser un valor booleano' })
+        .optional()
+        .describe('Filtrar por estado de validación'),
+}));
 //# sourceMappingURL=activo.validator.js.map

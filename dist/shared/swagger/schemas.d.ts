@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from './config.js';
 /**
  * Schema de respuesta exitosa genérica
  * Nota: No se puede registrar en el registry aquí porque crea dependencia circular

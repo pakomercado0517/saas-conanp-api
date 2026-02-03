@@ -1,14 +1,9 @@
-import { z } from 'zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry, commonErrorResponses } from '@/shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
 import {
   CreatePrestadorProfileSchema,
   UpdatePrestadorProfileSchema,
   ListPrestadoresSchema,
 } from '../validators/prestador-profile.validator.js';
-
-// Extender Zod con funcionalidad OpenAPI
-extendZodWithOpenApi(z);
 
 // Schema de Prestador en respuestas
 const PrestadorProfileSchema = registry.register(
