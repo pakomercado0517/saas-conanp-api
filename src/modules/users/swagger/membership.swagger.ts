@@ -22,9 +22,7 @@ const MembershipSchema = registry.register(
     role: z
       .enum(['admin', 'gestor', 'prestador', 'observador'])
       .describe('Rol del usuario en la organización'),
-    status: z
-      .enum(['activo', 'inactivo', 'suspendido'])
-      .describe('Estado de la membresía'),
+    status: z.enum(['activo', 'inactivo', 'suspendido']).describe('Estado de la membresía'),
     createdAt: z.string().datetime().describe('Fecha de creación'),
     updatedAt: z.string().datetime().describe('Fecha de última actualización'),
     user: z

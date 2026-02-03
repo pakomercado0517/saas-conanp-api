@@ -1,0 +1,524 @@
+- generic [active] [ref=e1]:
+  - img
+  - generic [ref=e4]:
+    - generic:
+      - img
+    - generic [ref=e5]:
+      - generic [ref=e9]:
+        - heading "CONANP - API de Gestión de Áreas Naturales Protegidas 1.0.0 OAS 3.0" [level=1] [ref=e11]:
+          - text: CONANP - API de Gestión de Áreas Naturales Protegidas
+          - generic [ref=e12]:
+            - generic [ref=e14]: 1.0.0
+            - generic [ref=e16]: OAS 3.0
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: API REST para la gestión y regulación de operaciones turísticas en Áreas Naturales Protegidas (ANP) de México.
+          - heading "Características" [level=2] [ref=e20]
+          - list [ref=e21]:
+            - listitem [ref=e22]: Sistema multi-tenant (cada ANP es una organización independiente)
+            - listitem [ref=e23]: Gestión de prestadores de servicios turísticos y sus permisos
+            - listitem [ref=e24]: Control de capacidad de actividades turísticas
+            - listitem [ref=e25]: Registro de eventos operativos con evidencias ambientales
+            - listitem [ref=e26]: Sistema de suscripciones con Stripe
+          - heading "Autenticación" [level=2] [ref=e27]
+          - paragraph [ref=e28]: La mayoría de los endpoints requieren autenticación mediante JWT (JSON Web Token).
+          - list [ref=e29]:
+            - listitem [ref=e30]:
+              - text: Registra un usuario o inicia sesión en
+              - code [ref=e31]: /api/v1/auth/register
+              - text: o
+              - code [ref=e32]: /api/v1/auth/login
+            - listitem [ref=e33]:
+              - text: Usa el
+              - code [ref=e34]: accessToken
+              - text: recibido en el header
+              - code [ref=e35]: "Authorization: Bearer <token>"
+            - listitem [ref=e36]:
+              - text: Cuando el token expire, usa el
+              - code [ref=e37]: refreshToken
+              - text: en
+              - code [ref=e38]: /api/v1/auth/refresh
+              - text: para obtener uno nuevo
+          - heading "Organización Multi-Tenant" [level=2] [ref=e39]
+          - list [ref=e40]:
+            - listitem [ref=e41]:
+              - text: Cada ANP es una organización (
+              - code [ref=e42]: organizationId
+              - text: )
+            - listitem [ref=e43]: Los usuarios pertenecen a organizaciones mediante memberships
+            - listitem [ref=e44]: Todos los datos están aislados por organización
+            - listitem [ref=e45]: Requiere suscripción activa para acceder a funcionalidades
+        - link "Contact Equipo CONANP" [ref=e47] [cursor=pointer]:
+          - /url: mailto:soporte@conanp.gob.mx
+      - generic [ref=e49]:
+        - generic [ref=e51]:
+          - text: Servers
+          - combobox [ref=e54]:
+            - option "http://localhost:3001 - Servidor de desarrollo local" [selected]
+            - option "https://api-staging.conanp.gob.mx - Servidor de staging"
+            - option "https://api.conanp.gob.mx - Servidor de producción"
+        - button "Authorize" [ref=e56] [cursor=pointer]:
+          - generic [ref=e57]: Authorize
+          - img [ref=e58]
+      - generic [ref=e62]:
+        - generic [ref=e64]:
+          - heading "Autenticación Endpoints de registro, login, logout y gestión de tokens Collapse operation" [level=3] [ref=e65] [cursor=pointer]:
+            - link "Autenticación" [ref=e66]:
+              - /url: "#/Autenticación"
+            - paragraph [ref=e69]: Endpoints de registro, login, logout y gestión de tokens
+            - button "Collapse operation" [expanded] [ref=e70]:
+              - img [ref=e71]
+          - generic [ref=e74]:
+            - generic [ref=e77] [cursor=pointer]:
+              - button "POST /api/v1/auth/register Registrar nuevo usuario" [ref=e78]:
+                - generic [ref=e79]: POST
+                - generic [ref=e80]:
+                  - link "/api/v1/auth/register" [ref=e82]:
+                    - /url: "#/Autenticación/post_api_v1_auth_register"
+                    - generic [ref=e83]:
+                      - text: /api
+                      - text: /v1
+                      - text: /auth
+                      - text: /register
+                  - generic [ref=e84]: Registrar nuevo usuario
+              - generic "Copy to clipboard"
+              - button "post /api/v1/auth/register" [ref=e87]:
+                - img [ref=e88]
+            - generic [ref=e92] [cursor=pointer]:
+              - button "POST /api/v1/auth/login Iniciar sesión" [ref=e93]:
+                - generic [ref=e94]: POST
+                - generic [ref=e95]:
+                  - link "/api/v1/auth/login" [ref=e97]:
+                    - /url: "#/Autenticación/post_api_v1_auth_login"
+                    - generic [ref=e98]:
+                      - text: /api
+                      - text: /v1
+                      - text: /auth
+                      - text: /login
+                  - generic [ref=e99]: Iniciar sesión
+              - generic "Copy to clipboard"
+              - button "post /api/v1/auth/login" [ref=e102]:
+                - img [ref=e103]
+            - generic [ref=e107] [cursor=pointer]:
+              - button "POST /api/v1/auth/refresh Renovar access token" [ref=e108]:
+                - generic [ref=e109]: POST
+                - generic [ref=e110]:
+                  - link "/api/v1/auth/refresh" [ref=e112]:
+                    - /url: "#/Autenticación/post_api_v1_auth_refresh"
+                    - generic [ref=e113]:
+                      - text: /api
+                      - text: /v1
+                      - text: /auth
+                      - text: /refresh
+                  - generic [ref=e114]: Renovar access token
+              - generic "Copy to clipboard"
+              - button "post /api/v1/auth/refresh" [ref=e117]:
+                - img [ref=e118]
+            - generic [ref=e122] [cursor=pointer]:
+              - button "POST /api/v1/auth/logout Cerrar sesión" [ref=e123]:
+                - generic [ref=e124]: POST
+                - generic [ref=e125]:
+                  - link "/api/v1/auth/logout" [ref=e127]:
+                    - /url: "#/Autenticación/post_api_v1_auth_logout"
+                    - generic [ref=e128]:
+                      - text: /api
+                      - text: /v1
+                      - text: /auth
+                      - text: /logout
+                  - generic [ref=e129]: Cerrar sesión
+              - generic "Copy to clipboard"
+              - button "post /api/v1/auth/logout" [ref=e132]:
+                - img [ref=e133]
+            - generic [ref=e137] [cursor=pointer]:
+              - button "GET /api/v1/auth/me Obtener usuario actual" [ref=e138]:
+                - generic [ref=e139]: GET
+                - generic [ref=e140]:
+                  - link "/api/v1/auth/me" [ref=e142]:
+                    - /url: "#/Autenticación/get_api_v1_auth_me"
+                    - generic [ref=e143]:
+                      - text: /api
+                      - text: /v1
+                      - text: /auth
+                      - text: /me
+                  - generic [ref=e144]: Obtener usuario actual
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e147]:
+                - img [ref=e148]
+              - button "get /api/v1/auth/me" [ref=e150]:
+                - img [ref=e151]
+        - generic [ref=e154]:
+          - heading "Usuarios Gestión de perfil de usuario y configuración personal Collapse operation" [level=3] [ref=e155] [cursor=pointer]:
+            - link "Usuarios" [ref=e156]:
+              - /url: "#/Usuarios"
+            - paragraph [ref=e159]: Gestión de perfil de usuario y configuración personal
+            - button "Collapse operation" [expanded] [ref=e160]:
+              - img [ref=e161]
+          - generic [ref=e164]:
+            - generic [ref=e167] [cursor=pointer]:
+              - button "GET /api/v1/users/profile Obtener perfil del usuario" [ref=e168]:
+                - generic [ref=e169]: GET
+                - generic [ref=e170]:
+                  - link "/api/v1/users/profile" [ref=e172]:
+                    - /url: "#/Usuarios/get_api_v1_users_profile"
+                    - generic [ref=e173]:
+                      - text: /api
+                      - text: /v1
+                      - text: /users
+                      - text: /profile
+                  - generic [ref=e174]: Obtener perfil del usuario
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e177]:
+                - img [ref=e178]
+              - button "get /api/v1/users/profile" [ref=e180]:
+                - img [ref=e181]
+            - generic [ref=e185] [cursor=pointer]:
+              - button "PATCH /api/v1/users/profile Actualizar perfil del usuario" [ref=e186]:
+                - generic [ref=e187]: PATCH
+                - generic [ref=e188]:
+                  - link "/api/v1/users/profile" [ref=e190]:
+                    - /url: "#/Usuarios/patch_api_v1_users_profile"
+                    - generic [ref=e191]:
+                      - text: /api
+                      - text: /v1
+                      - text: /users
+                      - text: /profile
+                  - generic [ref=e192]: Actualizar perfil del usuario
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e195]:
+                - img [ref=e196]
+              - button "patch /api/v1/users/profile" [ref=e198]:
+                - img [ref=e199]
+            - generic [ref=e203] [cursor=pointer]:
+              - button "DELETE /api/v1/users/profile Eliminar cuenta de usuario" [ref=e204]:
+                - generic [ref=e205]: DELETE
+                - generic [ref=e206]:
+                  - link "/api/v1/users/profile" [ref=e208]:
+                    - /url: "#/Usuarios/delete_api_v1_users_profile"
+                    - generic [ref=e209]:
+                      - text: /api
+                      - text: /v1
+                      - text: /users
+                      - text: /profile
+                  - generic [ref=e210]: Eliminar cuenta de usuario
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e213]:
+                - img [ref=e214]
+              - button "delete /api/v1/users/profile" [ref=e216]:
+                - img [ref=e217]
+            - generic [ref=e221] [cursor=pointer]:
+              - button "PATCH /api/v1/users/password Cambiar contraseña" [ref=e222]:
+                - generic [ref=e223]: PATCH
+                - generic [ref=e224]:
+                  - link "/api/v1/users/password" [ref=e226]:
+                    - /url: "#/Usuarios/patch_api_v1_users_password"
+                    - generic [ref=e227]:
+                      - text: /api
+                      - text: /v1
+                      - text: /users
+                      - text: /password
+                  - generic [ref=e228]: Cambiar contraseña
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e231]:
+                - img [ref=e232]
+              - button "patch /api/v1/users/password" [ref=e234]:
+                - img [ref=e235]
+        - generic [ref=e238]:
+          - heading "Organizaciones Gestión de ANPs (Áreas Naturales Protegidas) Collapse operation" [level=3] [ref=e239] [cursor=pointer]:
+            - link "Organizaciones" [ref=e240]:
+              - /url: "#/Organizaciones"
+            - paragraph [ref=e243]: Gestión de ANPs (Áreas Naturales Protegidas)
+            - button "Collapse operation" [expanded] [ref=e244]:
+              - img [ref=e245]
+          - generic [ref=e248]:
+            - generic [ref=e251] [cursor=pointer]:
+              - button "POST /api/v1/organizations Crear nueva organización" [ref=e252]:
+                - generic [ref=e253]: POST
+                - generic [ref=e254]:
+                  - link "/api/v1/organizations" [ref=e256]:
+                    - /url: "#/Organizaciones/post_api_v1_organizations"
+                    - generic [ref=e257]:
+                      - text: /api
+                      - text: /v1
+                      - text: /organizations
+                  - generic [ref=e258]: Crear nueva organización
+              - generic "Copy to clipboard"
+              - button "post /api/v1/organizations" [ref=e261]:
+                - img [ref=e262]
+            - generic [ref=e266] [cursor=pointer]:
+              - button "GET /api/v1/organizations Listar organizaciones" [ref=e267]:
+                - generic [ref=e268]: GET
+                - generic [ref=e269]:
+                  - link "/api/v1/organizations" [ref=e271]:
+                    - /url: "#/Organizaciones/get_api_v1_organizations"
+                    - generic [ref=e272]:
+                      - text: /api
+                      - text: /v1
+                      - text: /organizations
+                  - generic [ref=e273]: Listar organizaciones
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e276]:
+                - img [ref=e277]
+              - button "get /api/v1/organizations" [ref=e279]:
+                - img [ref=e280]
+            - generic [ref=e284] [cursor=pointer]:
+              - 'button "GET /api/v1/organizations/{organizationId} Obtener organización por ID" [ref=e285]':
+                - generic [ref=e286]: GET
+                - generic [ref=e287]:
+                  - 'link "/api/v1/organizations/{organizationId}" [ref=e289]':
+                    - /url: "#/Organizaciones/get_api_v1_organizations__organizationId_"
+                    - generic [ref=e290]:
+                      - text: /api
+                      - text: /v1
+                      - text: /organizations
+                      - text: "/{organizationId}"
+                  - generic [ref=e291]: Obtener organización por ID
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e294]:
+                - img [ref=e295]
+              - 'button "get /api/v1/organizations/{organizationId}" [ref=e297]':
+                - img [ref=e298]
+            - generic [ref=e302] [cursor=pointer]:
+              - 'button "PATCH /api/v1/organizations/{organizationId} Actualizar organización" [ref=e303]':
+                - generic [ref=e304]: PATCH
+                - generic [ref=e305]:
+                  - 'link "/api/v1/organizations/{organizationId}" [ref=e307]':
+                    - /url: "#/Organizaciones/patch_api_v1_organizations__organizationId_"
+                    - generic [ref=e308]:
+                      - text: /api
+                      - text: /v1
+                      - text: /organizations
+                      - text: "/{organizationId}"
+                  - generic [ref=e309]: Actualizar organización
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e312]:
+                - img [ref=e313]
+              - 'button "patch /api/v1/organizations/{organizationId}" [ref=e315]':
+                - img [ref=e316]
+            - generic [ref=e320] [cursor=pointer]:
+              - 'button "DELETE /api/v1/organizations/{organizationId} Eliminar organización" [ref=e321]':
+                - generic [ref=e322]: DELETE
+                - generic [ref=e323]:
+                  - 'link "/api/v1/organizations/{organizationId}" [ref=e325]':
+                    - /url: "#/Organizaciones/delete_api_v1_organizations__organizationId_"
+                    - generic [ref=e326]:
+                      - text: /api
+                      - text: /v1
+                      - text: /organizations
+                      - text: "/{organizationId}"
+                  - generic [ref=e327]: Eliminar organización
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e330]:
+                - img [ref=e331]
+              - 'button "delete /api/v1/organizations/{organizationId}" [ref=e333]':
+                - img [ref=e334]
+        - generic [ref=e337]:
+          - heading "Memberships Gestión de membresías de usuarios en organizaciones Collapse operation" [level=3] [ref=e338] [cursor=pointer]:
+            - link "Memberships" [ref=e339]:
+              - /url: "#/Memberships"
+            - paragraph [ref=e342]: Gestión de membresías de usuarios en organizaciones
+            - button "Collapse operation" [expanded] [ref=e343]:
+              - img [ref=e344]
+          - generic [ref=e347]:
+            - generic [ref=e350] [cursor=pointer]:
+              - 'button "POST /api/v1/organizations/{organizationId}/memberships Invitar usuario a organización" [ref=e351]':
+                - generic [ref=e352]: POST
+                - generic [ref=e353]:
+                  - 'link "/api/v1/organizations/{organizationId}/memberships" [ref=e355]':
+                    - /url: "#/Memberships/post_api_v1_organizations__organizationId__memberships"
+                    - generic [ref=e356]:
+                      - text: /api
+                      - text: /v1
+                      - text: /organizations
+                      - text: "/{organizationId}"
+                      - text: /memberships
+                  - generic [ref=e357]: Invitar usuario a organización
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e360]:
+                - img [ref=e361]
+              - 'button "post /api/v1/organizations/{organizationId}/memberships" [ref=e363]':
+                - img [ref=e364]
+            - generic [ref=e368] [cursor=pointer]:
+              - 'button "GET /api/v1/organizations/{organizationId}/memberships Listar membresías" [ref=e369]':
+                - generic [ref=e370]: GET
+                - generic [ref=e371]:
+                  - 'link "/api/v1/organizations/{organizationId}/memberships" [ref=e373]':
+                    - /url: "#/Memberships/get_api_v1_organizations__organizationId__memberships"
+                    - generic [ref=e374]:
+                      - text: /api
+                      - text: /v1
+                      - text: /organizations
+                      - text: "/{organizationId}"
+                      - text: /memberships
+                  - generic [ref=e375]: Listar membresías
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e378]:
+                - img [ref=e379]
+              - 'button "get /api/v1/organizations/{organizationId}/memberships" [ref=e381]':
+                - img [ref=e382]
+            - generic [ref=e386] [cursor=pointer]:
+              - 'button "PATCH /api/v1/organizations/{organizationId}/memberships/{membershipId} Actualizar membresía" [ref=e387]':
+                - generic [ref=e388]: PATCH
+                - generic [ref=e389]:
+                  - 'link "/api/v1/organizations/{organizationId}/memberships/{membershipId}" [ref=e391]':
+                    - /url: "#/Memberships/patch_api_v1_organizations__organizationId__memberships__membershipId_"
+                    - generic [ref=e392]:
+                      - text: /api
+                      - text: /v1
+                      - text: /organizations
+                      - text: "/{organizationId}"
+                      - text: /memberships
+                      - text: "/{membershipId}"
+                  - generic [ref=e393]: Actualizar membresía
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e396]:
+                - img [ref=e397]
+              - 'button "patch /api/v1/organizations/{organizationId}/memberships/{membershipId}" [ref=e399]':
+                - img [ref=e400]
+            - generic [ref=e404] [cursor=pointer]:
+              - 'button "DELETE /api/v1/organizations/{organizationId}/memberships/{membershipId} Eliminar membresía" [ref=e405]':
+                - generic [ref=e406]: DELETE
+                - generic [ref=e407]:
+                  - 'link "/api/v1/organizations/{organizationId}/memberships/{membershipId}" [ref=e409]':
+                    - /url: "#/Memberships/delete_api_v1_organizations__organizationId__memberships__membershipId_"
+                    - generic [ref=e410]:
+                      - text: /api
+                      - text: /v1
+                      - text: /organizations
+                      - text: "/{organizationId}"
+                      - text: /memberships
+                      - text: "/{membershipId}"
+                  - generic [ref=e411]: Eliminar membresía
+              - generic "Copy to clipboard"
+              - button "authorization button unlocked" [ref=e414]:
+                - img [ref=e415]
+              - 'button "delete /api/v1/organizations/{organizationId}/memberships/{membershipId}" [ref=e417]':
+                - img [ref=e418]
+        - heading "Actividades Gestión de actividades turísticas permitidas en ANPs Collapse operation" [level=3] [ref=e422] [cursor=pointer]:
+          - link "Actividades" [ref=e423]:
+            - /url: "#/Actividades"
+          - paragraph [ref=e426]: Gestión de actividades turísticas permitidas en ANPs
+          - button "Collapse operation" [expanded] [ref=e427]:
+            - img [ref=e428]
+        - heading "Bloques Gestión de bloques horarios para actividades Collapse operation" [level=3] [ref=e432] [cursor=pointer]:
+          - link "Bloques" [ref=e433]:
+            - /url: "#/Bloques"
+          - paragraph [ref=e436]: Gestión de bloques horarios para actividades
+          - button "Collapse operation" [expanded] [ref=e437]:
+            - img [ref=e438]
+        - heading "Capacidad Gestión de capacidad de actividades y disponibilidad Collapse operation" [level=3] [ref=e442] [cursor=pointer]:
+          - link "Capacidad" [ref=e443]:
+            - /url: "#/Capacidad"
+          - paragraph [ref=e446]: Gestión de capacidad de actividades y disponibilidad
+          - button "Collapse operation" [expanded] [ref=e447]:
+            - img [ref=e448]
+        - heading "Prestadores Gestión de perfiles de prestadores de servicios turísticos Collapse operation" [level=3] [ref=e452] [cursor=pointer]:
+          - link "Prestadores" [ref=e453]:
+            - /url: "#/Prestadores"
+          - paragraph [ref=e456]: Gestión de perfiles de prestadores de servicios turísticos
+          - button "Collapse operation" [expanded] [ref=e457]:
+            - img [ref=e458]
+        - heading "Permisos Gestión de permisos de prestadores para realizar actividades Collapse operation" [level=3] [ref=e462] [cursor=pointer]:
+          - link "Permisos" [ref=e463]:
+            - /url: "#/Permisos"
+          - paragraph [ref=e466]: Gestión de permisos de prestadores para realizar actividades
+          - button "Collapse operation" [expanded] [ref=e467]:
+            - img [ref=e468]
+        - heading "Activos Gestión de activos de prestadores (embarcaciones, vehículos, guías, equipos) Collapse operation" [level=3] [ref=e472] [cursor=pointer]:
+          - link "Activos" [ref=e473]:
+            - /url: "#/Activos"
+          - paragraph [ref=e476]: Gestión de activos de prestadores (embarcaciones, vehículos, guías, equipos)
+          - button "Collapse operation" [expanded] [ref=e477]:
+            - img [ref=e478]
+        - heading "Eventos Operativos Registro de operaciones turísticas concretas realizadas Collapse operation" [level=3] [ref=e482] [cursor=pointer]:
+          - link "Eventos Operativos" [ref=e483]:
+            - /url: "#/Eventos%20Operativos"
+          - paragraph [ref=e486]: Registro de operaciones turísticas concretas realizadas
+          - button "Collapse operation" [expanded] [ref=e487]:
+            - img [ref=e488]
+        - heading "Evidencias Ambientales Gestión de evidencias ambientales asociadas a eventos Collapse operation" [level=3] [ref=e492] [cursor=pointer]:
+          - link "Evidencias Ambientales" [ref=e493]:
+            - /url: "#/Evidencias%20Ambientales"
+          - paragraph [ref=e496]: Gestión de evidencias ambientales asociadas a eventos
+          - button "Collapse operation" [expanded] [ref=e497]:
+            - img [ref=e498]
+        - heading "Reportes Generación de reportes y estadísticas Collapse operation" [level=3] [ref=e502] [cursor=pointer]:
+          - link "Reportes" [ref=e503]:
+            - /url: "#/Reportes"
+          - paragraph [ref=e506]: Generación de reportes y estadísticas
+          - button "Collapse operation" [expanded] [ref=e507]:
+            - img [ref=e508]
+        - heading "Pagos Gestión de pagos y transacciones con Stripe Collapse operation" [level=3] [ref=e512] [cursor=pointer]:
+          - link "Pagos" [ref=e513]:
+            - /url: "#/Pagos"
+          - paragraph [ref=e516]: Gestión de pagos y transacciones con Stripe
+          - button "Collapse operation" [expanded] [ref=e517]:
+            - img [ref=e518]
+        - heading "Planes de Suscripción Gestión de planes de suscripción disponibles Collapse operation" [level=3] [ref=e522] [cursor=pointer]:
+          - link "Planes de Suscripción" [ref=e523]:
+            - /url: "#/Planes%20de%20Suscripción"
+          - paragraph [ref=e526]: Gestión de planes de suscripción disponibles
+          - button "Collapse operation" [expanded] [ref=e527]:
+            - img [ref=e528]
+        - heading "Suscripciones Gestión de suscripciones de organizaciones Collapse operation" [level=3] [ref=e532] [cursor=pointer]:
+          - link "Suscripciones" [ref=e533]:
+            - /url: "#/Suscripciones"
+          - paragraph [ref=e536]: Gestión de suscripciones de organizaciones
+          - button "Collapse operation" [expanded] [ref=e537]:
+            - img [ref=e538]
+        - heading "Webhooks Webhooks de Stripe para eventos de pagos Collapse operation" [level=3] [ref=e542] [cursor=pointer]:
+          - link "Webhooks" [ref=e543]:
+            - /url: "#/Webhooks"
+          - paragraph [ref=e546]: Webhooks de Stripe para eventos de pagos
+          - button "Collapse operation" [expanded] [ref=e547]:
+            - img [ref=e548]
+      - generic [ref=e552]:
+        - heading "Schemas" [level=4] [ref=e553] [cursor=pointer]:
+          - button "Schemas" [expanded] [ref=e554]:
+            - generic [ref=e555]: Schemas
+            - img [ref=e556]
+        - generic [ref=e558]:
+          - button "RegisterRequest" [ref=e561] [cursor=pointer]:
+            - generic [ref=e563]: RegisterRequest
+          - button "LoginRequest" [ref=e567] [cursor=pointer]:
+            - generic [ref=e569]: LoginRequest
+          - button "RefreshTokenRequest" [ref=e573] [cursor=pointer]:
+            - generic [ref=e575]: RefreshTokenRequest
+          - button "UserData" [ref=e579] [cursor=pointer]:
+            - generic [ref=e581]: UserData
+          - button "AuthResponse" [ref=e585] [cursor=pointer]:
+            - generic [ref=e587]: AuthResponse
+          - button "RefreshTokenResponse" [ref=e591] [cursor=pointer]:
+            - generic [ref=e593]: RefreshTokenResponse
+          - button "MeResponse" [ref=e597] [cursor=pointer]:
+            - generic [ref=e599]: MeResponse
+          - button "UpdateProfileRequest" [ref=e603] [cursor=pointer]:
+            - generic [ref=e605]: UpdateProfileRequest
+          - button "ChangePasswordRequest" [ref=e609] [cursor=pointer]:
+            - generic [ref=e611]: ChangePasswordRequest
+          - button "UserProfile" [ref=e615] [cursor=pointer]:
+            - generic [ref=e617]: UserProfile
+          - button "UserProfileResponse" [ref=e621] [cursor=pointer]:
+            - generic [ref=e623]: UserProfileResponse
+          - button "CreateMembership" [ref=e627] [cursor=pointer]:
+            - generic [ref=e629]: CreateMembership
+          - button "UpdateMembership" [ref=e633] [cursor=pointer]:
+            - generic [ref=e635]: UpdateMembership
+          - button "ListMemberships" [ref=e639] [cursor=pointer]:
+            - generic [ref=e641]: ListMemberships
+          - button "Membership" [ref=e645] [cursor=pointer]:
+            - generic [ref=e647]: Membership
+          - button "MembershipResponse" [ref=e651] [cursor=pointer]:
+            - generic [ref=e653]: MembershipResponse
+          - button "MembershipListResponse" [ref=e657] [cursor=pointer]:
+            - generic [ref=e659]: MembershipListResponse
+          - button "CreateOrganization" [ref=e663] [cursor=pointer]:
+            - generic [ref=e665]: CreateOrganization
+          - button "UpdateOrganization" [ref=e669] [cursor=pointer]:
+            - generic [ref=e671]: UpdateOrganization
+          - button "ListOrganizations" [ref=e675] [cursor=pointer]:
+            - generic [ref=e677]: ListOrganizations
+          - button "Organization" [ref=e681] [cursor=pointer]:
+            - generic [ref=e683]: Organization
+          - button "OrganizationResponse" [ref=e687] [cursor=pointer]:
+            - generic [ref=e689]: OrganizationResponse
+          - button "OrganizationListResponse" [ref=e693] [cursor=pointer]:
+            - generic [ref=e695]: OrganizationListResponse
