@@ -18,4 +18,5 @@ import '../../modules/capacidad/swagger/capacidad.swagger.js';
 import '../../modules/prestadores/swagger/prestador.swagger.js';
 import '../../modules/permisos/swagger/permiso.swagger.js';
 import '../../modules/activos/swagger/activo.swagger.js';
+import '../../modules/eventos/swagger/evento.swagger.js';
 // etc...
