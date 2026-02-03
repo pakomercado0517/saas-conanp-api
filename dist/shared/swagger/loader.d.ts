@@ -10,4 +10,5 @@ import '../../modules/users/swagger/membership.swagger.js';
 import '../../modules/organizations/swagger/organization.swagger.js';
 import '../../modules/actividades/swagger/actividad.swagger.js';
 import '../../modules/bloques/swagger/bloque.swagger.js';
+import '../../modules/capacidad/swagger/capacidad.swagger.js';
 //# sourceMappingURL=loader.d.ts.map

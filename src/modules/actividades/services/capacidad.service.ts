@@ -7,7 +7,7 @@ import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model
 import type {
   CreateCapacidadDTO,
   UpdateCapacidadDTO,
-} from '@/modules/actividades/validators/capacidad.validator.js';
+} from '@/modules/capacidad/validators/capacidad.validator.js';
 import { NotFoundError, ValidationError, ConflictError } from '@/shared/errors/index.js';
 import { logger } from '@/shared/logger/index.js';
 import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';

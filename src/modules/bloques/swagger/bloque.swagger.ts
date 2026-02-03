@@ -169,7 +169,8 @@ registry.registerPath({
   path: '/api/v1/organizations/{organizationId}/bloques',
   tags: ['Bloques'],
   summary: 'Listar bloques',
-  description: 'Lista bloques de la organización con paginación y filtros (actividad, fecha, plantilla).',
+  description:
+    'Lista bloques de la organización con paginación y filtros (actividad, fecha, plantilla).',
   security: [{ bearerAuth: [] }],
   request: {
     params: z.object({ organizationId: z.string().uuid().describe('ID de la organización') }),
@@ -282,5 +283,3 @@ registry.registerPath({
     500: commonErrorResponses[500],
   },
 });
-
- 

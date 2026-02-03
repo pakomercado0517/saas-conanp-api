@@ -18,6 +18,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json}\"",
+    "formatfile": "prettier --write",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:migrate:status": "sequelize-cli db:migrate:status",

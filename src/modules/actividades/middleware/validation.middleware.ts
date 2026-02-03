@@ -11,10 +11,7 @@ import {
   UpdateBloqueSchema,
   ListBloquesSchema,
 } from '../validators/bloque.validator.js';
-import {
-  CreateCapacidadSchema,
-  VerificarDisponibilidadSchema,
-} from '../validators/capacidad.validator.js';
+import { CreateCapacidadSchema, VerificarDisponibilidadSchema } from '@/modules/capacidad/validators/capacidad.validator.js';
 
 /**
  * Middleware de validación para crear actividad
