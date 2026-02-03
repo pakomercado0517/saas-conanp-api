@@ -2,8 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import { pinoHttp } from 'pino-http';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 import { errorHandler, apiLimiter, webhookLimiter } from './shared/middleware/index.js';
 import { now } from './shared/dates/index.js';
+// Importar el módulo swagger ANTES de generateOpenAPISpec para que se registren los paths
+import './shared/swagger/index.js';
+import { generateOpenAPISpec } from './shared/swagger/index.js';
 dotenv.config();
 const app = express();
 // CORS: Configurar según entorno
@@ -39,6 +43,12 @@ app.get('/health', (_req, res) => {
     });
 });
 app.get('/', (_req, res) => res.send({ message: 'Bienvenido a la API de CONANP - Gestión de Áreas Naturales Protegidas' }));
+// Documentación Swagger UI
+const swaggerSpec = generateOpenAPISpec();
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'CONANP API - Documentación',
+}));
 // Rutas de la aplicación
 import { authRoutes } from './modules/auth/routes/index.js';
 import { organizationsRoutes } from './modules/organizations/routes/index.js';

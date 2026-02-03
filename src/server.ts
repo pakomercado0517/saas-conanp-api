@@ -6,6 +6,8 @@ import swaggerUi from 'swagger-ui-express';
 import type { Application, Request, Response } from 'express';
 import { errorHandler, apiLimiter, webhookLimiter } from './shared/middleware/index.js';
 import { now } from './shared/dates/index.js';
+// Importar el módulo swagger ANTES de generateOpenAPISpec para que se registren los paths
+import './shared/swagger/index.js';
 import { generateOpenAPISpec } from './shared/swagger/index.js';
 
 dotenv.config();

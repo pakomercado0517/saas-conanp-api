@@ -16,9 +16,9 @@ registry.registerComponent('securitySchemes', 'bearerAuth', {
 });
 
 /**
- * Generador de especificación OpenAPI 3.0
+ * Exportar la clase generadora para usarla dentro de generateOpenAPISpec
  */
-export const generator = new OpenApiGeneratorV3(registry.definitions);
+export { OpenApiGeneratorV3 };
 
 /**
  * Configuración base de la API
@@ -57,7 +57,7 @@ La mayoría de los endpoints requieren autenticación mediante JWT (JSON Web Tok
   },
   servers: [
     {
-      url: 'http://localhost:5000',
+      url: 'http://localhost:3001',
       description: 'Servidor de desarrollo local',
     },
     {

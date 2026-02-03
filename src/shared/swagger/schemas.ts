@@ -8,7 +8,14 @@ extendZodWithOpenApi(z);
  * Schema de respuesta exitosa genérica
  * Nota: No se puede registrar en el registry aquí porque crea dependencia circular
  */
-export function createSuccessResponseSchema<T extends z.ZodTypeAny>(dataSchema: T) {
+export function createSuccessResponseSchema<T extends z.ZodTypeAny>(
+  dataSchema: T
+): z.ZodObject<{
+  success: z.ZodLiteral<true>;
+  data: T;
+  message: z.ZodOptional<z.ZodString>;
+  timestamp: z.ZodOptional<z.ZodString>;
+}> {
   return z.object({
     success: z.literal(true).describe('Indica que la operación fue exitosa'),
     data: dataSchema.describe('Datos de la respuesta'),
@@ -46,7 +53,14 @@ export const PaginationMetadataSchema = z.object({
  * Schema de respuesta paginada genérica
  * Nota: No se puede registrar en el registry aquí porque crea dependencia circular
  */
-export function createPaginatedResponseSchema<T extends z.ZodTypeAny>(dataSchema: T) {
+export function createPaginatedResponseSchema<T extends z.ZodTypeAny>(
+  dataSchema: T
+): z.ZodObject<{
+  success: z.ZodLiteral<true>;
+  data: z.ZodArray<T>;
+  pagination: typeof PaginationMetadataSchema;
+  timestamp: z.ZodOptional<z.ZodString>;
+}> {
   return z.object({
     success: z.literal(true).describe('Indica que la operación fue exitosa'),
     data: z.array(dataSchema).describe('Array de elementos de la página actual'),
@@ -62,12 +76,7 @@ export const PaginatedResponseSchema = createPaginatedResponseSchema;
  * Schema de parámetros de paginación
  */
 export const PaginationParamsSchema = z.object({
-  page: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(1)
-    .describe('Número de página (comienza en 1)'),
+  page: z.coerce.number().int().positive().default(1).describe('Número de página (comienza en 1)'),
   limit: z.coerce
     .number()
     .int()
