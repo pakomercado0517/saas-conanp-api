@@ -1,10 +1,10 @@
 import { Op } from 'sequelize';
-import { Actividad } from '../../../modules/actividades/models/actividad.model';
-import { NotFoundError, ValidationError } from '../../../shared/errors';
-import { logger } from '../../../shared/logger';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service';
-import { assertIsAdmin } from '../../../modules/users/services/membership.service';
-import { checkActividadesLimit } from '../../../modules/subscriptions/services/subscription-limits.service';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
+import { checkActividadesLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
 /**
  * Valida que el tipo de agenda sea válido
  *

@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../../../shared/database';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { Actividad } from './actividad.model';
+import { sequelize } from '../../../shared/database/index.js';
+import { Organization } from '../../../modules/organizations/models/organization.model.js';
+import { Actividad } from './actividad.model.js';
 export class Bloque extends Model {
 }
 Bloque.init({

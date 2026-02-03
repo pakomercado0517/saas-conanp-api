@@ -4,25 +4,6 @@ import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../.
  * Crea un nuevo activo.
  *
  * POST /api/v1/organizations/:organizationId/activos
- *
- * Headers:
- * - Authorization: Bearer <accessToken>
- *
- * Params:
- * - organizationId: UUID
- *
- * Body:
- * - organizationId: UUID (requerido, debe coincidir con el parámetro)
- * - ownerId: UUID (requerido)
- * - type: 'embarcacion' | 'vehiculo' | 'guia' | 'equipo' (requerido)
- * - status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido' (opcional, default: 'pendiente')
- *
- * Respuesta 201:
- * {
- *   success: true,
- *   data: Activo con relaciones Organization y Owner,
- *   message: "Activo creado exitosamente"
- * }
  */
 export const createActivo = async (req, res) => {
     if (!req.user) {
@@ -35,32 +16,17 @@ export const createActivo = async (req, res) => {
     const organizationId = req.organizationId;
     const userId = req.user.userId;
     const data = req.body;
-    // Asegurar que organizationId del body coincida con el del parámetro
-    const activoData = {
+    const actividadData = {
         ...data,
         organizationId,
     };
-    const activo = await activoService.createActivo(activoData, organizationId, userId);
+    const activo = await activoService.createActivo(actividadData, organizationId, userId);
     return sendCreated(res, activo, 'Activo creado exitosamente');
 };
 /**
  * Obtiene un activo por ID.
  *
  * GET /api/v1/organizations/:organizationId/activos/:activoId
- *
- * Headers:
- * - Authorization: Bearer <accessToken>
- *
- * Params:
- * - organizationId: UUID
- * - activoId: UUID
- *
- * Respuesta 200:
- * {
- *   success: true,
- *   data: Activo con relaciones Organization y Owner,
- *   message: "Activo obtenido exitosamente"
- * }
  */
 export const getActivoById = async (req, res) => {
     if (!req.user) {
@@ -77,32 +43,34 @@ export const getActivoById = async (req, res) => {
     return sendSuccess(res, activo, 'Activo obtenido exitosamente');
 };
 /**
- * Lista activos con paginación y filtros.
- *
- * GET /api/v1/organizations/:organizationId/activos
- *
- * Headers:
- * - Authorization: Bearer <accessToken>
- *
- * Params:
- * - organizationId: UUID
- *
- * Query:
- * - page: number (default 1)
- * - limit: number (default 20, max 100)
- * - sortBy: 'type' | 'status' | 'createdAt' | 'updatedAt' (opcional)
- * - sortOrder: 'asc' | 'desc' (default 'desc')
- * - ownerId: UUID (opcional, filtro por propietario)
- * - type: 'embarcacion' | 'vehiculo' | 'guia' | 'equipo' (opcional, filtro)
- * - status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido' (opcional, filtro)
- *
- * Respuesta 200:
- * {
- *   success: true,
- *   data: Activo[] con relaciones Organization y Owner,
- *   pagination: { page, limit, total, totalPages },
- *   message: "Activos obtenidos exitosamente"
- * }
+ * @swagger
+ * /api/v1/:
+ *   get:
+ *     summary: Listar recursos
+ *     description: Endpoint para listar recursos. Requiere autenticación. Requiere acceso a la organización.
+ *     tags: [Activos]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQuery'
+ *       - $ref: '#/components/parameters/LimitQuery'
+ *       - $ref: '#/components/parameters/SortByQuery'
+ *       - $ref: '#/components/parameters/SortOrderQuery'
+ *     responses:
+ *       200:
+ *         description: Listado obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaginatedResponse'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 export const listActivos = async (req, res) => {
     if (!req.user) {

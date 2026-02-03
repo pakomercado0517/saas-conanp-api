@@ -393,10 +393,39 @@ Retorna el estado del servidor, timestamp y uptime.
 
 ## 🧪 Testing
 
+### Tests unitarios
+
+Los tests unitarios usan Vitest con mocks de base de datos (Sequelize), Stripe y S3. No requieren BD real.
+
 ```bash
-# Ejecutar tests (cuando estén implementados)
+# Ejecutar tests unitarios (watch)
 pnpm test
+
+# Ejecutar una vez
+pnpm test:run
+
+# Con cobertura
+pnpm test:coverage
 ```
+
+### Tests de integración
+
+Los tests de integración ejecutan la API contra una base de datos real (PostgreSQL). Requieren:
+
+- **`DATABASE_TEST_URL`** definida en `.env` (ej. `postgresql://user:pass@localhost:5432/conanp_test`)
+- **Migraciones aplicadas** en esa BD: `NODE_ENV=test pnpm db:migrate` (o configurar Sequelize para usar `DATABASE_TEST_URL` en entorno test)
+
+Stripe y S3 siguen mockeados para no hacer cobros ni subir archivos.
+
+```bash
+# Ejecutar tests de integración (una vez)
+pnpm test:integration
+
+# Modo watch (desarrollo)
+pnpm test:integration:watch
+```
+
+Más detalles en [docs/tests.md](docs/tests.md).
 
 ## 📄 Licencia
 

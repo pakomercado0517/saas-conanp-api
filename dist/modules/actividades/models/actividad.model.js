@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../../../shared/database';
-import { Organization } from '../../../modules/organizations/models/organization.model';
+import { sequelize } from '../../../shared/database/index.js';
+import { Organization } from '../../../modules/organizations/models/organization.model.js';
 export class Actividad extends Model {
 }
 Actividad.init({

@@ -16,6 +16,7 @@ export default defineConfig({
     globals: false,
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+    exclude: ['src/__tests__/integration/**'],
     setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
     env: {
       NODE_ENV: 'test',

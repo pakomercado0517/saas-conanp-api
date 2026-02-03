@@ -1,6 +1,6 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, ActividadType, AgendaType } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
+import type { UUID, ActividadType, AgendaType } from '../../../shared/database/types.js';
+import { Organization } from '../../../modules/organizations/models/organization.model.js';
 export interface ActividadAttributes {
     id: UUID;
     organizationId: UUID;

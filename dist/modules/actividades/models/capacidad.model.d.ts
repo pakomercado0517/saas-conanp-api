@@ -1,7 +1,7 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { Actividad } from './actividad.model';
+import type { UUID } from '../../../shared/database/types.js';
+import { Organization } from '../../../modules/organizations/models/organization.model.js';
+import { Actividad } from './actividad.model.js';
 export interface CapacidadAttributes {
     id: UUID;
     organizationId: UUID;
