@@ -75,9 +75,7 @@ export const UpdateOrganizationSchema = registry.register(
         .trim()
         .optional()
         .describe('Nuevo nombre de la organización (opcional)'),
-      ecosystem_type: ecosystemTypeEnum
-        .optional()
-        .describe('Nuevo tipo de ecosistema (opcional)'),
+      ecosystem_type: ecosystemTypeEnum.optional().describe('Nuevo tipo de ecosistema (opcional)'),
       settings: settingsSchema.optional().describe('Nuevas configuraciones (opcional)'),
     })
     .refine((data) => Object.keys(data).some((k) => data[k as keyof typeof data] !== undefined), {

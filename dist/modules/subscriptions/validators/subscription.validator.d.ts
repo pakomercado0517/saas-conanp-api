@@ -55,8 +55,8 @@ export declare const ListSubscriptionsSchema: z.ZodObject<{
     sortBy: z.ZodOptional<z.ZodEnum<{
         createdAt: "createdAt";
         organizationId: "organizationId";
-        planId: "planId";
         status: "status";
+        planId: "planId";
         billingCycle: "billingCycle";
         currentPeriodEnd: "currentPeriodEnd";
     }>>;
