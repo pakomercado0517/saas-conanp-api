@@ -12,8 +12,19 @@ import { sequelize } from '../../../shared/database/index.js';
 import { stripeClient, handleStripeError } from '../../../shared/stripe/index.js';
 import { ConflictError, NotFoundError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
+import { cache } from '../../../shared/cache/index.js';
+import { CacheKeys } from '../../../shared/cache/keys.js';
 const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
 const CANCELABLE_STATUSES = ['active', 'trialing', 'past_due', 'unpaid'];
+/**
+ * Invalida el caché de suscripción de una organización.
+ * Se llama después de CREATE/UPDATE/DELETE de suscripciones.
+ */
+const invalidateSubscriptionCache = async (organizationId) => {
+    const cacheKey = CacheKeys.activeSubscription(organizationId);
+    await cache.del(cacheKey);
+    logger.debug({ organizationId, cacheKey }, 'Caché de suscripción invalidado');
+};
 /**
  * Valida que la organización no tenga una suscripción activa.
  * Estados "activos" considerados: active, trialing.
@@ -252,6 +263,8 @@ export const createSubscription = async (data, organizationId, userId) => {
         stripePriceId: stripeResult.stripePriceId,
         trialEnd: stripeResult.trialEnd,
     });
+    // Invalidar caché después de crear suscripción
+    await invalidateSubscriptionCache(organizationId);
     return subscription.reload({
         include: [
             { model: Organization, as: 'Organization' },
@@ -429,6 +442,8 @@ export const changePlan = async (subscriptionId, organizationId, userId, data) =
         billingCycle,
         stripePriceId,
     });
+    // Invalidar caché después de cambiar plan
+    await invalidateSubscriptionCache(organizationId);
     logger.info({ subscriptionId, organizationId, planId, billingCycle }, 'Plan de suscripción actualizado');
     return subscription.reload({
         include: [
@@ -512,6 +527,8 @@ export const cancelSubscription = async (subscriptionId, organizationId, userId,
         cancelAtPeriodEnd: data.cancelAtPeriodEnd,
         reason: data.reason,
     }, 'Suscripción cancelada');
+    // Invalidar caché después de cancelar suscripción
+    await invalidateSubscriptionCache(organizationId);
     return subscription.reload({
         include: [
             { model: Organization, as: 'Organization' },
@@ -557,6 +574,8 @@ export const reactivateSubscription = async (subscriptionId, organizationId, use
         }
     }
     await subscription.update({ cancelAtPeriodEnd: false });
+    // Invalidar caché después de reactivar suscripción
+    await invalidateSubscriptionCache(organizationId);
     logger.info({ subscriptionId, organizationId }, 'Suscripción reactivada');
     return subscription.reload({
         include: [
@@ -765,6 +784,8 @@ export const updateSubscriptionFromWebhook = async (stripeSubscription) => {
         updateData['stripePriceId'] = priceId;
     if (Object.keys(updateData).length > 0) {
         await subscription.update(updateData);
+        // Invalidar caché después de actualizar desde webhook
+        await invalidateSubscriptionCache(subscription.organizationId);
         logger.info({
             subscriptionId: subscription.id,
             stripeSubscriptionId,
@@ -817,6 +838,8 @@ export const renewSubscriptionPeriodFromWebhook = async (stripeInvoice) => {
         updateData['status'] = 'active';
     }
     await subscription.update(updateData);
+    // Invalidar caché después de actualizar desde invoice
+    await invalidateSubscriptionCache(subscription.organizationId);
     logger.info({
         subscriptionId: subscription.id,
         stripeSubscriptionId,
@@ -853,6 +876,8 @@ export const markSubscriptionPastDueFromWebhook = async (stripeInvoice) => {
         return null;
     }
     await subscription.update({ status: 'past_due' });
+    // Invalidar caché después de marcar como past_due
+    await invalidateSubscriptionCache(subscription.organizationId);
     logger.info({ subscriptionId: subscription.id, stripeSubscriptionId }, 'Webhook invoice.payment_failed: suscripción marcada past_due');
     return subscription.reload({
         include: [

@@ -65,6 +65,10 @@ vi.mock('@/modules/prestadores/models/prestador-profile.model.js', () => ({
   },
 }));
 
+vi.mock('@/modules/users/models/user.model.js', () => ({
+  User: {},
+}));
+
 vi.mock('@/modules/eventos/models/evento-operativo.model.js', () => ({
   EventoOperativo: {
     findOne: (...args: unknown[]): unknown => mockEventoOperativoFindOne(...args),

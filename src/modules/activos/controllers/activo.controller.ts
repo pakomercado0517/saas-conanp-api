@@ -1,7 +1,66 @@
 import type { Request, Response } from 'express';
 import * as activoService from '../services/activo.service.js';
-import { sendSuccess, sendPaginated, sendNoContent } from '@/shared/responses/helpers.js';
-import type { UpdateActivoDTO, ListActivosDTO } from '../validators/activo.validator.js';
+import {
+  sendSuccess,
+  sendCreated,
+  sendPaginated,
+  sendNoContent,
+} from '@/shared/responses/helpers.js';
+import type {
+  CreateActivoDTO,
+  UpdateActivoDTO,
+  ListActivosDTO,
+} from '../validators/activo.validator.js';
+
+/**
+ * Crea un nuevo activo.
+ *
+ * POST /api/v1/organizations/:organizationId/activos
+ */
+export const createActivo = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const data = req.body as CreateActivoDTO;
+
+  const actividadData: CreateActivoDTO = {
+    ...data,
+    organizationId,
+  };
+  const activo = await activoService.createActivo(actividadData, organizationId, userId);
+
+  return sendCreated(res, activo, 'Activo creado exitosamente');
+};
+
+/**
+ * Obtiene un activo por ID.
+ *
+ * GET /api/v1/organizations/:organizationId/activos/:activoId
+ */
+export const getActivoById = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const activoId = req.params['activoId'] as string;
+  const userId = req.user.userId;
+
+  const activo = await activoService.getActivoById(activoId, organizationId, userId);
+
+  return sendSuccess(res, activo, 'Activo obtenido exitosamente');
+};
 
 /**
  * @swagger

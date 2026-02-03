@@ -5,6 +5,7 @@ import { Payment } from '../../../modules/payments/models/payment.model.js';
 import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
 import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
 import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 import { Membership } from '../../../modules/users/models/membership.model.js';
 import { NotFoundError, ValidationError, ForbiddenError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
@@ -352,16 +353,36 @@ export const listEventos = async (organizationId, filters, requestingUserId) => 
     const sortBy = filters.sortBy ?? 'createdAt';
     const sortOrder = filters.sortOrder ?? 'desc';
     const offset = (filters.page - 1) * limit;
-    // Ejecutar query con paginación
+    // Ejecutar query con paginación (includes con atributos mínimos para evitar sobrecarga)
     const result = await EventoOperativo.findAndCountAll({
         where,
         limit,
         offset,
         order: [[sortBy, sortOrder]],
         include: [
-            { model: Actividad, as: 'Actividad' },
-            { model: PrestadorProfile, as: 'PrestadorProfile' },
-            { model: Bloque, as: 'Bloque', required: false },
+            {
+                model: Actividad,
+                as: 'Actividad',
+                attributes: ['id', 'name', 'type', 'agendaType', 'active'],
+            },
+            {
+                model: PrestadorProfile,
+                as: 'PrestadorProfile',
+                attributes: ['id', 'userId'],
+                include: [
+                    {
+                        model: User,
+                        as: 'User',
+                        attributes: ['id', 'name'],
+                    },
+                ],
+            },
+            {
+                model: Bloque,
+                as: 'Bloque',
+                required: false,
+                attributes: ['id', 'startTime', 'endTime', 'capacity'],
+            },
         ],
     });
     const total = result.count;

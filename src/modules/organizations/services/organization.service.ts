@@ -12,9 +12,22 @@ import type {
 import { ForbiddenError, NotFoundError } from '@/shared/errors';
 import type { PaginationMeta } from '@/shared/responses/types';
 import { logger } from '@/shared/logger';
+import { cache } from '@/shared/cache';
+import { CacheKeys } from '@/shared/cache/keys';
+import { cacheConfig } from '@/shared/cache/config';
 
 /** Estados de suscripción que permiten operaciones (no bloquean). */
 const ACTIVE_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = ['active', 'trialing'];
+
+/**
+ * Invalida el caché de organización.
+ * Se llama después de UPDATE/DELETE de organizaciones.
+ */
+const invalidateOrganizationCache = async (organizationId: UUID): Promise<void> => {
+  const cacheKey = CacheKeys.organization(organizationId);
+  await cache.del(cacheKey);
+  logger.debug({ organizationId, cacheKey }, 'Caché de organización invalidado');
+};
 
 /**
  * Valida que el usuario tenga acceso a la organización.
@@ -44,15 +57,32 @@ export const assertCanAccessOrganization = async (
 
 /**
  * Obtiene la suscripción de una organización (cualquier estado).
+ * Usa caché para reducir consultas a la base de datos.
  */
 const getSubscriptionByOrganization = async (
   organizationId: UUID
 ): Promise<(Subscription & { SubscriptionPlan?: SubscriptionPlan }) | null> => {
-  return Subscription.findOne({
+  const cacheKey = CacheKeys.activeSubscription(organizationId);
+
+  // Intentar obtener del caché
+  const cached = await cache.get<Subscription & { SubscriptionPlan?: SubscriptionPlan }>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // Si no está en caché, consultar la base de datos
+  const subscription = await Subscription.findOne({
     where: { organizationId },
     order: [['currentPeriodEnd', 'DESC']],
     include: [{ model: SubscriptionPlan, as: 'SubscriptionPlan' }],
   });
+
+  // Guardar en caché si existe
+  if (subscription) {
+    await cache.set(cacheKey, subscription, cacheConfig.ttl.subscription);
+  }
+
+  return subscription;
 };
 
 /**
@@ -265,6 +295,9 @@ export const updateOrganization = async (
     ...(data.settings !== undefined && { settings: data.settings }),
   });
 
+  // Invalidar caché después de actualizar organización
+  await invalidateOrganizationCache(organizationId);
+
   const updatedKeys = [
     data.name !== undefined && 'name',
     data.ecosystem_type !== undefined && 'ecosystem_type',
@@ -291,6 +324,9 @@ export const deleteOrganization = async (organizationId: UUID, userId: UUID): Pr
   }
 
   await org.destroy();
+
+  // Invalidar caché después de eliminar organización
+  await invalidateOrganizationCache(organizationId);
 
   logger.info({ organizationId, userId }, 'Organización eliminada (soft delete)');
 };

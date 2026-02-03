@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import type { UUID } from '@/shared/database/types.js';
 import { Permiso } from '@/modules/permisos/models/permiso.model.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
+import { User } from '@/modules/users/models/user.model.js';
 import { Actividad } from '@/modules/actividades/models/actividad.model.js';
 import type {
   CreatePermisoDTO,
@@ -387,8 +388,7 @@ export const listPermisosByPrestador = async (
   const sortOrder = filters.sortOrder ?? 'desc';
   const offset = (filters.page - 1) * limit;
 
-  // Ejecutar query con paginación
-  // Asegurar que solo se obtengan permisos de prestadores y actividades de la organización
+  // Ejecutar query con paginación (includes con atributos mínimos)
   const result = await Permiso.findAndCountAll({
     where,
     limit,
@@ -398,18 +398,23 @@ export const listPermisosByPrestador = async (
       {
         model: PrestadorProfile,
         as: 'PrestadorProfile',
-        where: {
-          organizationId,
-        },
+        where: { organizationId },
         required: true,
+        attributes: ['id', 'userId'],
+        include: [
+          {
+            model: User,
+            as: 'User',
+            attributes: ['id', 'name'],
+          },
+        ],
       },
       {
         model: Actividad,
         as: 'Actividad',
-        where: {
-          organizationId,
-        },
+        where: { organizationId },
         required: true,
+        attributes: ['id', 'name'],
       },
     ],
   });

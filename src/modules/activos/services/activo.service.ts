@@ -1,6 +1,7 @@
 import type { UUID } from '@/shared/database/types.js';
 import { Activo } from '@/modules/activos/models/activo.model.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
+import { User } from '@/modules/users/models/user.model.js';
 import { Organization } from '@/modules/organizations/models/organization.model.js';
 import type {
   CreateActivoDTO,
@@ -247,15 +248,30 @@ export const listActivos = async (
   const sortOrder = filters.sortOrder ?? 'desc';
   const offset = (filters.page - 1) * limit;
 
-  // Ejecutar query con paginación
+  // Ejecutar query con paginación (includes con atributos mínimos)
   const result = await Activo.findAndCountAll({
     where,
     limit,
     offset,
     order: [[sortBy, sortOrder]],
     include: [
-      { model: Organization, as: 'Organization' },
-      { model: PrestadorProfile, as: 'Owner' },
+      {
+        model: Organization,
+        as: 'Organization',
+        attributes: ['id', 'name'],
+      },
+      {
+        model: PrestadorProfile,
+        as: 'Owner',
+        attributes: ['id', 'userId'],
+        include: [
+          {
+            model: User,
+            as: 'User',
+            attributes: ['id', 'name'],
+          },
+        ],
+      },
     ],
   });
 

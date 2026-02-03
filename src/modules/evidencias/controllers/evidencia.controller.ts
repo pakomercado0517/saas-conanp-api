@@ -1,7 +1,53 @@
 import type { Request, Response } from 'express';
 import * as evidenciaService from '../services/evidencia.service.js';
-import { sendSuccess, sendPaginated, sendNoContent } from '@/shared/responses/helpers.js';
-import type { UpdateEvidenciaDTO, ListEvidenciasDTO } from '../validators/evidencia.validator.js';
+import {
+  sendSuccess,
+  sendCreated,
+  sendPaginated,
+  sendNoContent,
+} from '@/shared/responses/helpers.js';
+import type {
+  CreateEvidenciaDTO,
+  UpdateEvidenciaDTO,
+  ListEvidenciasDTO,
+} from '../validators/evidencia.validator.js';
+
+/**
+ * Crea una nueva evidencia ambiental asociada a un evento.
+ *
+ * POST /api/v1/organizations/:organizationId/eventos/:eventoId/evidencias
+ */
+export const createEvidencia = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const eventoId = req.params['eventoId'] as string;
+  const userId = req.user.userId;
+  const data = req.body as CreateEvidenciaDTO;
+
+  const evidenciaData: CreateEvidenciaDTO = {
+    ...data,
+    eventoId,
+  };
+  const file = req.file?.buffer;
+  const contentType = req.file?.mimetype;
+
+  const evidencia = await evidenciaService.createEvidencia(
+    evidenciaData,
+    organizationId,
+    userId,
+    file,
+    contentType
+  );
+
+  return sendCreated(res, evidencia, 'Evidencia creada exitosamente');
+};
 
 /**
  * @swagger
