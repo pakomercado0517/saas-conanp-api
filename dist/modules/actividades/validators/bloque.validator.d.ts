@@ -42,9 +42,9 @@ export declare const ListBloquesSchema: z.ZodObject<{
         createdAt: "createdAt";
         updatedAt: "updatedAt";
         date: "date";
-        capacity: "capacity";
         startTime: "startTime";
         endTime: "endTime";
+        capacity: "capacity";
     }>>;
     sortOrder: z.ZodDefault<z.ZodEnum<{
         asc: "asc";
