@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dateOnlySchema, optionalDateOnlySchema } from '@/shared/dates/zod-schemas';
+import { dateOnlySchema, optionalDateOnlySchema } from '@/shared/dates/zod-schemas.js';
 
 /**
  * Schema Zod para crear capacidad

@@ -1,17 +1,17 @@
 import { Op } from 'sequelize';
-import type { UUID, AgendaType } from '@/shared/database/types';
-import { Actividad } from '@/modules/actividades/models/actividad.model';
+import type { UUID, AgendaType } from '@/shared/database/types.js';
+import { Actividad } from '@/modules/actividades/models/actividad.model.js';
 import type {
   CreateActividadDTO,
   UpdateActividadDTO,
   ListActividadesDTO,
-} from '@/modules/actividades/validators/actividad.validator';
-import { NotFoundError, ValidationError } from '@/shared/errors';
-import type { PaginationMeta } from '@/shared/responses/types';
-import { logger } from '@/shared/logger';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service';
-import { assertIsAdmin } from '@/modules/users/services/membership.service';
-import { checkActividadesLimit } from '@/modules/subscriptions/services/subscription-limits.service';
+} from '@/modules/actividades/validators/actividad.validator.js';
+import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import type { PaginationMeta } from '@/shared/responses/types.js';
+import { logger } from '@/shared/logger/index.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
+import { checkActividadesLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
 
 /**
  * Valida que el tipo de agenda sea válido

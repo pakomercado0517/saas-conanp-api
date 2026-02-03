@@ -1,103 +1,38 @@
 import type { Request, Response } from 'express';
 import * as evidenciaService from '../services/evidencia.service.js';
-import {
-  sendSuccess,
-  sendCreated,
-  sendPaginated,
-  sendNoContent,
-} from '@/shared/responses/helpers.js';
-import type {
-  CreateEvidenciaDTO,
-  UpdateEvidenciaDTO,
-  ListEvidenciasDTO,
-} from '../validators/evidencia.validator.js';
+import { sendSuccess, sendPaginated, sendNoContent } from '@/shared/responses/helpers.js';
+import type { UpdateEvidenciaDTO, ListEvidenciasDTO } from '../validators/evidencia.validator.js';
 
 /**
- * Crea una nueva evidencia ambiental asociada a un evento.
- * Permite subir un archivo o proporcionar una URL de archivo ya subido.
- *
- * POST /api/v1/organizations/:organizationId/eventos/:eventoId/evidencias
- *
- * Headers:
- * - Authorization: Bearer <accessToken>
- *
- * Params:
- * - organizationId: UUID
- * - eventoId: UUID
- *
- * Body (multipart/form-data):
- * - type: string (requerido, 1-100 caracteres)
- * - description: string (opcional)
- * - file: File (opcional, si se sube archivo)
- * - fileUrl: string (opcional, si el archivo ya está subido)
- *
- * Respuesta 201:
- * {
- *   success: true,
- *   data: EvidenciaAmbiental con relación EventoOperativo,
- *   message: "Evidencia creada exitosamente"
- * }
- */
-export const createEvidencia = async (req: Request, res: Response): Promise<Response> => {
-  if (!req.user) {
-    return res.status(401).json({
-      success: false,
-      error: 'No autorizado',
-      message: 'Token de autenticación requerido',
-    });
-  }
-
-  const organizationId = req.organizationId!;
-  const eventoId = req.params['eventoId'] as string;
-  const userId = req.user.userId;
-
-  // Construir DTO desde body (los campos de texto vienen en req.body después de multer)
-  const data: CreateEvidenciaDTO = {
-    eventoId,
-    type: req.body['type'] as string,
-    description: req.body['description'] ? (req.body['description'] as string) : undefined,
-    fileUrl: req.body['fileUrl'] ? (req.body['fileUrl'] as string) : undefined,
-  };
-
-  // Si hay archivo subido (multer lo procesa y lo pone en req.file)
-  let fileBuffer: Buffer | undefined;
-  let contentType: string | undefined;
-
-  if (req.file) {
-    fileBuffer = req.file.buffer;
-    contentType = req.file.mimetype;
-  }
-
-  const evidencia = await evidenciaService.createEvidencia(
-    data,
-    organizationId,
-    userId,
-    fileBuffer,
-    contentType
-  );
-
-  return sendCreated(res, evidencia, 'Evidencia creada exitosamente');
-};
-
-/**
- * Obtiene una evidencia por ID.
- *
- * GET /api/v1/organizations/:organizationId/eventos/:eventoId/evidencias/:evidenciaId
- *
- * Headers:
- * - Authorization: Bearer <accessToken>
- *
- * Params:
- * - organizationId: UUID
- * - eventoId: UUID
- * - evidenciaId: UUID
- *
- * Respuesta 200:
- * {
- *   success: true,
- *   data: EvidenciaAmbiental con relación EventoOperativo,
- *   message: "Evidencia obtenida exitosamente"
- * }
+ * @swagger
+ * /api/v1/:evidenciaId:
+ *   get:
+ *     summary: Obtener recurso
+ *     description: Endpoint para obtener recurso. Requiere autenticación. Requiere acceso a la organización.
+ *     tags: [Evidencias]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: evidenciaId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           $ref: '#/components/schemas/UUID'
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 export const getEvidenciaById = async (req: Request, res: Response): Promise<Response> => {
   if (!req.user) {

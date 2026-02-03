@@ -4,7 +4,7 @@ import {
   optionalDateOnlySchema,
   timeOnlySchema,
   optionalTimeOnlySchema,
-} from '@/shared/dates/zod-schemas';
+} from '@/shared/dates/zod-schemas.js';
 
 /**
  * Schema Zod para crear bloque
