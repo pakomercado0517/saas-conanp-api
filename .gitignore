@@ -13,3 +13,6 @@ docs/
 
 # postman collection
 postman/
+
+# github folder
+.github/

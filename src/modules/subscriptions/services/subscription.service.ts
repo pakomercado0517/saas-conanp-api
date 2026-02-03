@@ -18,6 +18,8 @@ import { stripeClient, handleStripeError } from '@/shared/stripe/index.js';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors/index.js';
 import type { PaginationMeta } from '@/shared/responses/types.js';
 import { logger } from '@/shared/logger/index.js';
+import { cache } from '@/shared/cache/index.js';
+import { CacheKeys } from '@/shared/cache/keys.js';
 import type {
   CreateSubscriptionDTO,
   UpdateSubscriptionDTO,
@@ -28,6 +30,16 @@ import type { DateTime } from 'luxon';
 
 const ACTIVE_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = ['active', 'trialing'];
 const CANCELABLE_STATUSES: SubscriptionStatus[] = ['active', 'trialing', 'past_due', 'unpaid'];
+
+/**
+ * Invalida el caché de suscripción de una organización.
+ * Se llama después de CREATE/UPDATE/DELETE de suscripciones.
+ */
+const invalidateSubscriptionCache = async (organizationId: UUID): Promise<void> => {
+  const cacheKey = CacheKeys.activeSubscription(organizationId);
+  await cache.del(cacheKey);
+  logger.debug({ organizationId, cacheKey }, 'Caché de suscripción invalidado');
+};
 
 /**
  * Valida que la organización no tenga una suscripción activa.
@@ -368,6 +380,9 @@ export const createSubscription = async (
     trialEnd: stripeResult.trialEnd,
   });
 
+  // Invalidar caché después de crear suscripción
+  await invalidateSubscriptionCache(organizationId);
+
   return subscription.reload({
     include: [
       { model: Organization, as: 'Organization' },
@@ -616,6 +631,9 @@ export const changePlan = async (
     stripePriceId,
   });
 
+  // Invalidar caché después de cambiar plan
+  await invalidateSubscriptionCache(organizationId);
+
   logger.info(
     { subscriptionId, organizationId, planId, billingCycle },
     'Plan de suscripción actualizado'
@@ -719,6 +737,9 @@ export const cancelSubscription = async (
     'Suscripción cancelada'
   );
 
+  // Invalidar caché después de cancelar suscripción
+  await invalidateSubscriptionCache(organizationId);
+
   return subscription.reload({
     include: [
       { model: Organization, as: 'Organization' },
@@ -776,6 +797,9 @@ export const reactivateSubscription = async (
   }
 
   await subscription.update({ cancelAtPeriodEnd: false });
+
+  // Invalidar caché después de reactivar suscripción
+  await invalidateSubscriptionCache(organizationId);
 
   logger.info({ subscriptionId, organizationId }, 'Suscripción reactivada');
 
@@ -1032,6 +1056,10 @@ export const updateSubscriptionFromWebhook = async (
 
   if (Object.keys(updateData).length > 0) {
     await subscription.update(updateData);
+
+    // Invalidar caché después de actualizar desde webhook
+    await invalidateSubscriptionCache(subscription.organizationId);
+
     logger.info(
       {
         subscriptionId: subscription.id,
@@ -1099,6 +1127,9 @@ export const renewSubscriptionPeriodFromWebhook = async (
   }
   await subscription.update(updateData);
 
+  // Invalidar caché después de actualizar desde invoice
+  await invalidateSubscriptionCache(subscription.organizationId);
+
   logger.info(
     {
       subscriptionId: subscription.id,
@@ -1148,6 +1179,10 @@ export const markSubscriptionPastDueFromWebhook = async (
   }
 
   await subscription.update({ status: 'past_due' });
+
+  // Invalidar caché después de marcar como past_due
+  await invalidateSubscriptionCache(subscription.organizationId);
+
   logger.info(
     { subscriptionId: subscription.id, stripeSubscriptionId },
     'Webhook invoice.payment_failed: suscripción marcada past_due'

@@ -4,6 +4,21 @@ import { Subscription } from '../../../modules/subscriptions/models/subscription
 import { stripeClient, handleStripeError, getDefaultCurrency } from '../../../shared/stripe';
 import { ConflictError, NotFoundError, ValidationError } from '../../../shared/errors';
 import { logger } from '../../../shared/logger';
+import { cache } from '../../../shared/cache';
+import { CacheKeys } from '../../../shared/cache/keys';
+import { cacheConfig } from '../../../shared/cache/config';
+/**
+ * Invalida el caché de planes de suscripción.
+ * Se llama después de CREATE/UPDATE/DELETE de planes.
+ */
+const invalidatePlanCache = async (planId) => {
+    const keys = [CacheKeys.subscriptionPlans()];
+    if (planId) {
+        keys.push(CacheKeys.subscriptionPlan(planId));
+    }
+    await cache.del(keys);
+    logger.debug({ keys }, 'Caché de planes de suscripción invalidado');
+};
 /**
  * Valida que el plan no tenga suscripciones activas.
  * Estados "en uso": active, trialing.
@@ -64,10 +79,19 @@ export const listPlans = async (filters) => {
  * @throws {NotFoundError} Si el plan no existe
  */
 export const getPlanById = async (planId) => {
+    const cacheKey = CacheKeys.subscriptionPlan(planId);
+    // Intentar obtener del caché
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+    // Si no está en caché, consultar la base de datos
     const plan = await SubscriptionPlan.findByPk(planId);
     if (!plan) {
         throw new NotFoundError('Plan de suscripción', { planId });
     }
+    // Guardar en caché
+    await cache.set(cacheKey, plan, cacheConfig.ttl.subscriptionPlan);
     return plan;
 };
 /**
@@ -127,6 +151,8 @@ export const createPlan = async (data) => {
         maxActividades: data.maxActividades ?? null,
         active: data.active ?? true,
     });
+    // Invalidar caché después de crear plan
+    await invalidatePlanCache();
     logger.info({ planId: plan.id, name: plan.name }, 'Plan de suscripción creado');
     return plan;
 };
@@ -168,6 +194,8 @@ export const updatePlan = async (planId, data) => {
         }),
         ...(data.active !== undefined && { active: data.active }),
     });
+    // Invalidar caché después de actualizar plan
+    await invalidatePlanCache(planId);
     logger.info({ planId: plan.id }, 'Plan de suscripción actualizado');
     return plan;
 };
@@ -181,6 +209,8 @@ export const deletePlan = async (planId) => {
     const plan = await getPlanById(planId);
     await assertPlanNotInUse(planId);
     await plan.destroy();
+    // Invalidar caché después de eliminar plan
+    await invalidatePlanCache(planId);
     logger.info({ planId }, 'Plan eliminado (soft delete)');
 };
 /**
@@ -241,6 +271,8 @@ export const syncPlanToStripe = async (planId) => {
     catch (error) {
         handleStripeError(error);
     }
+    // Invalidar caché después de sincronizar con Stripe
+    await invalidatePlanCache(planId);
     return plan.reload();
 };
 //# sourceMappingURL=subscription-plan.service.js.map

@@ -42,6 +42,10 @@ vi.mock('@/modules/actividades/models/actividad.model.js', () => ({
   },
 }));
 
+vi.mock('@/modules/users/models/user.model.js', () => ({
+  User: {},
+}));
+
 vi.mock('@/shared/logger/index.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn().mockReturnThis() },
 }));

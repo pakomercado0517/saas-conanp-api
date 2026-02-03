@@ -9,6 +9,7 @@ import type { ReporteEventosPorActividadItem, ReporteEventosPorPrestadorItem, Re
  * @param userId - ID del usuario que solicita
  * @returns Array con datos agrupados por actividad
  * @throws {ForbiddenError} Si no tiene acceso a la organización
+ * @throws {ValidationError} Si el rango de fechas excede el máximo
  */
 export declare const getReporteEventosPorActividad: (organizationId: UUID, filters: ReporteEventosPorActividadDTO, userId: UUID) => Promise<ReporteEventosPorActividadItem[]>;
 /**
@@ -19,6 +20,7 @@ export declare const getReporteEventosPorActividad: (organizationId: UUID, filte
  * @param userId - ID del usuario que solicita
  * @returns Array con datos agrupados por prestador
  * @throws {ForbiddenError} Si no tiene acceso a la organización
+ * @throws {ValidationError} Si el rango de fechas excede el máximo
  */
 export declare const getReporteEventosPorPrestador: (organizationId: UUID, filters: ReporteEventosPorPrestadorDTO, userId: UUID) => Promise<ReporteEventosPorPrestadorItem[]>;
 /**
@@ -29,7 +31,7 @@ export declare const getReporteEventosPorPrestador: (organizationId: UUID, filte
  * @param userId - ID del usuario que solicita
  * @returns Array con datos agrupados por fecha
  * @throws {ForbiddenError} Si no tiene acceso a la organización
- * @throws {ValidationError} Si no se proporciona dateFrom o dateTo
+ * @throws {ValidationError} Si no se proporciona dateFrom o dateTo o rango excede máximo
  */
 export declare const getReporteEventosPorFecha: (organizationId: UUID, filters: ReporteEventosPorFechaDTO, userId: UUID) => Promise<ReporteEventosPorFechaItem[]>;
 /**
@@ -40,6 +42,7 @@ export declare const getReporteEventosPorFecha: (organizationId: UUID, filters: 
  * @param userId - ID del usuario que solicita
  * @returns Array con datos de capacidad utilizada
  * @throws {ForbiddenError} Si no tiene acceso a la organización
+ * @throws {ValidationError} Si el rango de fechas excede el máximo
  */
 export declare const getReporteCapacidadUtilizada: (organizationId: UUID, filters: ReporteCapacidadUtilizadaDTO, userId: UUID) => Promise<ReporteCapacidadUtilizadaItem[]>;
 /**

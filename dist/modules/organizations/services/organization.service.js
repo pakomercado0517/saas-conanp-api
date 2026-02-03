@@ -5,8 +5,20 @@ import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscrip
 import { Membership } from '../../../modules/users/models/membership.model';
 import { ForbiddenError, NotFoundError } from '../../../shared/errors';
 import { logger } from '../../../shared/logger';
+import { cache } from '../../../shared/cache';
+import { CacheKeys } from '../../../shared/cache/keys';
+import { cacheConfig } from '../../../shared/cache/config';
 /** Estados de suscripción que permiten operaciones (no bloquean). */
 const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
+/**
+ * Invalida el caché de organización.
+ * Se llama después de UPDATE/DELETE de organizaciones.
+ */
+const invalidateOrganizationCache = async (organizationId) => {
+    const cacheKey = CacheKeys.organization(organizationId);
+    await cache.del(cacheKey);
+    logger.debug({ organizationId, cacheKey }, 'Caché de organización invalidado');
+};
 /**
  * Valida que el usuario tenga acceso a la organización.
  * Verifica membresía activa (userId + organizationId, status 'activo').
@@ -30,13 +42,26 @@ export const assertCanAccessOrganization = async (userId, organizationId) => {
 };
 /**
  * Obtiene la suscripción de una organización (cualquier estado).
+ * Usa caché para reducir consultas a la base de datos.
  */
 const getSubscriptionByOrganization = async (organizationId) => {
-    return Subscription.findOne({
+    const cacheKey = CacheKeys.activeSubscription(organizationId);
+    // Intentar obtener del caché
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+    // Si no está en caché, consultar la base de datos
+    const subscription = await Subscription.findOne({
         where: { organizationId },
         order: [['currentPeriodEnd', 'DESC']],
         include: [{ model: SubscriptionPlan, as: 'SubscriptionPlan' }],
     });
+    // Guardar en caché si existe
+    if (subscription) {
+        await cache.set(cacheKey, subscription, cacheConfig.ttl.subscription);
+    }
+    return subscription;
 };
 /**
  * Verifica que la organización tenga suscripción activa (active o trialing)
@@ -193,6 +218,8 @@ export const updateOrganization = async (organizationId, data, userId) => {
         ...(data.ecosystem_type !== undefined && { ecosystem_type: data.ecosystem_type }),
         ...(data.settings !== undefined && { settings: data.settings }),
     });
+    // Invalidar caché después de actualizar organización
+    await invalidateOrganizationCache(organizationId);
     const updatedKeys = [
         data.name !== undefined && 'name',
         data.ecosystem_type !== undefined && 'ecosystem_type',
@@ -214,6 +241,8 @@ export const deleteOrganization = async (organizationId, userId) => {
         throw new NotFoundError('Organización', { organizationId });
     }
     await org.destroy();
+    // Invalidar caché después de eliminar organización
+    await invalidateOrganizationCache(organizationId);
     logger.info({ organizationId, userId }, 'Organización eliminada (soft delete)');
 };
 //# sourceMappingURL=organization.service.js.map

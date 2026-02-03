@@ -26,6 +26,29 @@ import { assertCanAccessOrganization } from '@/modules/organizations/services/or
 import { toDateOnlyDB, DateTime } from '@/shared/dates/index.js';
 import { ValidationError } from '@/shared/errors/index.js';
 
+// Límites para evitar respuestas muy grandes
+const MAX_DATE_RANGE_DAYS = 365; // Máximo 1 año de rango
+const MAX_RESULTS_LIMIT = 1000; // Máximo 1000 registros por reporte
+
+/**
+ * Valida que el rango de fechas no exceda el límite máximo
+ */
+const validateDateRange = (dateFrom?: string | DateTime, dateTo?: string | DateTime): void => {
+  if (!dateFrom || !dateTo) return;
+
+  const from = typeof dateFrom === 'string' ? DateTime.fromISO(dateFrom) : dateFrom;
+  const to = typeof dateTo === 'string' ? DateTime.fromISO(dateTo) : dateTo;
+
+  const daysDiff = to.diff(from, 'days').days;
+
+  if (daysDiff > MAX_DATE_RANGE_DAYS) {
+    throw new ValidationError(
+      `El rango de fechas no puede exceder ${MAX_DATE_RANGE_DAYS} días (aproximadamente 1 año). Rango actual: ${Math.round(daysDiff)} días.`,
+      'dateRange'
+    );
+  }
+};
+
 /**
  * Obtiene reporte de eventos agrupados por actividad
  *
@@ -34,6 +57,7 @@ import { ValidationError } from '@/shared/errors/index.js';
  * @param userId - ID del usuario que solicita
  * @returns Array con datos agrupados por actividad
  * @throws {ForbiddenError} Si no tiene acceso a la organización
+ * @throws {ValidationError} Si el rango de fechas excede el máximo
  */
 export const getReporteEventosPorActividad = async (
   organizationId: UUID,
@@ -42,6 +66,9 @@ export const getReporteEventosPorActividad = async (
 ): Promise<ReporteEventosPorActividadItem[]> => {
   // Validar acceso a la organización
   await assertCanAccessOrganization(userId, organizationId);
+
+  // Validar rango de fechas
+  validateDateRange(filters.dateFrom, filters.dateTo);
 
   // Construir filtros base
   const whereClause: Record<string, unknown> = {
@@ -87,61 +114,80 @@ export const getReporteEventosPorActividad = async (
     }
   }
 
-  // Obtener eventos con relación a Actividad
-  const eventos = await EventoOperativo.findAll({
+  // Usar GROUP BY en SQL para agregaciones - mucho más eficiente
+  type AggregateRow = {
+    actividadId: UUID;
+    totalEventos: string;
+    totalPersonas: string;
+    fechaInicio: string;
+    fechaFin: string;
+  };
+
+  const aggregates = (await EventoOperativo.findAll({
     where: whereClause,
-    include: [
-      {
-        model: Actividad,
-        as: 'Actividad',
-        required: true,
-        attributes: ['id', 'name'],
-      },
+    attributes: [
+      'actividadId',
+      [sequelize.fn('COUNT', sequelize.col('id')), 'totalEventos'],
+      [sequelize.fn('SUM', sequelize.col('peopleCount')), 'totalPersonas'],
+      [sequelize.fn('MIN', sequelize.col('date')), 'fechaInicio'],
+      [sequelize.fn('MAX', sequelize.col('date')), 'fechaFin'],
     ],
-    attributes: ['id', 'actividadId', 'date', 'status', 'peopleCount'],
-  });
+    group: ['actividadId'],
+    raw: true,
+    limit: MAX_RESULTS_LIMIT,
+  })) as unknown as AggregateRow[];
 
-  // Agrupar por actividad
-  const agrupado = new Map<UUID, ReporteEventosPorActividadItem>();
-
-  for (const evento of eventos) {
-    const actividadId = evento.actividadId;
-    const actividad = evento.Actividad;
-
-    if (!actividad) continue;
-
-    if (!agrupado.has(actividadId)) {
-      agrupado.set(actividadId, {
-        actividadId,
-        actividadName: actividad.name,
-        totalEventos: 0,
-        totalPersonas: 0,
-        eventosPorStatus: {
-          programado: 0,
-          en_curso: 0,
-          completado: 0,
-          cancelado: 0,
-        },
-        fechaInicio: null,
-        fechaFin: null,
-      });
-    }
-
-    const item = agrupado.get(actividadId)!;
-    item.totalEventos += 1;
-    item.totalPersonas += evento.peopleCount;
-    item.eventosPorStatus[evento.status as keyof typeof item.eventosPorStatus] += 1;
-
-    // Actualizar fechas
-    if (!item.fechaInicio || evento.date < item.fechaInicio) {
-      item.fechaInicio = evento.date;
-    }
-    if (!item.fechaFin || evento.date > item.fechaFin) {
-      item.fechaFin = evento.date;
-    }
+  if (aggregates.length === 0) {
+    return [];
   }
 
-  return Array.from(agrupado.values());
+  // Obtener nombres de actividades
+  const actividadIds = aggregates.map((a) => a.actividadId);
+  const actividades = await Actividad.findAll({
+    where: { id: { [Op.in]: actividadIds } },
+    attributes: ['id', 'name'],
+  });
+  const actividadMap = new Map(actividades.map((a) => [a.id, a.name]));
+
+  // Contar eventos por status usando GROUP BY
+  type StatusCountRow = {
+    actividadId: UUID;
+    status: string;
+    count: string;
+  };
+
+  const statusCounts = (await EventoOperativo.findAll({
+    where: whereClause,
+    attributes: ['actividadId', 'status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+    group: ['actividadId', 'status'],
+    raw: true,
+  })) as unknown as StatusCountRow[];
+
+  // Mapear conteos por status
+  const statusMap = new Map<
+    UUID,
+    { programado: number; en_curso: number; completado: number; cancelado: number }
+  >();
+  for (const row of statusCounts) {
+    if (!statusMap.has(row.actividadId)) {
+      statusMap.set(row.actividadId, { programado: 0, en_curso: 0, completado: 0, cancelado: 0 });
+    }
+    const counts = statusMap.get(row.actividadId)!;
+    counts[row.status as keyof typeof counts] = Number(row.count);
+  }
+
+  // Construir resultado
+  return aggregates.map((agg) => ({
+    actividadId: agg.actividadId,
+    actividadName: actividadMap.get(agg.actividadId) || 'Desconocida',
+    totalEventos: Number(agg.totalEventos),
+    totalPersonas: Number(agg.totalPersonas),
+    eventosPorStatus:
+      statusMap.get(agg.actividadId) ||
+      ({ programado: 0, en_curso: 0, completado: 0, cancelado: 0 } as const),
+    fechaInicio: agg.fechaInicio,
+    fechaFin: agg.fechaFin,
+  }));
 };
 
 /**
@@ -152,6 +198,7 @@ export const getReporteEventosPorActividad = async (
  * @param userId - ID del usuario que solicita
  * @returns Array con datos agrupados por prestador
  * @throws {ForbiddenError} Si no tiene acceso a la organización
+ * @throws {ValidationError} Si el rango de fechas excede el máximo
  */
 export const getReporteEventosPorPrestador = async (
   organizationId: UUID,
@@ -160,6 +207,9 @@ export const getReporteEventosPorPrestador = async (
 ): Promise<ReporteEventosPorPrestadorItem[]> => {
   // Validar acceso a la organización
   await assertCanAccessOrganization(userId, organizationId);
+
+  // Validar rango de fechas
+  validateDateRange(filters.dateFrom, filters.dateTo);
 
   // Construir filtros base
   const whereClause: Record<string, unknown> = {
@@ -205,102 +255,137 @@ export const getReporteEventosPorPrestador = async (
     }
   }
 
-  // Obtener eventos con relaciones
-  const eventos = await EventoOperativo.findAll({
+  // Agregaciones por prestador usando GROUP BY en SQL
+  type AggregateRow = {
+    prestadorId: UUID;
+    totalEventos: string;
+    totalPersonas: string;
+    fechaInicio: string;
+    fechaFin: string;
+  };
+
+  const aggregates = (await EventoOperativo.findAll({
     where: whereClause,
+    attributes: [
+      'prestadorId',
+      [sequelize.fn('COUNT', sequelize.col('id')), 'totalEventos'],
+      [sequelize.fn('SUM', sequelize.col('peopleCount')), 'totalPersonas'],
+      [sequelize.fn('MIN', sequelize.col('date')), 'fechaInicio'],
+      [sequelize.fn('MAX', sequelize.col('date')), 'fechaFin'],
+    ],
+    group: ['prestadorId'],
+    raw: true,
+    limit: MAX_RESULTS_LIMIT,
+  })) as unknown as AggregateRow[];
+
+  if (aggregates.length === 0) {
+    return [];
+  }
+
+  const prestadorIds = aggregates.map((a) => a.prestadorId);
+
+  // Obtener información de prestadores
+  const prestadores = await PrestadorProfile.findAll({
+    where: { id: { [Op.in]: prestadorIds } },
     include: [
       {
-        model: PrestadorProfile,
-        as: 'PrestadorProfile',
-        required: true,
-        include: [
-          {
-            model: User,
-            as: 'User',
-            required: true,
-            attributes: ['id', 'name'],
-          },
-        ],
-        attributes: ['id'],
-      },
-      {
-        model: Actividad,
-        as: 'Actividad',
+        model: User,
+        as: 'User',
         required: true,
         attributes: ['id', 'name'],
       },
     ],
-    attributes: ['id', 'prestadorId', 'actividadId', 'date', 'status', 'peopleCount'],
+    attributes: ['id'],
   });
+  const prestadorMap = new Map(prestadores.map((p) => [p.id, p.User?.name || 'Desconocido']));
 
-  // Agrupar por prestador
-  const agrupado = new Map<UUID, ReporteEventosPorPrestadorItem>();
-  const actividadesPorPrestador = new Map<
+  // Contar eventos por status usando GROUP BY
+  type StatusCountRow = {
+    prestadorId: UUID;
+    status: string;
+    count: string;
+  };
+
+  const statusCounts = (await EventoOperativo.findAll({
+    where: whereClause,
+    attributes: ['prestadorId', 'status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+    group: ['prestadorId', 'status'],
+    raw: true,
+  })) as unknown as StatusCountRow[];
+
+  const statusMap = new Map<
     UUID,
-    Map<UUID, { actividadId: UUID; actividadName: string; totalEventos: number }>
+    { programado: number; en_curso: number; completado: number; cancelado: number }
+  >();
+  for (const row of statusCounts) {
+    if (!statusMap.has(row.prestadorId)) {
+      statusMap.set(row.prestadorId, { programado: 0, en_curso: 0, completado: 0, cancelado: 0 });
+    }
+    const counts = statusMap.get(row.prestadorId)!;
+    counts[row.status as keyof typeof counts] = Number(row.count);
+  }
+
+  // Contar actividades distintas por prestador usando GROUP BY
+  type ActividadCountRow = {
+    prestadorId: UUID;
+    actividadId: UUID;
+    actividadName: string;
+    totalEventos: string;
+  };
+
+  const actividadCounts = (await EventoOperativo.findAll({
+    where: whereClause,
+    attributes: [
+      'prestadorId',
+      'actividadId',
+      [sequelize.fn('COUNT', sequelize.col('EventoOperativo.id')), 'totalEventos'],
+    ],
+    include: [
+      {
+        model: Actividad,
+        as: 'Actividad',
+        required: true,
+        attributes: ['name'],
+      },
+    ],
+    group: ['prestadorId', 'actividadId', 'Actividad.id'],
+    raw: true,
+    nest: true,
+  })) as unknown as ActividadCountRow[];
+
+  const actividadesMap = new Map<
+    UUID,
+    Array<{
+      actividadId: UUID;
+      actividadName: string;
+      totalEventos: number;
+    }>
   >();
 
-  for (const evento of eventos) {
-    const prestadorId = evento.prestadorId;
-    const prestador = evento.PrestadorProfile;
-    const user = prestador?.User;
-    const actividad = evento.Actividad;
-
-    if (!prestador || !user || !actividad) continue;
-
-    if (!agrupado.has(prestadorId)) {
-      agrupado.set(prestadorId, {
-        prestadorId,
-        prestadorName: user.name,
-        totalEventos: 0,
-        totalPersonas: 0,
-        eventosPorStatus: {
-          programado: 0,
-          en_curso: 0,
-          completado: 0,
-          cancelado: 0,
-        },
-        actividadesRealizadas: [],
-        fechaInicio: null,
-        fechaFin: null,
-      });
-      actividadesPorPrestador.set(prestadorId, new Map());
+  for (const row of actividadCounts) {
+    if (!actividadesMap.has(row.prestadorId)) {
+      actividadesMap.set(row.prestadorId, []);
     }
-
-    const item = agrupado.get(prestadorId)!;
-    item.totalEventos += 1;
-    item.totalPersonas += evento.peopleCount;
-    item.eventosPorStatus[evento.status as keyof typeof item.eventosPorStatus] += 1;
-
-    // Actualizar fechas
-    if (!item.fechaInicio || evento.date < item.fechaInicio) {
-      item.fechaInicio = evento.date;
-    }
-    if (!item.fechaFin || evento.date > item.fechaFin) {
-      item.fechaFin = evento.date;
-    }
-
-    // Agrupar por actividad
-    const actividadesMap = actividadesPorPrestador.get(prestadorId)!;
-    if (!actividadesMap.has(actividad.id)) {
-      actividadesMap.set(actividad.id, {
-        actividadId: actividad.id,
-        actividadName: actividad.name,
-        totalEventos: 0,
-      });
-    }
-    actividadesMap.get(actividad.id)!.totalEventos += 1;
+    actividadesMap.get(row.prestadorId)!.push({
+      actividadId: row.actividadId,
+      actividadName: (row as unknown as { Actividad: { name: string } }).Actividad.name,
+      totalEventos: Number(row.totalEventos),
+    });
   }
 
-  // Agregar actividades realizadas a cada prestador
-  for (const [prestadorId, item] of agrupado.entries()) {
-    const actividadesMap = actividadesPorPrestador.get(prestadorId);
-    if (actividadesMap) {
-      item.actividadesRealizadas = Array.from(actividadesMap.values());
-    }
-  }
-
-  return Array.from(agrupado.values());
+  // Construir resultado
+  return aggregates.map((agg) => ({
+    prestadorId: agg.prestadorId,
+    prestadorName: prestadorMap.get(agg.prestadorId) || 'Desconocido',
+    totalEventos: Number(agg.totalEventos),
+    totalPersonas: Number(agg.totalPersonas),
+    eventosPorStatus:
+      statusMap.get(agg.prestadorId) ||
+      ({ programado: 0, en_curso: 0, completado: 0, cancelado: 0 } as const),
+    actividadesRealizadas: actividadesMap.get(agg.prestadorId) || [],
+    fechaInicio: agg.fechaInicio,
+    fechaFin: agg.fechaFin,
+  }));
 };
 
 /**
@@ -311,7 +396,7 @@ export const getReporteEventosPorPrestador = async (
  * @param userId - ID del usuario que solicita
  * @returns Array con datos agrupados por fecha
  * @throws {ForbiddenError} Si no tiene acceso a la organización
- * @throws {ValidationError} Si no se proporciona dateFrom o dateTo
+ * @throws {ValidationError} Si no se proporciona dateFrom o dateTo o rango excede máximo
  */
 export const getReporteEventosPorFecha = async (
   organizationId: UUID,
@@ -325,6 +410,9 @@ export const getReporteEventosPorFecha = async (
   if (!filters.dateFrom && !filters.dateTo) {
     throw new ValidationError('Debe proporcionar al menos una fecha (dateFrom o dateTo)');
   }
+
+  // Validar rango de fechas
+  validateDateRange(filters.dateFrom, filters.dateTo);
 
   // Construir filtros base
   const whereClause: Record<string, unknown> = {
@@ -368,82 +456,112 @@ export const getReporteEventosPorFecha = async (
     };
   }
 
-  // Obtener eventos con relaciones
-  const eventos = await EventoOperativo.findAll({
+  // Agregaciones por fecha usando GROUP BY en SQL
+  type AggregateRow = {
+    date: string;
+    totalEventos: string;
+    totalPersonas: string;
+  };
+
+  const aggregates = (await EventoOperativo.findAll({
     where: whereClause,
+    attributes: [
+      'date',
+      [sequelize.fn('COUNT', sequelize.col('id')), 'totalEventos'],
+      [sequelize.fn('SUM', sequelize.col('peopleCount')), 'totalPersonas'],
+    ],
+    group: ['date'],
+    order: [['date', 'ASC']],
+    raw: true,
+    limit: MAX_RESULTS_LIMIT,
+  })) as unknown as AggregateRow[];
+
+  if (aggregates.length === 0) {
+    return [];
+  }
+
+  // Contar eventos por status usando GROUP BY
+  type StatusCountRow = {
+    date: string;
+    status: string;
+    count: string;
+  };
+
+  const statusCounts = (await EventoOperativo.findAll({
+    where: whereClause,
+    attributes: ['date', 'status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+    group: ['date', 'status'],
+    raw: true,
+  })) as unknown as StatusCountRow[];
+
+  const statusMap = new Map<
+    string,
+    { programado: number; en_curso: number; completado: number; cancelado: number }
+  >();
+  for (const row of statusCounts) {
+    if (!statusMap.has(row.date)) {
+      statusMap.set(row.date, { programado: 0, en_curso: 0, completado: 0, cancelado: 0 });
+    }
+    const counts = statusMap.get(row.date)!;
+    counts[row.status as keyof typeof counts] = Number(row.count);
+  }
+
+  // Contar por actividad por fecha usando GROUP BY
+  type ActividadCountRow = {
+    date: string;
+    actividadId: UUID;
+    totalEventos: string;
+    totalPersonas: string;
+  };
+
+  const actividadCounts = (await EventoOperativo.findAll({
+    where: whereClause,
+    attributes: [
+      'date',
+      'actividadId',
+      [sequelize.fn('COUNT', sequelize.col('EventoOperativo.id')), 'totalEventos'],
+      [sequelize.fn('SUM', sequelize.col('peopleCount')), 'totalPersonas'],
+    ],
     include: [
       {
         model: Actividad,
         as: 'Actividad',
         required: true,
-        attributes: ['id', 'name'],
+        attributes: ['name'],
       },
     ],
-    attributes: ['id', 'actividadId', 'date', 'status', 'peopleCount'],
-  });
+    group: ['date', 'actividadId', 'Actividad.id'],
+    raw: true,
+    nest: true,
+  })) as unknown as ActividadCountRow[];
 
-  // Agrupar por fecha
-  const agrupado = new Map<string, ReporteEventosPorFechaItem>();
-  const actividadesPorFecha = new Map<
+  const actividadesMap = new Map<
     string,
-    Map<
-      UUID,
-      { actividadId: UUID; actividadName: string; totalEventos: number; totalPersonas: number }
-    >
+    Array<{ actividadId: UUID; actividadName: string; totalEventos: number; totalPersonas: number }>
   >();
 
-  for (const evento of eventos) {
-    const date = evento.date;
-    const actividad = evento.Actividad;
-
-    if (!actividad) continue;
-
-    if (!agrupado.has(date)) {
-      agrupado.set(date, {
-        date,
-        totalEventos: 0,
-        totalPersonas: 0,
-        eventosPorActividad: [],
-        eventosPorStatus: {
-          programado: 0,
-          en_curso: 0,
-          completado: 0,
-          cancelado: 0,
-        },
-      });
-      actividadesPorFecha.set(date, new Map());
+  for (const row of actividadCounts) {
+    if (!actividadesMap.has(row.date)) {
+      actividadesMap.set(row.date, []);
     }
-
-    const item = agrupado.get(date)!;
-    item.totalEventos += 1;
-    item.totalPersonas += evento.peopleCount;
-    item.eventosPorStatus[evento.status as keyof typeof item.eventosPorStatus] += 1;
-
-    // Agrupar por actividad
-    const actividadesMap = actividadesPorFecha.get(date)!;
-    if (!actividadesMap.has(actividad.id)) {
-      actividadesMap.set(actividad.id, {
-        actividadId: actividad.id,
-        actividadName: actividad.name,
-        totalEventos: 0,
-        totalPersonas: 0,
-      });
-    }
-    const actividadItem = actividadesMap.get(actividad.id)!;
-    actividadItem.totalEventos += 1;
-    actividadItem.totalPersonas += evento.peopleCount;
+    actividadesMap.get(row.date)!.push({
+      actividadId: row.actividadId,
+      actividadName: (row as unknown as { Actividad: { name: string } }).Actividad.name,
+      totalEventos: Number(row.totalEventos),
+      totalPersonas: Number(row.totalPersonas),
+    });
   }
 
-  // Agregar actividades por fecha
-  for (const [date, item] of agrupado.entries()) {
-    const actividadesMap = actividadesPorFecha.get(date);
-    if (actividadesMap) {
-      item.eventosPorActividad = Array.from(actividadesMap.values());
-    }
-  }
-
-  // Ordenar por fecha
-  return Array.from(agrupado.values()).sort((a, b) => a.date.localeCompare(b.date));
+  // Construir resultado
+  return aggregates.map((agg) => ({
+    date: agg.date,
+    totalEventos: Number(agg.totalEventos),
+    totalPersonas: Number(agg.totalPersonas),
+    eventosPorStatus:
+      statusMap.get(agg.date) ||
+      ({ programado: 0, en_curso: 0, completado: 0, cancelado: 0 } as const),
+    eventosPorActividad: actividadesMap.get(agg.date) || [],
+  }));
 };
 
 /**
@@ -454,6 +572,7 @@ export const getReporteEventosPorFecha = async (
  * @param userId - ID del usuario que solicita
  * @returns Array con datos de capacidad utilizada
  * @throws {ForbiddenError} Si no tiene acceso a la organización
+ * @throws {ValidationError} Si el rango de fechas excede el máximo
  */
 export const getReporteCapacidadUtilizada = async (
   organizationId: UUID,
@@ -462,6 +581,9 @@ export const getReporteCapacidadUtilizada = async (
 ): Promise<ReporteCapacidadUtilizadaItem[]> => {
   // Validar acceso a la organización
   await assertCanAccessOrganization(userId, organizationId);
+
+  // Validar rango de fechas
+  validateDateRange(filters.dateFrom, filters.dateTo);
 
   // Construir filtros para capacidades
   const capacidadWhere: Record<string, unknown> = {
@@ -513,6 +635,7 @@ export const getReporteCapacidadUtilizada = async (
         attributes: ['id', 'name', 'agendaType'],
       },
     ],
+    limit: MAX_RESULTS_LIMIT,
   });
 
   if (capacidades.length === 0) {
@@ -711,6 +834,7 @@ export const getReportePrestadoresActivos = async (
         attributes: ['id', 'name'],
       },
     ],
+    limit: MAX_RESULTS_LIMIT,
   });
 
   if (prestadores.length === 0) {

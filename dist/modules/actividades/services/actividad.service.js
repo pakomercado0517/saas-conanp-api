@@ -5,6 +5,21 @@ import { logger } from '../../../shared/logger/index.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
 import { checkActividadesLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
+import { cache } from '../../../shared/cache/index.js';
+import { CacheKeys } from '../../../shared/cache/keys.js';
+import { cacheConfig } from '../../../shared/cache/config.js';
+/**
+ * Invalida el caché de actividades de una organización.
+ * Se llama después de CREATE/UPDATE/DELETE de actividades.
+ */
+const invalidateActividadCache = async (organizationId, actividadId) => {
+    const keys = [CacheKeys.actividades(organizationId)];
+    if (actividadId) {
+        keys.push(CacheKeys.actividad(organizationId, actividadId));
+    }
+    await cache.del(keys);
+    logger.debug({ organizationId, actividadId, keys }, 'Caché de actividades invalidado');
+};
 /**
  * Valida que el tipo de agenda sea válido
  *
@@ -49,6 +64,8 @@ export const createActividad = async (data, userId) => {
         impactLevel: data.impactLevel ?? null,
         active: data.active ?? true,
     });
+    // Invalidar caché después de crear actividad
+    await invalidateActividadCache(data.organizationId);
     logger.info({
         actividadId: actividad.id,
         organizationId: actividad.organizationId,
@@ -72,6 +89,12 @@ export const createActividad = async (data, userId) => {
 export const getActividadById = async (actividadId, organizationId, userId) => {
     // Validar acceso a la organización
     await assertCanAccessOrganization(userId, organizationId);
+    const cacheKey = CacheKeys.actividad(organizationId, actividadId);
+    // Intentar obtener del caché
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
     // Buscar actividad con filtro multi-tenant
     // Nota: paranoid: true en el modelo excluye automáticamente registros eliminados
     const actividad = await Actividad.findOne({
@@ -83,6 +106,8 @@ export const getActividadById = async (actividadId, organizationId, userId) => {
     if (!actividad) {
         throw new NotFoundError('Actividad', { actividadId, organizationId });
     }
+    // Guardar en caché
+    await cache.set(cacheKey, actividad, cacheConfig.ttl.actividad);
     return actividad;
 };
 /**
@@ -195,6 +220,8 @@ export const updateActividad = async (actividadId, organizationId, data, userId)
         updateData.active = data.active;
     }
     await actividad.update(updateData);
+    // Invalidar caché después de actualizar actividad
+    await invalidateActividadCache(organizationId, actividadId);
     const updatedKeys = Object.keys(updateData);
     logger.info({
         actividadId: actividad.id,
@@ -234,6 +261,8 @@ export const deleteActividad = async (actividadId, organizationId, userId) => {
     // Nota: Con paranoid: true configurado en el modelo, destroy() automáticamente
     // hace soft delete (actualiza deletedAt) en lugar de eliminar físicamente
     await actividad.destroy();
+    // Invalidar caché después de eliminar actividad
+    await invalidateActividadCache(organizationId, actividadId);
     logger.info({
         actividadId,
         organizationId,
