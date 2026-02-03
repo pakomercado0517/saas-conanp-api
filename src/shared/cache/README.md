@@ -144,10 +144,7 @@ import { CacheKeys } from '@/shared/cache/keys';
 await cache.del(CacheKeys.organization(organizationId));
 
 // Invalidar múltiples keys
-await cache.del([
-  CacheKeys.subscriptionPlans(),
-  CacheKeys.subscriptionPlan(planId)
-]);
+await cache.del([CacheKeys.subscriptionPlans(), CacheKeys.subscriptionPlan(planId)]);
 ```
 
 ## Cache Keys (Multi-Tenant)
@@ -213,7 +210,7 @@ Los siguientes middlewares se benefician automáticamente del caché:
 // - Subscription.findOne + include SubscriptionPlan (verificar suscripción)
 
 // Ahora: 1 query + 1 caché hit
-// - Membership.findOne (verificar acceso) 
+// - Membership.findOne (verificar acceso)
 // - getSubscriptionByOrganization -> CACHE HIT
 ```
 
@@ -229,7 +226,7 @@ Los siguientes middlewares se benefician automáticamente del caché:
 // Ahora: 3 queries + 1 caché hit
 // - getSubscriptionByOrganization -> CACHE HIT
 // - Membership.count
-// - EventoOperativo.count  
+// - EventoOperativo.count
 // - Actividad.count
 ```
 
