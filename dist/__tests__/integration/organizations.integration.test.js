@@ -8,7 +8,10 @@ describe('Organizations endpoints (integration)', () => {
     let org;
     beforeAll(async () => {
         auth = await createTestUserAndToken(app);
-        org = await createTestOrganization(app, { name: 'Org Integración', ecosystem_type: 'terrestre' });
+        org = await createTestOrganization(app, {
+            name: 'Org Integración',
+            ecosystem_type: 'terrestre',
+        });
         await bootstrapOrganizationWithSubscription(auth.user.id, org.id);
     });
     describe('POST /organizations', () => {
@@ -32,9 +35,7 @@ describe('Organizations endpoints (integration)', () => {
     });
     describe('GET /organizations', () => {
         it('lista organizaciones del usuario con auth y devuelve 200', async () => {
-            const res = await authRequest(app, auth.accessToken)
-                .get(API)
-                .expect(200);
+            const res = await authRequest(app, auth.accessToken).get(API).expect(200);
             expect(res.body.success).toBe(true);
             expect(res.body).toHaveProperty('data');
             expect(Array.isArray(res.body.data)).toBe(true);
@@ -48,9 +49,7 @@ describe('Organizations endpoints (integration)', () => {
     });
     describe('GET /organizations/:organizationId', () => {
         it('devuelve 200 y la organización cuando hay acceso y suscripción activa', async () => {
-            const res = await authRequest(app, auth.accessToken)
-                .get(`${API}/${org.id}`)
-                .expect(200);
+            const res = await authRequest(app, auth.accessToken).get(`${API}/${org.id}`).expect(200);
             expect(res.body.success).toBe(true);
             expect(res.body.data).toMatchObject({
                 id: org.id,
@@ -60,9 +59,7 @@ describe('Organizations endpoints (integration)', () => {
         });
         it('devuelve 403 para organización sin membresía', async () => {
             const otherOrg = await createTestOrganization(app, { name: 'Otra Org' });
-            await authRequest(app, auth.accessToken)
-                .get(`${API}/${otherOrg.id}`)
-                .expect(403);
+            await authRequest(app, auth.accessToken).get(`${API}/${otherOrg.id}`).expect(403);
         });
     });
     describe('PATCH /organizations/:organizationId', () => {
@@ -79,9 +76,7 @@ describe('Organizations endpoints (integration)', () => {
         it('elimina organización y devuelve 204', async () => {
             const toDelete = await createTestOrganization(app, { name: 'Org a Borrar' });
             await bootstrapOrganizationWithSubscription(auth.user.id, toDelete.id);
-            await authRequest(app, auth.accessToken)
-                .delete(`${API}/${toDelete.id}`)
-                .expect(204);
+            await authRequest(app, auth.accessToken).delete(`${API}/${toDelete.id}`).expect(204);
         });
     });
 });

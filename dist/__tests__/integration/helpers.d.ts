@@ -79,8 +79,18 @@ export declare function createPrestadorProfile(app: Application, accessToken: st
     organizationId: string;
     status: string;
 }>;
+/** Retorno de authRequest: métodos HTTP que inyectan el Bearer token. */
+type AuthRequestReturn = {
+    get: (url: string) => ReturnType<ReturnType<typeof request>['get']>;
+    post: (url: string) => ReturnType<ReturnType<typeof request>['post']>;
+    patch: (url: string) => ReturnType<ReturnType<typeof request>['patch']>;
+    delete: (url: string) => ReturnType<ReturnType<typeof request>['delete']>;
+};
 /**
  * Helper para peticiones autenticadas.
+ * request(app) devuelve un objeto con .get, .post, etc.; .set() está en la cadena de cada método.
+ * Por eso encadenamos el header en cada llamada a get/post/patch/delete.
  */
-export declare function authRequest(app: Application, accessToken: string): import("supertest/lib/agent")<request.SuperTestStatic.Test>;
+export declare function authRequest(app: Application, accessToken: string): AuthRequestReturn;
+export {};
 //# sourceMappingURL=helpers.d.ts.map

@@ -13,9 +13,7 @@ describe('Users endpoints (integration)', () => {
     });
     describe('GET /users/profile', () => {
         it('devuelve 200 y perfil del usuario', async () => {
-            const res = await authRequest(app, auth.accessToken)
-                .get(`${API_USERS}/profile`)
-                .expect(200);
+            const res = await authRequest(app, auth.accessToken).get(`${API_USERS}/profile`).expect(200);
             expect(res.body.success).toBe(true);
             expect(res.body.data).toMatchObject({
                 id: auth.user.id,

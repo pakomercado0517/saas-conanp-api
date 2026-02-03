@@ -226,8 +226,7 @@ export const listEvidencias = async (organizationId, filters, userId) => {
     const sortBy = filters.sortBy ?? 'createdAt';
     const sortOrder = filters.sortOrder ?? 'desc';
     const offset = (filters.page - 1) * limit;
-    // Ejecutar query con paginación
-    // Incluir relación EventoOperativo para validar multi-tenant
+    // Ejecutar query con paginación (include mínimo para multi-tenant)
     const result = await EvidenciaAmbiental.findAndCountAll({
         where,
         limit,
@@ -237,8 +236,9 @@ export const listEvidencias = async (organizationId, filters, userId) => {
             {
                 model: EventoOperativo,
                 as: 'EventoOperativo',
-                where: { organizationId }, // Multi-tenant obligatorio
+                where: { organizationId },
                 required: true,
+                attributes: ['id', 'organizationId'],
             },
         ],
     });

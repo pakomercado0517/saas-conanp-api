@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import type { UUID } from '@/shared/database/types.js';
+import { sequelize } from '@/shared/database/index.js';
 import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
 import { Actividad } from '@/modules/actividades/models/actividad.model.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
@@ -500,9 +501,10 @@ export const getReporteCapacidadUtilizada = async (
     }
   }
 
-  // Obtener capacidades con relación a Actividad
+  // Obtener capacidades con relación a Actividad (solo atributos necesarios)
   const capacidades = await Capacidad.findAll({
     where: capacidadWhere,
+    attributes: ['id', 'actividadId', 'date', 'limit'],
     include: [
       {
         model: Actividad,
@@ -513,26 +515,65 @@ export const getReporteCapacidadUtilizada = async (
     ],
   });
 
+  if (capacidades.length === 0) {
+    return [];
+  }
+
+  const actividadIds = [...new Set(capacidades.map((c) => c.actividadId))];
+  const allDates = [...new Set(capacidades.map((c) => c.date))];
+
+  // Una sola query: sum(peopleCount) agrupado por actividadId, date, bloqueId
+  const sumsRows = await EventoOperativo.findAll({
+    where: {
+      organizationId,
+      status: { [Op.in]: ['programado', 'en_curso'] },
+      actividadId: { [Op.in]: actividadIds },
+      date: { [Op.in]: allDates },
+    },
+    attributes: [
+      'actividadId',
+      'date',
+      'bloqueId',
+      [sequelize.fn('SUM', sequelize.col('peopleCount')), 'total'],
+    ],
+    group: ['actividadId', 'date', 'bloqueId'],
+    raw: true,
+  });
+
+  type SumRow = { actividadId: UUID; date: string; bloqueId: UUID | null; total: unknown };
+  const sumByKey = new Map<string, number>();
+  for (const row of sumsRows as unknown as SumRow[]) {
+    const key = `${row.actividadId}|${row.date}|${row.bloqueId ?? 'null'}`;
+    sumByKey.set(key, Number(row.total));
+  }
+
+  // Una sola query: todos los bloques de las actividades involucradas
+  const actividadesConBloques = capacidades.some((c) => c.Actividad?.agendaType === 'BLOQUES');
+  const bloquesPorActividad = new Map<UUID, Bloque[]>();
+  if (actividadesConBloques) {
+    const bloques = await Bloque.findAll({
+      where: {
+        actividadId: { [Op.in]: actividadIds },
+        organizationId,
+      },
+      attributes: ['id', 'actividadId', 'capacity', 'startTime', 'endTime'],
+    });
+    for (const b of bloques) {
+      const list = bloquesPorActividad.get(b.actividadId) ?? [];
+      list.push(b);
+      bloquesPorActividad.set(b.actividadId, list);
+    }
+  }
+
   const resultados: ReporteCapacidadUtilizadaItem[] = [];
 
   for (const capacidad of capacidades) {
     const actividad = capacidad.Actividad;
     if (!actividad) continue;
 
-    // Si es HORARIO_LIBRE, calcular capacidad para el día completo
     if (actividad.agendaType === 'HORARIO_LIBRE') {
-      // Calcular capacidad usada (suma de peopleCount de eventos activos sin bloqueId)
-      const capacidadUsada =
-        (await EventoOperativo.sum('peopleCount', {
-          where: {
-            actividadId: capacidad.actividadId,
-            date: capacidad.date,
-            organizationId,
-            status: { [Op.in]: ['programado', 'en_curso'] },
-            bloqueId: { [Op.is]: null },
-          },
-        })) || 0;
-
+      const key = `${capacidad.actividadId}|${capacidad.date}|null`;
+      const capacidadUsada = sumByKey.get(key) ?? 0;
       const capacidadDisponible = Math.max(0, capacidad.limit - capacidadUsada);
       const porcentajeUtilizado =
         capacidad.limit > 0 ? (capacidadUsada / capacidad.limit) * 100 : 0;
@@ -550,30 +591,10 @@ export const getReporteCapacidadUtilizada = async (
         bloqueName: null,
       });
     } else if (actividad.agendaType === 'BLOQUES') {
-      // Para BLOQUES, obtener información por bloque
-      // Obtener bloques para esta actividad
-      const bloques = await Bloque.findAll({
-        where: {
-          actividadId: actividad.id,
-          organizationId,
-        },
-        attributes: ['id', 'capacity', 'startTime', 'endTime'],
-      });
-
+      const bloques = bloquesPorActividad.get(actividad.id) ?? [];
       for (const bloque of bloques) {
-        // Calcular capacidad usada para este bloque específico
-        const capacidadUsadaBloque =
-          (await EventoOperativo.sum('peopleCount', {
-            where: {
-              actividadId: capacidad.actividadId,
-              date: capacidad.date,
-              organizationId,
-              status: { [Op.in]: ['programado', 'en_curso'] },
-              bloqueId: bloque.id,
-            },
-          })) || 0;
-
-        // Para BLOQUES, si hay capacidad definida en la tabla Capacidad, usarla; si no, usar bloque.capacity
+        const key = `${capacidad.actividadId}|${capacidad.date}|${bloque.id}`;
+        const capacidadUsadaBloque = sumByKey.get(key) ?? 0;
         const capacidadTotalBloque = capacidad.limit || bloque.capacity;
         const capacidadDisponibleBloque = Math.max(0, capacidadTotalBloque - capacidadUsadaBloque);
         const porcentajeUtilizadoBloque =
@@ -678,9 +699,10 @@ export const getReportePrestadoresActivos = async (
     };
   }
 
-  // Obtener prestadores con relación a User
+  // Obtener prestadores con relación a User (solo atributos necesarios)
   const prestadores = await PrestadorProfile.findAll({
     where: prestadorWhere,
+    attributes: ['id', 'userId', 'status', 'permitExpiresAt'],
     include: [
       {
         model: User,
@@ -691,66 +713,79 @@ export const getReportePrestadoresActivos = async (
     ],
   });
 
-  const resultados: ReportePrestadoresActivosItem[] = [];
+  if (prestadores.length === 0) {
+    return [];
+  }
 
-  for (const prestador of prestadores) {
-    const user = prestador.User;
-    if (!user) continue;
+  const prestadorIds = prestadores.map((p) => p.id);
+  const ahora = DateTime.now().setZone('America/Mexico_City');
 
-    // Obtener eventos del prestador
-    const eventos = await EventoOperativo.findAll({
-      where: {
-        prestadorId: prestador.id,
-        organizationId,
-        deletedAt: null,
-      } as unknown as Record<string, unknown>,
-      attributes: ['id', 'date', 'peopleCount'],
-      order: [['date', 'DESC']],
+  // Una sola query: todos los eventos de estos prestadores
+  const eventos = await EventoOperativo.findAll({
+    where: {
+      prestadorId: { [Op.in]: prestadorIds },
+      organizationId,
+      deletedAt: null,
+    } as unknown as Record<string, unknown>,
+    attributes: ['prestadorId', 'date', 'peopleCount'],
+    order: [['date', 'DESC']],
+  });
+
+  // Agrupar por prestador: totalEventos, totalPersonas, ultimoEvento
+  const eventosPorPrestador = new Map<
+    UUID,
+    { totalEventos: number; totalPersonas: number; ultimoEvento: string | null }
+  >();
+  for (const id of prestadorIds) {
+    eventosPorPrestador.set(id, {
+      totalEventos: 0,
+      totalPersonas: 0,
+      ultimoEvento: null,
     });
+  }
+  for (const evento of eventos) {
+    const agg = eventosPorPrestador.get(evento.prestadorId)!;
+    agg.totalEventos += 1;
+    agg.totalPersonas += evento.peopleCount ?? 0;
+    if (!agg.ultimoEvento) agg.ultimoEvento = evento.date;
+  }
 
-    const totalEventos = eventos.length;
-    const totalPersonas = eventos.reduce((sum, evento) => sum + (evento.peopleCount ?? 0), 0);
-    const ultimoEvento = eventos[0]?.date ?? null;
+  // Una sola query: conteo de permisos por prestador (GROUP BY)
+  const permisoWhere: Record<string, unknown> = {
+    prestadorId: { [Op.in]: prestadorIds },
+    status: 'activo',
+  };
+  if (filters.conPermisosVigentes) {
+    permisoWhere['validFrom'] = { [Op.lte]: ahora.toJSDate() };
+    permisoWhere['validTo'] = { [Op.gte]: ahora.toJSDate() };
+  }
+  const permisosCountRows = await Permiso.findAll({
+    where: permisoWhere,
+    attributes: ['prestadorId', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+    group: ['prestadorId'],
+    raw: true,
+  });
+  type PermisoCountRow = { prestadorId: UUID; count: unknown };
+  const permisosPorPrestador = new Map<UUID, number>();
+  for (const row of permisosCountRows as unknown as PermisoCountRow[]) {
+    permisosPorPrestador.set(row.prestadorId, Number(row.count));
+  }
 
-    // Obtener permisos vigentes
-    const ahora = DateTime.now().setZone('America/Mexico_City');
-    let actividadesPermitidas = 0;
-    if (filters.conPermisosVigentes) {
-      // Contar solo permisos vigentes
-      actividadesPermitidas = await Permiso.count({
-        where: {
-          prestadorId: prestador.id,
-          status: 'activo',
-          validFrom: {
-            [Op.lte]: ahora.toJSDate(),
-          },
-          validTo: {
-            [Op.gte]: ahora.toJSDate(),
-          },
-        },
-      });
-    } else {
-      // Contar todos los permisos activos
-      actividadesPermitidas = await Permiso.count({
-        where: {
-          prestadorId: prestador.id,
-          status: 'activo',
-        },
-      });
-    }
-
-    resultados.push({
+  const resultados: ReportePrestadoresActivosItem[] = prestadores.map((prestador) => {
+    const user = prestador.User!;
+    const agg = eventosPorPrestador.get(prestador.id)!;
+    const actividadesPermitidas = permisosPorPrestador.get(prestador.id) ?? 0;
+    return {
       prestadorId: prestador.id,
       prestadorName: user.name,
       status: prestador.status,
       permitExpiresAt: prestador.permitExpiresAt,
-      totalEventos,
-      totalPersonas,
+      totalEventos: agg.totalEventos,
+      totalPersonas: agg.totalPersonas,
       actividadesPermitidas,
-      ultimoEvento,
-    });
-  }
+      ultimoEvento: agg.ultimoEvento,
+    };
+  });
 
-  // Ordenar por nombre
   return resultados.sort((a, b) => a.prestadorName.localeCompare(b.prestadorName));
 };

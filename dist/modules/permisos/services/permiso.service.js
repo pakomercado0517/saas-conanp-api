@@ -1,6 +1,7 @@
 import { Op } from 'sequelize';
 import { Permiso } from '../../../modules/permisos/models/permiso.model.js';
 import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
 import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
@@ -300,8 +301,7 @@ export const listPermisosByPrestador = async (prestadorId, organizationId, filte
     const sortBy = filters.sortBy ?? 'createdAt';
     const sortOrder = filters.sortOrder ?? 'desc';
     const offset = (filters.page - 1) * limit;
-    // Ejecutar query con paginación
-    // Asegurar que solo se obtengan permisos de prestadores y actividades de la organización
+    // Ejecutar query con paginación (includes con atributos mínimos)
     const result = await Permiso.findAndCountAll({
         where,
         limit,
@@ -311,18 +311,23 @@ export const listPermisosByPrestador = async (prestadorId, organizationId, filte
             {
                 model: PrestadorProfile,
                 as: 'PrestadorProfile',
-                where: {
-                    organizationId,
-                },
+                where: { organizationId },
                 required: true,
+                attributes: ['id', 'userId'],
+                include: [
+                    {
+                        model: User,
+                        as: 'User',
+                        attributes: ['id', 'name'],
+                    },
+                ],
             },
             {
                 model: Actividad,
                 as: 'Actividad',
-                where: {
-                    organizationId,
-                },
+                where: { organizationId },
                 required: true,
+                attributes: ['id', 'name'],
             },
         ],
     });

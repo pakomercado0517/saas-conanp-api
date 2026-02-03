@@ -91,6 +91,7 @@ export async function bootstrapOrganizationWithSubscription(userId, organization
         billingCycle: 'monthly',
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,
+        metadata: null,
     });
 }
 /**
@@ -120,6 +121,7 @@ export async function createPrestadorProfile(app, accessToken, organizationId, b
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
         userId: body.userId,
+        organizationId,
         status: body.status ?? 'activo',
     })
         .expect(201);
@@ -130,8 +132,17 @@ export async function createPrestadorProfile(app, accessToken, organizationId, b
 }
 /**
  * Helper para peticiones autenticadas.
+ * request(app) devuelve un objeto con .get, .post, etc.; .set() está en la cadena de cada método.
+ * Por eso encadenamos el header en cada llamada a get/post/patch/delete.
  */
 export function authRequest(app, accessToken) {
-    return request(app).set('Authorization', `Bearer ${accessToken}`);
+    const req = request(app);
+    const withAuth = (r) => accessToken ? r.set('Authorization', `Bearer ${accessToken}`) : r;
+    return {
+        get: (url) => withAuth(req.get(url)),
+        post: (url) => withAuth(req.post(url)),
+        patch: (url) => withAuth(req.patch(url)),
+        delete: (url) => withAuth(req.delete(url)),
+    };
 }
 //# sourceMappingURL=helpers.js.map

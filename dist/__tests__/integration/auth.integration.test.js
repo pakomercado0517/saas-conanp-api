@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../../server.js';
-import { createTestUserAndToken, loginAs, } from './helpers.js';
+import { createTestUserAndToken, loginAs } from './helpers.js';
 const API = '/api/v1/auth';
 describe('Auth endpoints (integration)', () => {
     let auth;
@@ -61,10 +61,7 @@ describe('Auth endpoints (integration)', () => {
             expect(res.body.data).toHaveProperty('expiresIn');
         });
         it('devuelve 401 con refreshToken inválido', async () => {
-            await request(app)
-                .post(`${API}/refresh`)
-                .send({ refreshToken: 'invalid-token' })
-                .expect(401);
+            await request(app).post(`${API}/refresh`).send({ refreshToken: 'invalid-token' }).expect(401);
         });
     });
     describe('GET /me', () => {

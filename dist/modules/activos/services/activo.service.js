@@ -1,5 +1,6 @@
 import { Activo } from '../../../modules/activos/models/activo.model.js';
 import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 import { Organization } from '../../../modules/organizations/models/organization.model.js';
 import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
@@ -186,15 +187,30 @@ export const listActivos = async (organizationId, filters, requestingUserId) => 
     const sortBy = filters.sortBy ?? 'createdAt';
     const sortOrder = filters.sortOrder ?? 'desc';
     const offset = (filters.page - 1) * limit;
-    // Ejecutar query con paginación
+    // Ejecutar query con paginación (includes con atributos mínimos)
     const result = await Activo.findAndCountAll({
         where,
         limit,
         offset,
         order: [[sortBy, sortOrder]],
         include: [
-            { model: Organization, as: 'Organization' },
-            { model: PrestadorProfile, as: 'Owner' },
+            {
+                model: Organization,
+                as: 'Organization',
+                attributes: ['id', 'name'],
+            },
+            {
+                model: PrestadorProfile,
+                as: 'Owner',
+                attributes: ['id', 'userId'],
+                include: [
+                    {
+                        model: User,
+                        as: 'User',
+                        attributes: ['id', 'name'],
+                    },
+                ],
+            },
         ],
     });
     const total = result.count;

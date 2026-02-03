@@ -196,14 +196,22 @@ export async function createPrestadorProfile(
   return data;
 }
 
+/** Retorno de authRequest: métodos HTTP que inyectan el Bearer token. */
+type AuthRequestReturn = {
+  get: (url: string) => ReturnType<ReturnType<typeof request>['get']>;
+  post: (url: string) => ReturnType<ReturnType<typeof request>['post']>;
+  patch: (url: string) => ReturnType<ReturnType<typeof request>['patch']>;
+  delete: (url: string) => ReturnType<ReturnType<typeof request>['delete']>;
+};
+
 /**
  * Helper para peticiones autenticadas.
  * request(app) devuelve un objeto con .get, .post, etc.; .set() está en la cadena de cada método.
  * Por eso encadenamos el header en cada llamada a get/post/patch/delete.
  */
-export function authRequest(app: Application, accessToken: string) {
+export function authRequest(app: Application, accessToken: string): AuthRequestReturn {
   const req = request(app);
-  const withAuth = <T>(r: T & { set: (k: string, v: string) => T }) =>
+  const withAuth = <T>(r: T & { set: (k: string, v: string) => T }): T =>
     accessToken ? r.set('Authorization', `Bearer ${accessToken}`) : r;
   return {
     get: (url: string) => withAuth(req.get(url)),

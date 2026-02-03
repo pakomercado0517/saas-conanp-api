@@ -308,15 +308,15 @@ export const listPrestadores = async (
   const sortOrder = filters.sortOrder ?? 'desc';
   const offset = (filters.page - 1) * limit;
 
-  // Ejecutar query con paginación
+  // Ejecutar query con paginación (includes con atributos mínimos)
   const result = await PrestadorProfile.findAndCountAll({
     where,
     limit,
     offset,
     order: [[sortBy, sortOrder]],
     include: [
-      { model: User, as: 'User' },
-      { model: Organization, as: 'Organization' },
+      { model: User, as: 'User', attributes: ['id', 'name', 'email'] },
+      { model: Organization, as: 'Organization', attributes: ['id', 'name'] },
     ],
   });
 
