@@ -1,8 +1,12 @@
 import { z } from 'zod';
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+import { registry } from '../../../shared/swagger/index.js';
+// Extender Zod con funcionalidad OpenAPI
+extendZodWithOpenApi(z);
 /**
  * Schema Zod para actualizar perfil de usuario
  */
-export const UpdateProfileSchema = z
+export const UpdateProfileSchema = registry.register('UpdateProfileRequest', z
     .object({
     email: z
         .string({
@@ -13,7 +17,9 @@ export const UpdateProfileSchema = z
     })
         .toLowerCase()
         .trim()
-        .optional(),
+        .optional()
+        .describe('Nuevo correo electrónico del usuario. Debe ser único en el sistema.')
+        .openapi({ example: 'nuevo.email@example.com' }),
     name: z
         .string({
         message: 'El nombre debe ser un texto',
@@ -25,15 +31,17 @@ export const UpdateProfileSchema = z
         message: 'El nombre no puede exceder 255 caracteres',
     })
         .trim()
-        .optional(),
+        .optional()
+        .describe('Nuevo nombre completo del usuario')
+        .openapi({ example: 'María González Martínez' }),
 })
     .refine((data) => data.email !== undefined || data.name !== undefined, {
     message: 'Debe proporcionar al menos un campo para actualizar (email o name)',
-});
+}));
 /**
  * Schema Zod para cambiar contraseña
  */
-export const ChangePasswordSchema = z
+export const ChangePasswordSchema = registry.register('ChangePasswordRequest', z
     .object({
     currentPassword: z
         .string({
@@ -41,7 +49,9 @@ export const ChangePasswordSchema = z
     })
         .min(1, {
         message: 'La contraseña actual no puede estar vacía',
-    }),
+    })
+        .describe('Contraseña actual del usuario para verificar identidad')
+        .openapi({ example: 'MiPasswordActual123!' }),
     newPassword: z
         .string({
         message: 'La nueva contraseña es requerida y debe ser un texto',
@@ -51,10 +61,12 @@ export const ChangePasswordSchema = z
     })
         .max(255, {
         message: 'La nueva contraseña no puede exceder 255 caracteres',
-    }),
+    })
+        .describe('Nueva contraseña. Mínimo 8 caracteres. Debe ser diferente de la actual.')
+        .openapi({ example: 'MiNuevaPassword456!' }),
 })
     .refine((data) => data.currentPassword !== data.newPassword, {
     message: 'La nueva contraseña debe ser diferente de la contraseña actual',
     path: ['newPassword'],
-});
+}));
 //# sourceMappingURL=user.validator.js.map

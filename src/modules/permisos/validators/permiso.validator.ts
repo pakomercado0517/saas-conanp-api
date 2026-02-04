@@ -1,6 +1,12 @@
+// This file does not contain code fence markers to remove.
+// The following code is the actual content of the file.
 import { z } from 'zod';
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+import { registry } from '@/shared/swagger/index.js';
 import { dateTimeSchema, optionalDateTimeSchema } from '@/shared/dates/zod-schemas.js';
 import { URL } from 'url';
+
+extendZodWithOpenApi(z);
 
 // Constantes para enums reutilizables
 const STATUS_VALUES = ['activo', 'inactivo', 'vencido', 'suspendido'] as const;
@@ -37,59 +43,83 @@ const urlSchema = z
 /**
  * Schema Zod para crear permiso
  */
-export const CreatePermisoSchema = z
-  .object({
-    prestadorId: z
-      .string({
-        message: 'El ID de prestador es requerido y debe ser un texto',
-      })
-      .uuid({
-        message: 'El ID de prestador debe ser un UUID válido',
-      }),
-    actividadId: z
-      .string({
-        message: 'El ID de actividad es requerido y debe ser un texto',
-      })
-      .uuid({
-        message: 'El ID de actividad debe ser un UUID válido',
-      }),
-    validFrom: dateTimeSchema,
-    validTo: dateTimeSchema,
-    status: statusEnum.optional().default('activo'),
-    documentUrl: urlSchema.optional().nullable(),
-  })
-  .refine((data) => data.validTo > data.validFrom, {
-    message: 'La fecha de fin (validTo) debe ser posterior a la fecha de inicio (validFrom)',
-    path: ['validTo'],
-  });
+export const CreatePermisoSchema = registry.register(
+  'CreatePermiso',
+  z
+    .object({
+      prestadorId: z
+        .string({
+          message: 'El ID de prestador es requerido y debe ser un texto',
+        })
+        .uuid({
+          message: 'El ID de prestador debe ser un UUID válido',
+        }),
+      actividadId: z
+        .string({
+          message: 'El ID de actividad es requerido y debe ser un texto',
+        })
+        .uuid({
+          message: 'El ID de actividad debe ser un UUID válido',
+        }),
+      validFrom: dateTimeSchema,
+      validTo: dateTimeSchema,
+      status: statusEnum.optional().default('activo'),
+      documentUrl: urlSchema.optional().nullable(),
+    })
+    .openapi({
+      example: {
+        prestadorId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        actividadId: 'b1c2d3e4-f5a6-7890-abcd-1234567890ab',
+        validFrom: '2026-03-01T00:00:00Z',
+        validTo: '2026-12-31T23:59:59Z',
+        status: 'activo',
+        documentUrl: 'https://example.com/document.pdf',
+      },
+    })
+    .refine((data) => data.validTo > data.validFrom, {
+      message: 'La fecha de fin (validTo) debe ser posterior a la fecha de inicio (validFrom)',
+      path: ['validTo'],
+    })
+);
 
 export type CreatePermisoDTO = z.infer<typeof CreatePermisoSchema>;
 
 /**
  * Schema Zod para actualizar permiso
  */
-export const UpdatePermisoSchema = z
-  .object({
-    validFrom: optionalDateTimeSchema,
-    validTo: optionalDateTimeSchema,
-    status: statusEnum.optional(),
-    documentUrl: urlSchema.optional().nullable(),
-  })
-  .refine(
-    (data) => {
-      if (data.validFrom && data.validTo) {
-        return data.validTo > data.validFrom;
+export const UpdatePermisoSchema = registry.register(
+  'UpdatePermiso',
+  z
+    .object({
+      validFrom: optionalDateTimeSchema,
+      validTo: optionalDateTimeSchema,
+      status: statusEnum.optional(),
+      documentUrl: urlSchema.optional().nullable(),
+    })
+    .refine(
+      (data) => {
+        if (data.validFrom && data.validTo) {
+          return data.validTo > data.validFrom;
+        }
+        return true;
+      },
+      {
+        message: 'La fecha de fin (validTo) debe ser posterior a la fecha de inicio (validFrom)',
+        path: ['validTo'],
       }
-      return true;
-    },
-    {
-      message: 'La fecha de fin (validTo) debe ser posterior a la fecha de inicio (validFrom)',
-      path: ['validTo'],
-    }
-  )
-  .refine((data) => Object.keys(data).some((k) => data[k as keyof typeof data] !== undefined), {
-    message: 'Debe incluir al menos un campo para actualizar',
-  });
+    )
+    .openapi({
+      example: {
+        status: 'suspendido',
+      },
+    })
+    .refine(
+      (data) => Object.keys(data).some((k) => (data as Record<string, unknown>)[k] !== undefined),
+      {
+        message: 'Debe incluir al menos un campo para actualizar',
+      }
+    )
+);
 
 export type UpdatePermisoDTO = z.infer<typeof UpdatePermisoSchema>;
 

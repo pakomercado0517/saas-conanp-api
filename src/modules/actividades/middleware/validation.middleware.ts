@@ -14,7 +14,7 @@ import {
 import {
   CreateCapacidadSchema,
   VerificarDisponibilidadSchema,
-} from '../validators/capacidad.validator.js';
+} from '@/modules/capacidad/validators/capacidad.validator.js';
 
 /**
  * Middleware de validación para crear actividad

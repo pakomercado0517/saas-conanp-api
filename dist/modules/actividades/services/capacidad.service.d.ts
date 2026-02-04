@@ -1,6 +1,6 @@
 import type { UUID } from '../../../shared/database/types.js';
 import { Capacidad } from '../../../modules/actividades/models/capacidad.model.js';
-import type { CreateCapacidadDTO, UpdateCapacidadDTO } from '../../../modules/actividades/validators/capacidad.validator.js';
+import type { CreateCapacidadDTO, UpdateCapacidadDTO } from '../../../modules/capacidad/validators/capacidad.validator.js';
 import { DateTime } from '../../../shared/dates/index.js';
 /**
  * Tipo de retorno para verificación de disponibilidad

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { URL } from 'url';
+import { registry } from '../../../shared/swagger/index.js';
 /**
  * Schema Zod para validar URL con protocolos http/https
  */
@@ -52,6 +53,17 @@ export const CreateEvidenciaSchema = z.object({
         .nullable(),
     fileUrl: urlSchema.optional().nullable(),
 });
+// Registrar schema para documentación Swagger
+registry.register('CreateEvidencia', CreateEvidenciaSchema.openapi({
+    title: 'Crear Evidencia Ambiental',
+    description: 'Datos requeridos para crear una nueva evidencia ambiental asociada a un evento operativo',
+    example: {
+        eventoId: '123e4567-e89b-12d3-a456-426614174000',
+        type: 'Fotografía de impacto ambiental',
+        description: 'Fotografía tomada durante la actividad de snorkel mostrando el estado del arrecife',
+        fileUrl: 'https://storage.example.com/evidencias/foto-123.jpg',
+    },
+}));
 /**
  * Schema Zod para actualizar evidencia ambiental
  */
@@ -81,6 +93,16 @@ export const UpdateEvidenciaSchema = z
     .refine((data) => Object.keys(data).some((k) => data[k] !== undefined), {
     message: 'Debe incluir al menos un campo para actualizar',
 });
+// Registrar schema para documentación Swagger
+registry.register('UpdateEvidencia', UpdateEvidenciaSchema.openapi({
+    title: 'Actualizar Evidencia Ambiental',
+    description: 'Datos para actualizar una evidencia ambiental existente. Al menos un campo debe ser proporcionado.',
+    example: {
+        type: 'Fotografía actualizada de impacto ambiental',
+        description: 'Fotografía corregida tomada durante la actividad de snorkel',
+        fileUrl: 'https://storage.example.com/evidencias/foto-456.jpg',
+    },
+}));
 // Campos permitidos para ordenamiento
 const SORT_FIELDS = ['type', 'createdAt', 'updatedAt'];
 /**
@@ -121,4 +143,17 @@ export const ListEvidenciasSchema = z.object({
         .optional()
         .transform((val) => (val === '' ? undefined : val)),
 });
+// Registrar schema para documentación Swagger
+registry.register('ListEvidencias', ListEvidenciasSchema.openapi({
+    title: 'Listar Evidencias Ambientales',
+    description: 'Parámetros de consulta para listar evidencias ambientales con paginación y filtros',
+    example: {
+        page: 1,
+        limit: 20,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+        eventoId: '123e4567-e89b-12d3-a456-426614174000',
+        type: 'Fotografía',
+    },
+}));
 //# sourceMappingURL=evidencia.validator.js.map

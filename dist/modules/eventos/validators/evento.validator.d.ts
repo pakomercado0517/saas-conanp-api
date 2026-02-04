@@ -52,8 +52,8 @@ export declare const ListEventosSchema: z.ZodObject<{
     sortBy: z.ZodOptional<z.ZodEnum<{
         createdAt: "createdAt";
         updatedAt: "updatedAt";
-        status: "status";
         date: "date";
+        status: "status";
         startTime: "startTime";
         endTime: "endTime";
         peopleCount: "peopleCount";

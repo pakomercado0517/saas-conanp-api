@@ -1,0 +1,21 @@
+/**
+ * Loader de documentación Swagger
+ *
+ * Este archivo importa todos los módulos de documentación para registrar
+ * sus rutas y schemas en el registry de OpenAPI antes de generar la especificación.
+ */
+import '../../modules/auth/swagger/auth.swagger.js';
+import '../../modules/users/swagger/user.swagger.js';
+import '../../modules/users/swagger/membership.swagger.js';
+import '../../modules/organizations/swagger/organization.swagger.js';
+import '../../modules/actividades/swagger/actividad.swagger.js';
+import '../../modules/bloques/swagger/bloque.swagger.js';
+import '../../modules/capacidad/swagger/capacidad.swagger.js';
+import '../../modules/prestadores/swagger/prestador.swagger.js';
+import '../../modules/permisos/swagger/permiso.swagger.js';
+import '../../modules/activos/swagger/activo.swagger.js';
+import '../../modules/eventos/swagger/evento.swagger.js';
+import '../../modules/evidencias/swagger/evidencia.swagger.js';
+import '../../modules/reportes/swagger/reporte.swagger.js';
+import '../../modules/payments/swagger/payment.swagger.js';
+//# sourceMappingURL=loader.d.ts.map

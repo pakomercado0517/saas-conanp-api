@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import * as capacidadService from '../services/capacidad.service.js';
 import { sendSuccess, sendCreated } from '@/shared/responses/helpers.js';
-import type { CreateCapacidadDTO } from '../validators/capacidad.validator.js';
+import type { CreateCapacidadDTO } from '@/modules/capacidad/validators/capacidad.validator.js';
 import { ConflictError, ValidationError } from '@/shared/errors/index.js';
 import { Capacidad } from '../models/capacidad.model.js';
 import { Actividad } from '../models/actividad.model.js';

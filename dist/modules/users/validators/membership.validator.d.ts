@@ -49,8 +49,8 @@ export declare const ListMembershipsSchema: z.ZodObject<{
     sortBy: z.ZodOptional<z.ZodEnum<{
         createdAt: "createdAt";
         updatedAt: "updatedAt";
-        status: "status";
         role: "role";
+        status: "status";
     }>>;
     sortOrder: z.ZodDefault<z.ZodEnum<{
         asc: "asc";

@@ -12,7 +12,7 @@ export type CreateCapacidadDTO = z.infer<typeof CreateCapacidadSchema>;
  * Schema Zod para actualizar capacidad
  */
 export declare const UpdateCapacidadSchema: z.ZodObject<{
-    date: z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>;
+    date: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>>;
     limit: z.ZodOptional<z.ZodNumber>;
 }, z.core.$strip>;
 export type UpdateCapacidadDTO = z.infer<typeof UpdateCapacidadSchema>;
