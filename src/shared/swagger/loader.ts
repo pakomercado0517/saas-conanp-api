@@ -19,4 +19,7 @@ import '../../modules/prestadores/swagger/prestador.swagger.js';
 import '../../modules/permisos/swagger/permiso.swagger.js';
 import '../../modules/activos/swagger/activo.swagger.js';
 import '../../modules/eventos/swagger/evento.swagger.js';
+import '../../modules/evidencias/swagger/evidencia.swagger.js';
+import '../../modules/reportes/swagger/reporte.swagger.js';
+import '../../modules/payments/swagger/payment.swagger.js';
 // etc...

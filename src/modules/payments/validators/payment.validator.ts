@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { registry } from '@/shared/swagger/index.js';
 import { optionalDateOnlySchema } from '@/shared/dates/zod-schemas.js';
 import type { PaymentStatus } from '@/shared/database/types.ts';
 
@@ -249,3 +250,9 @@ export const ProcessRefundSchema = z.object({
 });
 
 export type ProcessRefundDTO = z.infer<typeof ProcessRefundSchema>;
+
+// Registrar schemas en el registry de OpenAPI
+registry.register('CreatePaymentIntent', CreatePaymentIntentSchema);
+registry.register('ConfirmPayment', ConfirmPaymentSchema);
+registry.register('ListPayments', ListPaymentsSchema);
+registry.register('ProcessRefund', ProcessRefundSchema);

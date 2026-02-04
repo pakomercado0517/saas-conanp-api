@@ -32,9 +32,9 @@ export declare const ListPaymentsSchema: z.ZodObject<{
         createdAt: "createdAt";
         updatedAt: "updatedAt";
         status: "status";
+        amount: "amount";
         currency: "currency";
         refundedAmount: "refundedAmount";
-        amount: "amount";
     }>>;
     sortOrder: z.ZodDefault<z.ZodEnum<{
         asc: "asc";

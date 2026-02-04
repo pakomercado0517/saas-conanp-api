@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { optionalDateOnlySchema } from '../../../shared/dates/zod-schemas.js';
+import { registry } from '../../../shared/swagger/index.js';
 // Constantes para enums reutilizables
 const EVENTO_STATUS_VALUES = ['programado', 'en_curso', 'completado', 'cancelado'];
 const PRESTADOR_STATUS_VALUES = ['activo', 'inactivo', 'suspendido'];
@@ -134,4 +135,10 @@ export const ReportePrestadoresActivosSchema = z.object({
         .optional()
         .default(false),
 });
+// Registrar schemas en el registry de Swagger
+registry.register('ReporteEventosPorActividad', ReporteEventosPorActividadSchema);
+registry.register('ReporteEventosPorPrestador', ReporteEventosPorPrestadorSchema);
+registry.register('ReporteEventosPorFecha', ReporteEventosPorFechaSchema);
+registry.register('ReporteCapacidadUtilizada', ReporteCapacidadUtilizadaSchema);
+registry.register('ReportePrestadoresActivos', ReportePrestadoresActivosSchema);
 //# sourceMappingURL=reporte.validator.js.map

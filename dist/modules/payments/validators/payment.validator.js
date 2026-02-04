@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { registry } from '../../../shared/swagger/index.js';
 import { optionalDateOnlySchema } from '../../../shared/dates/zod-schemas.js';
 // Constantes para monedas permitidas
 const ALLOWED_CURRENCIES = ['MXN', 'USD'];
@@ -221,4 +222,9 @@ export const ProcessRefundSchema = z.object({
         .optional()
         .nullable(),
 });
+// Registrar schemas en el registry de OpenAPI
+registry.register('CreatePaymentIntent', CreatePaymentIntentSchema);
+registry.register('ConfirmPayment', ConfirmPaymentSchema);
+registry.register('ListPayments', ListPaymentsSchema);
+registry.register('ProcessRefund', ProcessRefundSchema);
 //# sourceMappingURL=payment.validator.js.map
