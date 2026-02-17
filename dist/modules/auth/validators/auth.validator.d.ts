@@ -42,4 +42,19 @@ export declare const ResendVerificationSchema: z.ZodObject<{
  * Tipo TypeScript inferido desde ResendVerificationSchema
  */
 export type ResendVerificationDTO = z.infer<typeof ResendVerificationSchema>;
+/**
+ * Schema Zod para solicitar recuperación de contraseña
+ */
+export declare const ForgotPasswordSchema: z.ZodObject<{
+    email: z.ZodString;
+}, z.core.$strip>;
+export type ForgotPasswordDTO = z.infer<typeof ForgotPasswordSchema>;
+/**
+ * Schema Zod para restablecer contraseña con token
+ */
+export declare const ResetPasswordSchema: z.ZodObject<{
+    token: z.ZodString;
+    newPassword: z.ZodString;
+}, z.core.$strip>;
+export type ResetPasswordDTO = z.infer<typeof ResetPasswordSchema>;
 //# sourceMappingURL=auth.validator.d.ts.map

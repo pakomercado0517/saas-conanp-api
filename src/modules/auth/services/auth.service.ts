@@ -15,7 +15,7 @@ import type {
   JWTPayload,
 } from '../types/auth.types.js';
 import type { UUID } from '@/shared/database/types.js';
-import { sendVerificationEmail } from '@/shared/email/index.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '@/shared/email/index.js';
 
 /**
  * Configuración de JWT
@@ -135,6 +135,9 @@ const getRefreshTokenExpiration = (): Date => {
 
 /** Expiración del token de verificación de email: 24 horas */
 const EMAIL_VERIFICATION_EXPIRES_HOURS = 24;
+
+/** Expiración del token de recuperación de contraseña: 1 hora */
+const PASSWORD_RESET_EXPIRES_HOURS = 1;
 
 /**
  * Genera un token de verificación de email (plain) y su hash
@@ -463,6 +466,81 @@ export const resendVerificationEmail = async (email: string): Promise<void> => {
   });
 
   logger.info({ userId: user.id, email: user.email }, 'Email de verificación reenviado');
+};
+
+/**
+ * Envía email de recuperación de contraseña.
+ * Por seguridad, no revela si el email existe o no.
+ */
+export const forgotPassword = async (email: string): Promise<void> => {
+  const user = await User.findOne({
+    where: { email: email.toLowerCase().trim() },
+  });
+
+  if (!user) {
+    return;
+  }
+
+  const { token: resetToken, hashedToken: hashedResetToken } = await generateVerificationToken();
+  const resetExpiresAt = DateTime.now().plus({ hours: PASSWORD_RESET_EXPIRES_HOURS }).toJSDate();
+
+  await user.update({
+    passwordResetToken: hashedResetToken,
+    passwordResetExpiresAt: resetExpiresAt,
+  });
+
+  await sendPasswordResetEmail({
+    to: user.email,
+    name: user.name,
+    token: resetToken,
+  });
+
+  logger.info(
+    { userId: user.id, email: user.email },
+    'Email de recuperación de contraseña enviado'
+  );
+};
+
+/**
+ * Restablece la contraseña usando el token enviado por email.
+ */
+export const resetPassword = async (token: string, newPassword: string): Promise<void> => {
+  if (!token || token.length < 10) {
+    throw new BadRequestError('Token de recuperación inválido');
+  }
+
+  const usersWithPendingReset = await User.findAll({
+    where: {
+      passwordResetToken: { [Op.ne]: null },
+      passwordResetExpiresAt: { [Op.gt]: new Date() },
+    },
+  });
+
+  let targetUser: User | null = null;
+  for (const u of usersWithPendingReset) {
+    const isMatch = await bcrypt.compare(token, u.passwordResetToken!);
+    if (isMatch) {
+      targetUser = u;
+      break;
+    }
+  }
+
+  if (!targetUser) {
+    throw new BadRequestError('Token de recuperación inválido o expirado. Solicita uno nuevo.');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+
+  await targetUser.update({
+    password: hashedPassword,
+    passwordResetToken: null,
+    passwordResetExpiresAt: null,
+  });
+
+  logger.info(
+    { userId: targetUser.id, email: targetUser.email },
+    'Contraseña restablecida exitosamente'
+  );
 };
 
 /**

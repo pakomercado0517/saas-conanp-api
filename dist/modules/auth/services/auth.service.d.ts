@@ -31,6 +31,15 @@ export declare const verifyEmail: (token: string) => Promise<void>;
  */
 export declare const resendVerificationEmail: (email: string) => Promise<void>;
 /**
+ * Envía email de recuperación de contraseña.
+ * Por seguridad, no revela si el email existe o no.
+ */
+export declare const forgotPassword: (email: string) => Promise<void>;
+/**
+ * Restablece la contraseña usando el token enviado por email.
+ */
+export declare const resetPassword: (token: string, newPassword: string) => Promise<void>;
+/**
  * Revoca todos los refresh tokens de un usuario
  */
 export declare const revokeAllUserRefreshTokens: (userId: UUID) => Promise<void>;

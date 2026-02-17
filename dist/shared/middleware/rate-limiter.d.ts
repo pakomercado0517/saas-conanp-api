@@ -33,6 +33,12 @@ export declare const subscriptionCreateLimiter: import("express-rate-limit").Rat
  */
 export declare const subscriptionChangePlanLimiter: import("express-rate-limit").RateLimitRequestHandler;
 /**
+ * Rate limiter para recuperación de contraseña (forgot-password)
+ *
+ * Limita solicitudes para evitar abuso y envío masivo de emails.
+ */
+export declare const forgotPasswordLimiter: import("express-rate-limit").RateLimitRequestHandler;
+/**
  * Rate limiter para reenviar email de verificación
  *
  * Limita solicitudes para evitar abuso y envío masivo de emails.

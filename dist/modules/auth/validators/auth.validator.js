@@ -101,4 +101,46 @@ export const ResendVerificationSchema = registry.register('ResendVerificationReq
         .describe('Correo electrónico para reenviar verificación')
         .openapi({ example: 'usuario@example.com' }),
 }));
+/**
+ * Schema Zod para solicitar recuperación de contraseña
+ */
+export const ForgotPasswordSchema = registry.register('ForgotPasswordRequest', z.object({
+    email: z
+        .string({
+        message: 'El email es requerido y debe ser un texto',
+    })
+        .email({
+        message: 'El email debe tener un formato válido',
+    })
+        .toLowerCase()
+        .trim()
+        .describe('Correo electrónico para enviar enlace de recuperación')
+        .openapi({ example: 'usuario@example.com' }),
+}));
+/**
+ * Schema Zod para restablecer contraseña con token
+ */
+export const ResetPasswordSchema = registry.register('ResetPasswordRequest', z.object({
+    token: z
+        .string({
+        message: 'El token es requerido',
+    })
+        .min(10, {
+        message: 'El token debe tener al menos 10 caracteres',
+    })
+        .describe('Token de recuperación recibido por email')
+        .openapi({ example: 'abc123...' }),
+    newPassword: z
+        .string({
+        message: 'La nueva contraseña es requerida',
+    })
+        .min(8, {
+        message: 'La contraseña debe tener al menos 8 caracteres',
+    })
+        .max(255, {
+        message: 'La contraseña no puede exceder 255 caracteres',
+    })
+        .describe('Nueva contraseña')
+        .openapi({ example: 'NuevaPassword123!' }),
+}));
 //# sourceMappingURL=auth.validator.js.map

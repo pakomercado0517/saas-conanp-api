@@ -49,5 +49,6 @@
       "@/*": ["src/*"]
     }
   },
-  "exclude": ["vitest.config.ts", "vitest.setup.ts", "dist"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "scripts", "vitest.config.ts", "vitest.setup.ts"]
 }

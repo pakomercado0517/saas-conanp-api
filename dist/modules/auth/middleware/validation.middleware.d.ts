@@ -39,4 +39,12 @@ export declare const validateRefreshToken: (req: Request, res: Response, next: N
  * Middleware de validación para reenviar verificación de email
  */
 export declare const validateResendVerification: (req: Request, res: Response, next: NextFunction) => void;
+/**
+ * Middleware de validación para solicitar recuperación de contraseña
+ */
+export declare const validateForgotPassword: (req: Request, res: Response, next: NextFunction) => void;
+/**
+ * Middleware de validación para restablecer contraseña
+ */
+export declare const validateResetPassword: (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=validation.middleware.d.ts.map

@@ -7,7 +7,7 @@ import { User } from '../../../modules/users/models/user.model.js';
 import { RefreshToken } from '../../../modules/auth/models/refresh-token.model.js';
 import { ConflictError, UnauthorizedError, BadRequestError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
-import { sendVerificationEmail } from '../../../shared/email/index.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../../../shared/email/index.js';
 /**
  * Configuración de JWT
  */
@@ -107,6 +107,8 @@ const getRefreshTokenExpiration = () => {
 };
 /** Expiración del token de verificación de email: 24 horas */
 const EMAIL_VERIFICATION_EXPIRES_HOURS = 24;
+/** Expiración del token de recuperación de contraseña: 1 hora */
+const PASSWORD_RESET_EXPIRES_HOURS = 1;
 /**
  * Genera un token de verificación de email (plain) y su hash
  */
@@ -368,6 +370,62 @@ export const resendVerificationEmail = async (email) => {
         token: verificationToken,
     });
     logger.info({ userId: user.id, email: user.email }, 'Email de verificación reenviado');
+};
+/**
+ * Envía email de recuperación de contraseña.
+ * Por seguridad, no revela si el email existe o no.
+ */
+export const forgotPassword = async (email) => {
+    const user = await User.findOne({
+        where: { email: email.toLowerCase().trim() },
+    });
+    if (!user) {
+        return;
+    }
+    const { token: resetToken, hashedToken: hashedResetToken } = await generateVerificationToken();
+    const resetExpiresAt = DateTime.now().plus({ hours: PASSWORD_RESET_EXPIRES_HOURS }).toJSDate();
+    await user.update({
+        passwordResetToken: hashedResetToken,
+        passwordResetExpiresAt: resetExpiresAt,
+    });
+    await sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        token: resetToken,
+    });
+    logger.info({ userId: user.id, email: user.email }, 'Email de recuperación de contraseña enviado');
+};
+/**
+ * Restablece la contraseña usando el token enviado por email.
+ */
+export const resetPassword = async (token, newPassword) => {
+    if (!token || token.length < 10) {
+        throw new BadRequestError('Token de recuperación inválido');
+    }
+    const usersWithPendingReset = await User.findAll({
+        where: {
+            passwordResetToken: { [Op.ne]: null },
+            passwordResetExpiresAt: { [Op.gt]: new Date() },
+        },
+    });
+    let targetUser = null;
+    for (const u of usersWithPendingReset) {
+        const isMatch = await bcrypt.compare(token, u.passwordResetToken);
+        if (isMatch) {
+            targetUser = u;
+            break;
+        }
+    }
+    if (!targetUser) {
+        throw new BadRequestError('Token de recuperación inválido o expirado. Solicita uno nuevo.');
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await targetUser.update({
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpiresAt: null,
+    });
+    logger.info({ userId: targetUser.id, email: targetUser.email }, 'Contraseña restablecida exitosamente');
 };
 /**
  * Revoca todos los refresh tokens de un usuario

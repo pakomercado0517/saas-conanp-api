@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { RegisterSchema, LoginSchema, RefreshTokenSchema, ResendVerificationSchema, } from '../validators/auth.validator.js';
+import { RegisterSchema, LoginSchema, RefreshTokenSchema, ResendVerificationSchema, ForgotPasswordSchema, ResetPasswordSchema, } from '../validators/auth.validator.js';
 /**
  * Middleware de validación para registro de usuario
  *
@@ -117,6 +117,60 @@ export const validateRefreshToken = (req, res, next) => {
 export const validateResendVerification = (req, res, next) => {
     try {
         req.body = ResendVerificationSchema.parse(req.body);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+/**
+ * Middleware de validación para solicitar recuperación de contraseña
+ */
+export const validateForgotPassword = (req, res, next) => {
+    try {
+        req.body = ForgotPasswordSchema.parse(req.body);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+/**
+ * Middleware de validación para restablecer contraseña
+ */
+export const validateResetPassword = (req, res, next) => {
+    try {
+        req.body = ResetPasswordSchema.parse(req.body);
         next();
     }
     catch (error) {

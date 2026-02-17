@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ConflictError, UnauthorizedError } from '@/shared/errors/index.js';
+import { ConflictError, UnauthorizedError, BadRequestError } from '@/shared/errors/index.js';
 import type { UUID } from '@/shared/database/types.js';
 import jwt from 'jsonwebtoken';
 import type { JWTPayload } from '../../types/auth.types.js';
@@ -24,6 +24,7 @@ const mockBcryptCompare = vi.fn();
 vi.mock('@/modules/users/models/user.model.js', () => ({
   User: {
     findOne: (...args: unknown[]): unknown => mockUserFindOne(...args),
+    findAll: (...args: unknown[]): unknown => mockUserFindAll(...args),
     create: (...args: unknown[]): unknown => mockUserCreate(...args),
     findByPk: (...args: unknown[]): unknown => mockUserFindByPk(...args),
   },
@@ -50,7 +51,10 @@ vi.mock('@/shared/logger/index.js', () => ({
 
 vi.mock('@/shared/email/index.js', () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
+
+const mockUserFindAll = vi.fn();
 
 describe('auth.service', () => {
   beforeEach((): void => {
@@ -328,6 +332,71 @@ describe('auth.service', () => {
           where: { userId: USER_ID, revokedAt: null },
         })
       );
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('no hace nada cuando el usuario no existe', async () => {
+      mockUserFindOne.mockResolvedValueOnce(null);
+
+      await expect(authService.forgotPassword('nobody@example.com')).resolves.toBeUndefined();
+
+      expect(mockUserFindAll).not.toHaveBeenCalled();
+    });
+
+    it('envía email y actualiza usuario cuando existe', async () => {
+      const userWithUpdate = {
+        id: USER_ID,
+        email: USER_EMAIL,
+        name: USER_NAME,
+        update: vi.fn().mockResolvedValue(undefined),
+      };
+      mockUserFindOne.mockResolvedValueOnce(userWithUpdate);
+
+      await authService.forgotPassword(USER_EMAIL);
+
+      expect(userWithUpdate.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          passwordResetToken: expect.any(String),
+          passwordResetExpiresAt: expect.any(Date),
+        })
+      );
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('throws BadRequestError con token inválido', async () => {
+      await expect(authService.resetPassword('short', 'newpassword123')).rejects.toThrow(
+        BadRequestError
+      );
+    });
+
+    it('throws BadRequestError cuando token no coincide o expiró', async () => {
+      mockUserFindAll.mockResolvedValueOnce([]);
+
+      await expect(authService.resetPassword('a'.repeat(32), 'newpassword123')).rejects.toThrow(
+        BadRequestError
+      );
+    });
+
+    it('actualiza contraseña cuando token es válido', async () => {
+      const userWithUpdate = {
+        id: USER_ID,
+        email: USER_EMAIL,
+        passwordResetToken: HASHED_PASSWORD,
+        update: vi.fn().mockResolvedValue(undefined),
+      };
+      mockUserFindAll.mockResolvedValueOnce([userWithUpdate]);
+      mockBcryptCompare.mockResolvedValueOnce(true);
+      mockBcryptHash.mockResolvedValueOnce('$2b$10$newhashedpassword');
+
+      await authService.resetPassword('valid-token-64-chars-hex-string-here', 'newpassword123');
+
+      expect(userWithUpdate.update).toHaveBeenCalledWith({
+        password: '$2b$10$newhashedpassword',
+        passwordResetToken: null,
+        passwordResetExpiresAt: null,
+      });
     });
   });
 });

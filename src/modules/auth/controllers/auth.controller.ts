@@ -6,6 +6,8 @@ import type {
   LoginDTO,
   RefreshTokenDTO,
   ResendVerificationDTO,
+  ForgotPasswordDTO,
+  ResetPasswordDTO,
 } from '../validators/auth.validator.js';
 
 /**
@@ -83,6 +85,35 @@ export const resendVerification = async (req: Request, res: Response): Promise<R
     { sent: true },
     'Si el correo está registrado y no verificado, recibirás un nuevo enlace de verificación'
   );
+};
+
+/**
+ * Solicita envío de email de recuperación de contraseña
+ *
+ * POST /api/v1/auth/forgot-password
+ */
+export const forgotPassword = async (req: Request, res: Response): Promise<Response> => {
+  const data = req.body as ForgotPasswordDTO;
+  await authService.forgotPassword(data.email);
+
+  // Siempre retornar éxito (por seguridad, no revelar si el email existe)
+  return sendSuccess(
+    res,
+    { sent: true },
+    'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña'
+  );
+};
+
+/**
+ * Restablece la contraseña usando el token del email
+ *
+ * POST /api/v1/auth/reset-password
+ */
+export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
+  const data = req.body as ResetPasswordDTO;
+  await authService.resetPassword(data.token, data.newPassword);
+
+  return sendSuccess(res, { reset: true }, 'Contraseña restablecida exitosamente');
 };
 
 /**

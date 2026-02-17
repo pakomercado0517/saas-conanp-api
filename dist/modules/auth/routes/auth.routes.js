@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { register, login, refresh, logout, me, verifyEmail, resendVerification, } from '../controllers/auth.controller.js';
-import { validateRegister, validateLogin, validateRefreshToken, validateResendVerification, } from '../middleware/validation.middleware.js';
-import { authenticate, authLimiter, resendVerificationLimiter } from '../../../shared/middleware/index.js';
+import { register, login, refresh, logout, me, verifyEmail, resendVerification, forgotPassword, resetPassword, } from '../controllers/auth.controller.js';
+import { validateRegister, validateLogin, validateRefreshToken, validateResendVerification, validateForgotPassword, validateResetPassword, } from '../middleware/validation.middleware.js';
+import { authenticate, authLimiter, forgotPasswordLimiter, resendVerificationLimiter, } from '../../../shared/middleware/index.js';
 /**
  * Router de autenticación
  *
@@ -81,6 +81,37 @@ authRouter.get('/verify-email', verifyEmail);
  * }
  */
 authRouter.post('/resend-verification', resendVerificationLimiter, validateResendVerification, resendVerification);
+/**
+ * POST /api/v1/auth/forgot-password
+ * Solicita envío de email para recuperación de contraseña
+ *
+ * Body:
+ * - email: string (email válido)
+ *
+ * Respuesta 200:
+ * {
+ *   success: true,
+ *   data: { sent: true },
+ *   message: "Si el correo está registrado, recibirás un enlace..."
+ * }
+ */
+authRouter.post('/forgot-password', forgotPasswordLimiter, validateForgotPassword, forgotPassword);
+/**
+ * POST /api/v1/auth/reset-password
+ * Restablece la contraseña usando el token del email
+ *
+ * Body:
+ * - token: string (token recibido por email)
+ * - newPassword: string (mínimo 8 caracteres)
+ *
+ * Respuesta 200:
+ * {
+ *   success: true,
+ *   data: { reset: true },
+ *   message: "Contraseña restablecida exitosamente"
+ * }
+ */
+authRouter.post('/reset-password', validateResetPassword, resetPassword);
 /**
  * POST /api/v1/auth/refresh
  * Renueva un access token usando un refresh token

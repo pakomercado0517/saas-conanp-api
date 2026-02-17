@@ -36,6 +36,18 @@ export declare const verifyEmail: (req: Request, res: Response) => Promise<Respo
  */
 export declare const resendVerification: (req: Request, res: Response) => Promise<Response>;
 /**
+ * Solicita envío de email de recuperación de contraseña
+ *
+ * POST /api/v1/auth/forgot-password
+ */
+export declare const forgotPassword: (req: Request, res: Response) => Promise<Response>;
+/**
+ * Restablece la contraseña usando el token del email
+ *
+ * POST /api/v1/auth/reset-password
+ */
+export declare const resetPassword: (req: Request, res: Response) => Promise<Response>;
+/**
  * Valida el token actual y retorna información del usuario autenticado
  *
  * GET /api/v1/auth/me
