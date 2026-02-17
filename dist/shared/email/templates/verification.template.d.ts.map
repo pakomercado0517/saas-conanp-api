@@ -1,0 +1,1 @@
+{"version":3,"file":"verification.template.d.ts","sourceRoot":"","sources":["../../../../src/shared/email/templates/verification.template.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,uBAAuB,EAAE,MAAM,aAAa,CAAC;AAE3D;;;GAGG;AACH,eAAO,MAAM,2BAA2B,GACtC,QAAQ,uBAAuB,KAC9B;IAAE,IAAI,EAAE,MAAM,CAAC;IAAC,IAAI,EAAE,MAAM,CAAA;CA4D9B,CAAC"}
