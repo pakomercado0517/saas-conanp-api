@@ -1,12 +1,20 @@
 import { Router, type Router as ExpressRouter } from 'express';
-import { register, login, refresh, logout, me } from '../controllers/auth.controller.js';
+import {
+  register,
+  login,
+  refresh,
+  logout,
+  me,
+  verifyEmail,
+  resendVerification,
+} from '../controllers/auth.controller.js';
 import {
   validateRegister,
   validateLogin,
   validateRefreshToken,
+  validateResendVerification,
 } from '../middleware/validation.middleware.js';
-import { authenticate } from '@/shared/middleware/index.js';
-import { authLimiter } from '@/shared/middleware/index.js';
+import { authenticate, authLimiter, resendVerificationLimiter } from '@/shared/middleware/index.js';
 
 /**
  * Router de autenticación
@@ -29,12 +37,12 @@ const authRouter: ExpressRouter = Router();
  *   success: true,
  *   data: {
  *     user: { id, email, name },
- *     accessToken: string,
- *     refreshToken: string,
- *     expiresIn: number
+ *     message: "Revisa tu correo electrónico para verificar tu cuenta"
  *   },
  *   message: "Usuario registrado exitosamente"
  * }
+ *
+ * Nota: El usuario debe verificar su correo antes de poder iniciar sesión.
  */
 authRouter.post('/register', authLimiter, validateRegister, register);
 
@@ -59,6 +67,43 @@ authRouter.post('/register', authLimiter, validateRegister, register);
  * }
  */
 authRouter.post('/login', authLimiter, validateLogin, login);
+
+/**
+ * GET /api/v1/auth/verify-email
+ * Verifica el correo electrónico con el token enviado por email
+ *
+ * Query:
+ * - token: string (token de verificación)
+ *
+ * Respuesta 200:
+ * {
+ *   success: true,
+ *   data: { verified: true },
+ *   message: "Correo electrónico verificado exitosamente"
+ * }
+ */
+authRouter.get('/verify-email', verifyEmail);
+
+/**
+ * POST /api/v1/auth/resend-verification
+ * Reenvía el email de verificación
+ *
+ * Body:
+ * - email: string (email válido)
+ *
+ * Respuesta 200:
+ * {
+ *   success: true,
+ *   data: { sent: true },
+ *   message: "Si el correo está registrado y no verificado, recibirás un nuevo enlace..."
+ * }
+ */
+authRouter.post(
+  '/resend-verification',
+  resendVerificationLimiter,
+  validateResendVerification,
+  resendVerification
+);
 
 /**
  * POST /api/v1/auth/refresh

@@ -48,6 +48,10 @@ vi.mock('@/shared/logger/index.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn().mockReturnThis() },
 }));
 
+vi.mock('@/shared/email/index.js', () => ({
+  sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
 describe('auth.service', () => {
   beforeEach((): void => {
     vi.clearAllMocks();
@@ -71,7 +75,7 @@ describe('auth.service', () => {
       expect(mockUserCreate).not.toHaveBeenCalled();
     });
 
-    it('creates user and refresh token and returns AuthResponse on success', async () => {
+    it('creates user with emailVerified false and returns RegisterResponse (sin tokens)', async () => {
       mockUserFindOne.mockResolvedValueOnce(null);
       const createdUser = {
         id: USER_ID,
@@ -80,7 +84,6 @@ describe('auth.service', () => {
         password: HASHED_PASSWORD,
       };
       mockUserCreate.mockResolvedValueOnce(createdUser);
-      mockRefreshTokenCreate.mockResolvedValueOnce({});
 
       const result = await authService.register({
         email: USER_EMAIL,
@@ -90,25 +93,20 @@ describe('auth.service', () => {
 
       expect(result).toHaveProperty('user');
       expect(result.user).toEqual({ id: USER_ID, email: USER_EMAIL, name: USER_NAME });
-      expect(result).toHaveProperty('accessToken');
-      expect(result).toHaveProperty('refreshToken');
-      expect(result).toHaveProperty('expiresIn');
-      expect(typeof result.accessToken).toBe('string');
-      expect(typeof result.refreshToken).toBe('string');
+      expect(result).toHaveProperty('message');
+      expect(result).not.toHaveProperty('accessToken');
+      expect(result).not.toHaveProperty('refreshToken');
       expect(mockUserCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           email: USER_EMAIL,
           name: USER_NAME,
           password: HASHED_PASSWORD,
+          emailVerified: false,
+          emailVerificationToken: expect.any(String),
+          emailVerificationExpiresAt: expect.any(Date),
         })
       );
-      expect(mockRefreshTokenCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: USER_ID,
-          token: expect.any(String),
-          expiresAt: expect.any(Date),
-        })
-      );
+      expect(mockRefreshTokenCreate).not.toHaveBeenCalled();
     });
   });
 
@@ -126,12 +124,33 @@ describe('auth.service', () => {
       expect(mockUserFindOne).toHaveBeenCalledWith({ where: { email: USER_EMAIL } });
     });
 
+    it('throws UnauthorizedError when email is not verified', async () => {
+      mockUserFindOne.mockResolvedValueOnce({
+        id: USER_ID,
+        email: USER_EMAIL,
+        name: USER_NAME,
+        password: HASHED_PASSWORD,
+        emailVerified: false,
+      });
+
+      await expect(
+        authService.login({
+          email: USER_EMAIL,
+          password: 'password123',
+        })
+      ).rejects.toThrow(UnauthorizedError);
+
+      expect(mockBcryptCompare).not.toHaveBeenCalled();
+      expect(mockRefreshTokenCreate).not.toHaveBeenCalled();
+    });
+
     it('throws UnauthorizedError when password is invalid', async () => {
       mockUserFindOne.mockResolvedValueOnce({
         id: USER_ID,
         email: USER_EMAIL,
         name: USER_NAME,
         password: HASHED_PASSWORD,
+        emailVerified: true,
       });
       mockBcryptCompare.mockResolvedValueOnce(false);
 
@@ -151,6 +170,7 @@ describe('auth.service', () => {
         email: USER_EMAIL,
         name: USER_NAME,
         password: HASHED_PASSWORD,
+        emailVerified: true,
       };
       mockUserFindOne.mockResolvedValueOnce(user);
       mockRefreshTokenCreate.mockResolvedValueOnce({});

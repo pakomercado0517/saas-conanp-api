@@ -12,7 +12,7 @@ export interface JWTPayload {
 }
 
 /**
- * Respuesta de autenticación (login/registro)
+ * Respuesta de autenticación (login)
  */
 export interface AuthResponse {
   user: {
@@ -23,6 +23,18 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number; // Segundos hasta expiración
+}
+
+/**
+ * Respuesta de registro (sin tokens hasta verificar email)
+ */
+export interface RegisterResponse {
+  user: {
+    id: UUID;
+    email: string;
+    name: string;
+  };
+  message: string;
 }
 
 /**

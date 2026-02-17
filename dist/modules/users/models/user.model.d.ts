@@ -5,17 +5,23 @@ export interface UserAttributes {
     email: string;
     password: string;
     name: string;
+    emailVerified: boolean;
+    emailVerificationToken: string | null;
+    emailVerificationExpiresAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
     deletedAt: Date | null;
 }
-export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
+export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'emailVerified' | 'emailVerificationToken' | 'emailVerificationExpiresAt' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
 }
 export declare class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
     id: UUID;
     email: string;
     password: string;
     name: string;
+    emailVerified: boolean;
+    emailVerificationToken: string | null;
+    emailVerificationExpiresAt: Date | null;
     readonly createdAt: Date;
     readonly updatedAt: Date;
     deletedAt: Date | null;

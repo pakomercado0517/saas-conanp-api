@@ -53,10 +53,7 @@ export const sendVerificationEmail = async (
     tags: ['verification', 'auth'],
   });
 
-  logger.info(
-    { to: params.to, messageId },
-    'Email de verificación enviado'
-  );
+  logger.info({ to: params.to, messageId }, 'Email de verificación enviado');
 
   return messageId;
 };
@@ -85,10 +82,7 @@ export const sendPasswordResetEmail = async (
     tags: ['password-reset', 'auth'],
   });
 
-  logger.info(
-    { to: params.to, messageId },
-    'Email de recuperación de contraseña enviado'
-  );
+  logger.info({ to: params.to, messageId }, 'Email de recuperación de contraseña enviado');
 
   return messageId;
 };
@@ -112,10 +106,7 @@ export const sendPasswordChangedEmail = async (
     tags: ['password-changed', 'auth'],
   });
 
-  logger.info(
-    { to: params.to, messageId },
-    'Email de cambio de contraseña enviado'
-  );
+  logger.info({ to: params.to, messageId }, 'Email de cambio de contraseña enviado');
 
   return messageId;
 };

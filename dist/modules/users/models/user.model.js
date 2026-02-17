@@ -48,6 +48,19 @@ User.init({
             },
         },
     },
+    emailVerified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
+    emailVerificationToken: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+    },
+    emailVerificationExpiresAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,

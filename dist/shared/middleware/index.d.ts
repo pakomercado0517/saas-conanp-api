@@ -2,7 +2,7 @@
  * Exportación centralizada de middlewares
  */
 export { errorHandler } from './error-handler.js';
-export { apiLimiter, authLimiter, paymentCreateLimiter, webhookLimiter, subscriptionCreateLimiter, subscriptionChangePlanLimiter, } from './rate-limiter.js';
+export { apiLimiter, authLimiter, resendVerificationLimiter, paymentCreateLimiter, webhookLimiter, subscriptionCreateLimiter, subscriptionChangePlanLimiter, } from './rate-limiter.js';
 export { authenticate, optionalAuthenticate } from './auth.middleware.js';
 export { requireOrganizationAccess, requireOrganizationAccessOnly, } from './organization-access.middleware.js';
 export { requireRole, requireAdmin } from './role-authorization.middleware.js';

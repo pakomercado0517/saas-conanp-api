@@ -114,3 +114,28 @@ export const RefreshTokenSchema = registry.register(
  * Tipo TypeScript inferido desde RefreshTokenSchema
  */
 export type RefreshTokenDTO = z.infer<typeof RefreshTokenSchema>;
+
+/**
+ * Schema Zod para reenviar email de verificación
+ */
+export const ResendVerificationSchema = registry.register(
+  'ResendVerificationRequest',
+  z.object({
+    email: z
+      .string({
+        message: 'El email es requerido y debe ser un texto',
+      })
+      .email({
+        message: 'El email debe tener un formato válido',
+      })
+      .toLowerCase()
+      .trim()
+      .describe('Correo electrónico para reenviar verificación')
+      .openapi({ example: 'usuario@example.com' }),
+  })
+);
+
+/**
+ * Tipo TypeScript inferido desde ResendVerificationSchema
+ */
+export type ResendVerificationDTO = z.infer<typeof ResendVerificationSchema>;

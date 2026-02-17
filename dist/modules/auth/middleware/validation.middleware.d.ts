@@ -35,4 +35,8 @@ export declare const validateLogin: (req: Request, res: Response, next: NextFunc
  * @param next - NextFunction de Express
  */
 export declare const validateRefreshToken: (req: Request, res: Response, next: NextFunction) => void;
+/**
+ * Middleware de validación para reenviar verificación de email
+ */
+export declare const validateResendVerification: (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=validation.middleware.d.ts.map

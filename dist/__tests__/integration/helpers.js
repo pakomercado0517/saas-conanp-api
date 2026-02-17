@@ -1,10 +1,12 @@
 import request from 'supertest';
+import { User } from '../../modules/users/models/user.model.js';
 import { Membership } from '../../modules/users/models/membership.model.js';
 import { SubscriptionPlan } from '../../modules/subscriptions/models/subscription-plan.model.js';
 import { Subscription } from '../../modules/subscriptions/models/subscription.model.js';
 const API_PREFIX = '/api/v1';
 /**
- * Registra un usuario vía API y devuelve usuario y tokens.
+ * Registra un usuario vía API, lo marca como verificado y hace login para devolver tokens.
+ * (El registro ahora requiere verificación de email; para tests marcamos el usuario como verificado en BD.)
  */
 export async function createTestUserAndToken(app, overrides) {
     const email = overrides?.email ?? `test-${Date.now()}@example.com`;
@@ -15,9 +17,12 @@ export async function createTestUserAndToken(app, overrides) {
         .send({ email, password, name })
         .expect(201);
     const body = res.body;
-    if (!body.success || !body.data)
+    if (!body.success || !body.data?.user)
         throw new Error('Register failed');
-    return body.data;
+    const userId = body.data.user.id;
+    // Marcar como verificado para permitir login (bypass de email en tests)
+    await User.update({ emailVerified: true, emailVerificationToken: null, emailVerificationExpiresAt: null }, { where: { id: userId } });
+    return loginAs(app, email, password);
 }
 /**
  * Inicia sesión y devuelve tokens.

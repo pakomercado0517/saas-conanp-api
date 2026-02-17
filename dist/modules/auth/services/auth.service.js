@@ -1,11 +1,13 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
 import { DateTime } from 'luxon';
 import { randomBytes } from 'crypto';
 import { User } from '../../../modules/users/models/user.model.js';
 import { RefreshToken } from '../../../modules/auth/models/refresh-token.model.js';
-import { ConflictError, UnauthorizedError } from '../../../shared/errors/index.js';
+import { ConflictError, UnauthorizedError, BadRequestError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
+import { sendVerificationEmail } from '../../../shared/email/index.js';
 /**
  * Configuración de JWT
  */
@@ -103,8 +105,19 @@ const getRefreshTokenExpiration = () => {
     }
     return expiration.toJSDate();
 };
+/** Expiración del token de verificación de email: 24 horas */
+const EMAIL_VERIFICATION_EXPIRES_HOURS = 24;
+/**
+ * Genera un token de verificación de email (plain) y su hash
+ */
+const generateVerificationToken = async () => {
+    const token = randomBytes(32).toString('hex');
+    const hashedToken = await bcrypt.hash(token, BCRYPT_ROUNDS);
+    return { token, hashedToken };
+};
 /**
  * Registra un nuevo usuario
+ * Envía email de verificación. El usuario debe verificar su correo antes de poder iniciar sesión.
  */
 export const register = async (data) => {
     // Verificar si el email ya existe
@@ -118,35 +131,37 @@ export const register = async (data) => {
     }
     // Hashear contraseña
     const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-    // Crear usuario
+    // Generar token de verificación
+    const { token: verificationToken, hashedToken: hashedVerificationToken } = await generateVerificationToken();
+    const verificationExpiresAt = DateTime.now()
+        .plus({ hours: EMAIL_VERIFICATION_EXPIRES_HOURS })
+        .toJSDate();
+    // Crear usuario (sin verificar)
     const user = await User.create({
         email: data.email,
         password: hashedPassword,
         name: data.name,
+        emailVerified: false,
+        emailVerificationToken: hashedVerificationToken,
+        emailVerificationExpiresAt: verificationExpiresAt,
     });
-    // Generar tokens
-    const accessToken = generateAccessToken(user.id, user.email);
-    const { token: refreshToken, hashedToken } = await generateRefreshToken();
-    const expiresAt = getRefreshTokenExpiration();
-    // Guardar refresh token
-    await RefreshToken.create({
-        userId: user.id,
-        token: hashedToken,
-        expiresAt,
+    // Enviar email de verificación
+    await sendVerificationEmail({
+        to: user.email,
+        name: user.name,
+        token: verificationToken,
     });
     logger.info({
         userId: user.id,
         email: user.email,
-    }, 'Usuario registrado exitosamente');
+    }, 'Usuario registrado, email de verificación enviado');
     return {
         user: {
             id: user.id,
             email: user.email,
             name: user.name,
         },
-        accessToken,
-        refreshToken,
-        expiresIn: getExpiresInSeconds(JWT_ACCESS_EXPIRES_IN),
+        message: 'Revisa tu correo electrónico para verificar tu cuenta',
     };
 };
 /**
@@ -159,6 +174,10 @@ export const login = async (data) => {
     });
     if (!user) {
         throw new UnauthorizedError('Credenciales inválidas');
+    }
+    // Verificar que el correo esté verificado
+    if (!user.emailVerified) {
+        throw new UnauthorizedError('Debes verificar tu correo electrónico antes de iniciar sesión');
     }
     // Verificar contraseña
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
@@ -289,6 +308,66 @@ export const revokeRefreshToken = async (refreshToken) => {
         refreshTokenId: validRefreshToken.id,
         userId: validRefreshToken.userId,
     }, 'Refresh token revocado exitosamente');
+};
+/**
+ * Verifica el correo electrónico del usuario usando el token
+ */
+export const verifyEmail = async (token) => {
+    if (!token || token.length < 10) {
+        throw new BadRequestError('Token de verificación inválido');
+    }
+    // Buscar usuarios con token de verificación pendiente
+    const usersWithPendingVerification = await User.findAll({
+        where: {
+            emailVerified: false,
+            emailVerificationToken: { [Op.ne]: null },
+            emailVerificationExpiresAt: { [Op.gt]: new Date() },
+        },
+    });
+    let verifiedUser = null;
+    for (const u of usersWithPendingVerification) {
+        const isMatch = await bcrypt.compare(token, u.emailVerificationToken);
+        if (isMatch) {
+            verifiedUser = u;
+            break;
+        }
+    }
+    if (!verifiedUser) {
+        throw new BadRequestError('Token de verificación inválido o expirado. Solicita uno nuevo.');
+    }
+    await verifiedUser.update({
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpiresAt: null,
+    });
+    logger.info({ userId: verifiedUser.id, email: verifiedUser.email }, 'Correo electrónico verificado exitosamente');
+};
+/**
+ * Reenvía el email de verificación
+ */
+export const resendVerificationEmail = async (email) => {
+    const user = await User.findOne({
+        where: { email: email.toLowerCase().trim() },
+    });
+    // Por seguridad: respuesta genérica si no existe o ya está verificado
+    if (!user || user.emailVerified) {
+        return;
+    }
+    // Generar nuevo token
+    const { token: verificationToken, hashedToken: hashedVerificationToken } = await generateVerificationToken();
+    const verificationExpiresAt = DateTime.now()
+        .plus({ hours: EMAIL_VERIFICATION_EXPIRES_HOURS })
+        .toJSDate();
+    await user.update({
+        emailVerificationToken: hashedVerificationToken,
+        emailVerificationExpiresAt: verificationExpiresAt,
+    });
+    await sendVerificationEmail({
+        to: user.email,
+        name: user.name,
+        token: verificationToken,
+    });
+    logger.info({ userId: user.id, email: user.email }, 'Email de verificación reenviado');
 };
 /**
  * Revoca todos los refresh tokens de un usuario

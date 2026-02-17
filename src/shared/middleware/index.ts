@@ -6,6 +6,7 @@ export { errorHandler } from './error-handler.js';
 export {
   apiLimiter,
   authLimiter,
+  resendVerificationLimiter,
   paymentCreateLimiter,
   webhookLimiter,
   subscriptionCreateLimiter,

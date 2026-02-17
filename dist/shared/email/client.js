@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { TransactionalEmailsApi, TransactionalEmailsApiApiKeys, } from '@getbrevo/brevo';
+import { TransactionalEmailsApi, TransactionalEmailsApiApiKeys } from '@getbrevo/brevo';
 import { logger } from '../../shared/logger/index.js';
 dotenv.config();
 /**

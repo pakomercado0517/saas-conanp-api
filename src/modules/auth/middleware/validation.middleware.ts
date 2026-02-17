@@ -1,6 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { RegisterSchema, LoginSchema, RefreshTokenSchema } from '../validators/auth.validator.js';
+import {
+  RegisterSchema,
+  LoginSchema,
+  RefreshTokenSchema,
+  ResendVerificationSchema,
+} from '../validators/auth.validator.js';
 
 /**
  * Middleware de validación para registro de usuario
@@ -115,6 +120,38 @@ export const validateRefreshToken = (req: Request, res: Response, next: NextFunc
     }
 
     // Si no es un error de Zod, pasarlo al siguiente middleware de errores
+    next(error);
+  }
+};
+
+/**
+ * Middleware de validación para reenviar verificación de email
+ */
+export const validateResendVerification = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.body = ResendVerificationSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err: z.ZodIssue) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los datos proporcionados no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
     next(error);
   }
 };

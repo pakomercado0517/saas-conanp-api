@@ -75,6 +75,20 @@ export const subscriptionChangePlanLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter para reenviar email de verificación
+ *
+ * Limita solicitudes para evitar abuso y envío masivo de emails.
+ */
+export const resendVerificationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 3, // 3 intentos por 15 minutos por IP
+  message: 'Demasiados intentos de reenvío. Intenta nuevamente en 15 minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env['NODE_ENV'] !== 'production',
+});
+
+/**
  * Rate limiter para el webhook de Stripe
  *
  * Stripe ya controla la frecuencia de envío; este límite protege contra

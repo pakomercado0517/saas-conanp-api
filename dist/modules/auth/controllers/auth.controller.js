@@ -41,6 +41,27 @@ export const logout = async (req, res) => {
     return sendNoContent(res);
 };
 /**
+ * Verifica el correo electrónico con el token
+ *
+ * GET /api/v1/auth/verify-email?token=
+ */
+export const verifyEmail = async (req, res) => {
+    const token = req.query['token'];
+    await authService.verifyEmail(token ?? '');
+    return sendSuccess(res, { verified: true }, 'Correo electrónico verificado exitosamente');
+};
+/**
+ * Reenvía el email de verificación
+ *
+ * POST /api/v1/auth/resend-verification
+ */
+export const resendVerification = async (req, res) => {
+    const data = req.body;
+    await authService.resendVerificationEmail(data.email);
+    // Siempre retornar éxito (por seguridad, no revelar si el email existe)
+    return sendSuccess(res, { sent: true }, 'Si el correo está registrado y no verificado, recibirás un nuevo enlace de verificación');
+};
+/**
  * Valida el token actual y retorna información del usuario autenticado
  *
  * GET /api/v1/auth/me

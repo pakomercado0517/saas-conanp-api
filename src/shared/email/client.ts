@@ -1,8 +1,5 @@
 import dotenv from 'dotenv';
-import {
-  TransactionalEmailsApi,
-  TransactionalEmailsApiApiKeys,
-} from '@getbrevo/brevo';
+import { TransactionalEmailsApi, TransactionalEmailsApiApiKeys } from '@getbrevo/brevo';
 import type { BrevoConfig } from './types.js';
 import { logger } from '@/shared/logger/index.js';
 
@@ -21,9 +18,7 @@ const getConfig = (): BrevoConfig => {
   }
 
   if (!senderEmail) {
-    throw new Error(
-      'BREVO_SENDER_EMAIL no está definida en las variables de entorno'
-    );
+    throw new Error('BREVO_SENDER_EMAIL no está definida en las variables de entorno');
   }
 
   return {
@@ -39,15 +34,12 @@ const config = getConfig();
  * Cliente de Brevo para envío de correos transaccionales
  */
 const transactionalEmailsApi = new TransactionalEmailsApi();
-transactionalEmailsApi.setApiKey(
-  TransactionalEmailsApiApiKeys.apiKey,
-  config.apiKey
-);
+transactionalEmailsApi.setApiKey(TransactionalEmailsApiApiKeys.apiKey, config.apiKey);
 
 /**
  * Obtiene el remitente configurado
  */
-export const getSender = () => ({
+export const getSender = (): { email: string; name: string } => ({
   email: config.senderEmail,
   name: config.senderName,
 });

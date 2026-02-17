@@ -32,4 +32,14 @@ export declare const RefreshTokenSchema: z.ZodObject<{
  * Tipo TypeScript inferido desde RefreshTokenSchema
  */
 export type RefreshTokenDTO = z.infer<typeof RefreshTokenSchema>;
+/**
+ * Schema Zod para reenviar email de verificación
+ */
+export declare const ResendVerificationSchema: z.ZodObject<{
+    email: z.ZodString;
+}, z.core.$strip>;
+/**
+ * Tipo TypeScript inferido desde ResendVerificationSchema
+ */
+export type ResendVerificationDTO = z.infer<typeof ResendVerificationSchema>;
 //# sourceMappingURL=auth.validator.d.ts.map

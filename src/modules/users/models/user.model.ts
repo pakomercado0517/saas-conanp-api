@@ -7,6 +7,9 @@ export interface UserAttributes {
   email: string;
   password: string;
   name: string;
+  emailVerified: boolean;
+  emailVerificationToken: string | null;
+  emailVerificationExpiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -14,7 +17,13 @@ export interface UserAttributes {
 
 export interface UserCreationAttributes extends Optional<
   UserAttributes,
-  'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
+  | 'id'
+  | 'emailVerified'
+  | 'emailVerificationToken'
+  | 'emailVerificationExpiresAt'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'deletedAt'
 > {}
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -22,6 +31,9 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare email: string;
   declare password: string;
   declare name: string;
+  declare emailVerified: boolean;
+  declare emailVerificationToken: string | null;
+  declare emailVerificationExpiresAt: Date | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
@@ -73,6 +85,19 @@ User.init(
           msg: 'El nombre debe tener entre 1 y 255 caracteres',
         },
       },
+    },
+    emailVerified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    emailVerificationToken: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    emailVerificationExpiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     createdAt: {
       type: DataTypes.DATE,

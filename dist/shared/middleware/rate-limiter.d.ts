@@ -33,6 +33,12 @@ export declare const subscriptionCreateLimiter: import("express-rate-limit").Rat
  */
 export declare const subscriptionChangePlanLimiter: import("express-rate-limit").RateLimitRequestHandler;
 /**
+ * Rate limiter para reenviar email de verificación
+ *
+ * Limita solicitudes para evitar abuso y envío masivo de emails.
+ */
+export declare const resendVerificationLimiter: import("express-rate-limit").RateLimitRequestHandler;
+/**
  * Rate limiter para el webhook de Stripe
  *
  * Stripe ya controla la frecuencia de envío; este límite protege contra

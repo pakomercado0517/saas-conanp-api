@@ -12,7 +12,8 @@ export interface AuthResult {
     expiresIn: number;
 }
 /**
- * Registra un usuario vía API y devuelve usuario y tokens.
+ * Registra un usuario vía API, lo marca como verificado y hace login para devolver tokens.
+ * (El registro ahora requiere verificación de email; para tests marcamos el usuario como verificado en BD.)
  */
 export declare function createTestUserAndToken(app: Application, overrides?: {
     email?: string;

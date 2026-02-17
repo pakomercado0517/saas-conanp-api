@@ -1,7 +1,12 @@
 import type { Request, Response } from 'express';
 import * as authService from '../services/auth.service.js';
 import { sendSuccess, sendCreated, sendNoContent } from '@/shared/responses/helpers.js';
-import type { RegisterDTO, LoginDTO, RefreshTokenDTO } from '../validators/auth.validator.js';
+import type {
+  RegisterDTO,
+  LoginDTO,
+  RefreshTokenDTO,
+  ResendVerificationDTO,
+} from '../validators/auth.validator.js';
 
 /**
  * Registra un nuevo usuario
@@ -49,6 +54,35 @@ export const logout = async (req: Request, res: Response): Promise<Response> => 
   await authService.revokeRefreshToken(data.refreshToken);
 
   return sendNoContent(res);
+};
+
+/**
+ * Verifica el correo electrónico con el token
+ *
+ * GET /api/v1/auth/verify-email?token=
+ */
+export const verifyEmail = async (req: Request, res: Response): Promise<Response> => {
+  const token = req.query['token'] as string | undefined;
+  await authService.verifyEmail(token ?? '');
+
+  return sendSuccess(res, { verified: true }, 'Correo electrónico verificado exitosamente');
+};
+
+/**
+ * Reenvía el email de verificación
+ *
+ * POST /api/v1/auth/resend-verification
+ */
+export const resendVerification = async (req: Request, res: Response): Promise<Response> => {
+  const data = req.body as ResendVerificationDTO;
+  await authService.resendVerificationEmail(data.email);
+
+  // Siempre retornar éxito (por seguridad, no revelar si el email existe)
+  return sendSuccess(
+    res,
+    { sent: true },
+    'Si el correo está registrado y no verificado, recibirás un nuevo enlace de verificación'
+  );
 };
 
 /**

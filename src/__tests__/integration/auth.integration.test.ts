@@ -13,7 +13,7 @@ describe('Auth endpoints (integration)', () => {
   });
 
   describe('POST /register', () => {
-    it('devuelve 201 y user + tokens al registrar con datos válidos', async () => {
+    it('devuelve 201 y user + message (sin tokens) al registrar con datos válidos', async () => {
       const email = `new-${Date.now()}@example.com`;
       const res = await request(app)
         .post(`${API}/register`)
@@ -25,9 +25,9 @@ describe('Auth endpoints (integration)', () => {
       expect(res.body.data).toHaveProperty('user');
       expect(res.body.data.user).toMatchObject({ email, name: 'New User' });
       expect(res.body.data.user).toHaveProperty('id');
-      expect(res.body.data).toHaveProperty('accessToken');
-      expect(res.body.data).toHaveProperty('refreshToken');
-      expect(res.body.data).toHaveProperty('expiresIn');
+      expect(res.body.data).toHaveProperty('message');
+      expect(res.body.data).not.toHaveProperty('accessToken');
+      expect(res.body.data).not.toHaveProperty('refreshToken');
       expect(res.body).toHaveProperty('message');
     });
 
@@ -57,6 +57,21 @@ describe('Auth endpoints (integration)', () => {
         .post(`${API}/login`)
         .send({ email: auth.user.email, password: 'wrongpassword' })
         .expect(401);
+    });
+
+    it('devuelve 401 cuando el correo no está verificado', async () => {
+      const email = `unverified-${Date.now()}@example.com`;
+      await request(app)
+        .post(`${API}/register`)
+        .send({ email, password: 'password123', name: 'Unverified User' })
+        .expect(201);
+
+      const res = await request(app)
+        .post(`${API}/login`)
+        .send({ email, password: 'password123' })
+        .expect(401);
+
+      expect(res.body.message || res.body.error).toMatch(/verificar/i);
     });
   });
 
@@ -93,6 +108,62 @@ describe('Auth endpoints (integration)', () => {
 
     it('devuelve 401 sin Authorization', async () => {
       await request(app).get(`${API}/me`).expect(401);
+    });
+  });
+
+  describe('GET /verify-email', () => {
+    it('devuelve 200 al verificar con token válido', async () => {
+      // Registrar usuario nuevo (sin verificar)
+      const email = `verify-${Date.now()}@example.com`;
+      await request(app)
+        .post(`${API}/register`)
+        .send({ email, password: 'password123', name: 'Verify User' })
+        .expect(201);
+
+      // Obtener el token de la BD (en tests no enviamos email real)
+      const { User } = await import('@/modules/users/models/user.model.js');
+      const user = await User.findOne({ where: { email } });
+      expect(user).toBeTruthy();
+      expect(user?.emailVerificationToken).toBeTruthy();
+
+      // Para verificar necesitamos el token en plain - en producción viene del email
+      // En el service guardamos el hash; para el test inyectamos un token conocido
+      const bcrypt = (await import('bcrypt')).default;
+      const plainToken = 'test-verification-token-12345';
+      const hashedToken = await bcrypt.hash(plainToken, 10);
+      await user!.update({
+        emailVerificationToken: hashedToken,
+        emailVerificationExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
+
+      const res = await request(app)
+        .get(`${API}/verify-email`)
+        .query({ token: plainToken })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.verified).toBe(true);
+
+      // Verificar que el usuario quedó verificado
+      await user!.reload();
+      expect(user!.emailVerified).toBe(true);
+      expect(user!.emailVerificationToken).toBeNull();
+    });
+
+    it('devuelve 400 con token inválido', async () => {
+      await request(app).get(`${API}/verify-email`).query({ token: 'invalid-token' }).expect(400);
+    });
+  });
+
+  describe('POST /resend-verification', () => {
+    it('devuelve 200 (respuesta genérica por seguridad)', async () => {
+      const res = await request(app)
+        .post(`${API}/resend-verification`)
+        .send({ email: 'nonexistent@example.com' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.sent).toBe(true);
     });
   });
 

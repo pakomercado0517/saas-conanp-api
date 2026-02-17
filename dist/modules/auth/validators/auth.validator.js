@@ -85,4 +85,20 @@ export const RefreshTokenSchema = registry.register('RefreshTokenRequest', z.obj
         example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjM0NTY3OCIsInR5cGUiOiJyZWZyZXNoIn0.abc123',
     }),
 }));
+/**
+ * Schema Zod para reenviar email de verificación
+ */
+export const ResendVerificationSchema = registry.register('ResendVerificationRequest', z.object({
+    email: z
+        .string({
+        message: 'El email es requerido y debe ser un texto',
+    })
+        .email({
+        message: 'El email debe tener un formato válido',
+    })
+        .toLowerCase()
+        .trim()
+        .describe('Correo electrónico para reenviar verificación')
+        .openapi({ example: 'usuario@example.com' }),
+}));
 //# sourceMappingURL=auth.validator.js.map

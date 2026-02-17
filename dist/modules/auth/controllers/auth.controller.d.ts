@@ -24,6 +24,18 @@ export declare const refresh: (req: Request, res: Response) => Promise<Response>
  */
 export declare const logout: (req: Request, res: Response) => Promise<Response>;
 /**
+ * Verifica el correo electrónico con el token
+ *
+ * GET /api/v1/auth/verify-email?token=
+ */
+export declare const verifyEmail: (req: Request, res: Response) => Promise<Response>;
+/**
+ * Reenvía el email de verificación
+ *
+ * POST /api/v1/auth/resend-verification
+ */
+export declare const resendVerification: (req: Request, res: Response) => Promise<Response>;
+/**
  * Valida el token actual y retorna información del usuario autenticado
  *
  * GET /api/v1/auth/me
