@@ -1,6 +1,6 @@
 /**
  * Exportación centralizada de los servicios de organizaciones
  */
-export { assertCanAccessOrganization, assertActiveSubscription, getSubscriptionStatus, getCurrentPlanInfo, createOrganization, getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, } from './organization.service.js';
-export type { CurrentPlanInfo } from './organization.service.js';
+export { assertCanAccessOrganization, assertActiveSubscription, getSubscriptionStatus, getCurrentPlanInfo, getBrazaletesConfig, createOrganization, getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, } from './organization.service.js';
+export type { CurrentPlanInfo, BrazaletesConfig } from './organization.service.js';
 //# sourceMappingURL=index.d.ts.map

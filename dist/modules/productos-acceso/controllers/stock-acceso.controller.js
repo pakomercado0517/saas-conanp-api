@@ -1,0 +1,78 @@
+import * as stockAccesoService from '../services/stock-acceso.service.js';
+import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
+/**
+ * POST .../productos-acceso/:productoAccesoId/entrada
+ * Registra una entrada de stock.
+ */
+export const registrarEntrada = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const productoAccesoId = req.params['productoAccesoId'];
+    const userId = req.user.userId;
+    const data = req.body;
+    const movimiento = await stockAccesoService.registrarEntrada(organizationId, productoAccesoId, data, userId);
+    return sendCreated(res, movimiento, 'Entrada de stock registrada exitosamente');
+};
+/**
+ * POST .../productos-acceso/:productoAccesoId/salida
+ * Registra una salida de stock (venta).
+ */
+export const registrarSalida = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const productoAccesoId = req.params['productoAccesoId'];
+    const userId = req.user.userId;
+    const data = req.body;
+    const movimiento = await stockAccesoService.registrarSalida(organizationId, productoAccesoId, data, userId);
+    return sendCreated(res, movimiento, 'Salida de stock registrada exitosamente');
+};
+/**
+ * GET .../productos-acceso/:productoAccesoId/stock
+ * Obtiene el stock disponible de un producto.
+ */
+export const getStockDisponible = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const productoAccesoId = req.params['productoAccesoId'];
+    const userId = req.user.userId;
+    const stock = await stockAccesoService.getStockDisponible(organizationId, productoAccesoId, userId);
+    return sendSuccess(res, stock, 'Stock obtenido exitosamente');
+};
+/**
+ * GET .../movimientos-stock-acceso
+ * Lista movimientos con paginación y filtros.
+ */
+export const listMovimientos = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const userId = req.user.userId;
+    const filters = req.validatedQuery ??
+        req.query;
+    const result = await stockAccesoService.listMovimientos(organizationId, filters, userId);
+    return sendPaginated(res, result.data, result.pagination, 'Movimientos obtenidos exitosamente');
+};
+//# sourceMappingURL=stock-acceso.controller.js.map

@@ -38,6 +38,19 @@ export interface CurrentPlanInfo {
         maxActividades: number | null;
     };
 }
+/** Configuración de brazaletes por ANP (extraída de settings.acceso). */
+export interface BrazaletesConfig {
+    brazaletesObligatorios: boolean | null;
+    brazaletesExcluyenLocales: boolean;
+}
+/**
+ * Obtiene la configuración de brazaletes/pasaporte de una organización.
+ * No valida acceso ni suscripción; usar después de assertCanAccessOrganization si aplica.
+ *
+ * @returns { brazaletesObligatorios, brazaletesExcluyenLocales } normalizado
+ * @throws {NotFoundError} Si la organización no existe
+ */
+export declare const getBrazaletesConfig: (organizationId: UUID) => Promise<BrazaletesConfig>;
 /**
  * Obtiene la información del plan actual de la organización (solo si la suscripción está activa).
  *

@@ -14,6 +14,8 @@ import eventoRouter from '../../../modules/eventos/routes/evento.routes.js';
 import reporteRouter from '../../../modules/reportes/routes/reporte.routes.js';
 import paymentRouter from '../../../modules/payments/routes/payment.routes.js';
 import { subscriptionOrgRouter } from '../../../modules/subscriptions/routes/subscription.routes.js';
+import productoAccesoRouter from '../../../modules/productos-acceso/routes/producto-acceso.routes.js';
+import movimientoStockAccesoRouter from '../../../modules/productos-acceso/routes/movimiento-stock-acceso.routes.js';
 /**
  * Router de organizaciones
  *
@@ -180,5 +182,15 @@ organizationRouter.use('/:organizationId/payments', paymentRouter);
  * Montadas bajo /api/v1/organizations/:organizationId/subscriptions
  */
 organizationRouter.use('/:organizationId/subscriptions', subscriptionOrgRouter);
+/**
+ * Rutas anidadas de productos de acceso (brazaletes, pasaportes)
+ * Montadas bajo /api/v1/organizations/:organizationId/productos-acceso
+ */
+organizationRouter.use('/:organizationId/productos-acceso', productoAccesoRouter);
+/**
+ * Rutas anidadas de movimientos de stock (listado con filtros)
+ * Montadas bajo /api/v1/organizations/:organizationId/movimientos-stock-acceso
+ */
+organizationRouter.use('/:organizationId/movimientos-stock-acceso', movimientoStockAccesoRouter);
 export default organizationRouter;
 //# sourceMappingURL=organization.routes.js.map

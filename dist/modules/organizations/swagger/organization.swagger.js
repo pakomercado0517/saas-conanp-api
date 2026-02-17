@@ -9,7 +9,9 @@ const OrganizationSchema = registry.register('Organization', z.object({
     ecosystem_type: z
         .enum(['terrestre', 'maritimo', 'mixto'])
         .describe('Tipo de ecosistema: terrestre, marítimo o mixto'),
-    settings: z.record(z.string(), z.unknown()).describe('Configuraciones personalizadas (JSONB)'),
+    settings: z
+        .record(z.string(), z.unknown())
+        .describe('Configuraciones personalizadas (JSONB). Puede incluir settings.acceso (brazaletesObligatorios, brazaletesExcluyenLocales) para configuración de brazaletes por ANP.'),
     createdAt: z.string().datetime().describe('Fecha de creación'),
     updatedAt: z.string().datetime().describe('Fecha de última actualización'),
 }));
