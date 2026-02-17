@@ -91,3 +91,55 @@ export interface ReportePrestadoresActivosItem {
   actividadesPermitidas: number;
   ultimoEvento: string | null; // YYYY-MM-DD
 }
+
+/**
+ * Tipo de respuesta para reporte de stock actual por producto
+ */
+export interface ReporteStockActualItem {
+  productoAccesoId: UUID;
+  productName: string;
+  tipo: 'brazalete' | 'pasaporte';
+  vigenciaDias: number;
+  cantidad: number;
+}
+
+/**
+ * Tipo de respuesta para reporte de salidas de stock por período
+ */
+export interface ReporteSalidasStockItem {
+  totalCantidad: number;
+  totalMontoTotal: number;
+  cantidadMovimientos: number;
+  dateFrom: string | null;
+  dateTo: string | null;
+  porProducto?: Array<{
+    productoAccesoId: UUID;
+    productName: string;
+    cantidad: number;
+    montoTotal: number;
+    cantidadMovimientos: number;
+  }>;
+}
+
+/**
+ * Tipo de respuesta para reporte de ventas por prestador
+ */
+export interface ReporteVentasPrestadoresItem {
+  prestadorId: UUID | null;
+  prestadorName: string | null;
+  totalCantidad: number;
+  totalMontoTotal: number;
+  cantidadMovimientos: number;
+}
+
+/**
+ * Tipo de respuesta para reporte de ventas por producto y fecha
+ */
+export interface ReporteVentasPorProductoItem {
+  productoAccesoId: UUID;
+  productName: string;
+  fecha: string; // YYYY-MM-DD
+  totalCantidad: number;
+  totalMontoTotal: number;
+  cantidadMovimientos: number;
+}

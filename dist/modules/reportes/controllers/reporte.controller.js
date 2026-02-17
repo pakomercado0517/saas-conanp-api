@@ -197,4 +197,79 @@ export const getReportePrestadoresActivos = async (req, res) => {
     const resultado = await reporteService.getReportePrestadoresActivos(organizationId, filters, userId);
     return sendSuccess(res, resultado, 'Reporte obtenido exitosamente');
 };
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/stock-acceso
+ * Reporte de stock actual por producto. Solo admins.
+ */
+export const getReporteStockActual = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const userId = req.user.userId;
+    const filters = req.validatedQuery ?? {};
+    const resultado = await reporteService.getReporteStockActual(organizationId, filters, userId);
+    return sendSuccess(res, resultado, 'Reporte obtenido exitosamente');
+};
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/salidas-stock
+ * Reporte de salidas de stock por período. Solo admins.
+ */
+export const getReporteSalidasStock = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const userId = req.user.userId;
+    const filters = req.validatedQuery ??
+        req.query;
+    const resultado = await reporteService.getReporteSalidasPorPeriodo(organizationId, filters, userId);
+    return sendSuccess(res, resultado, 'Reporte obtenido exitosamente');
+};
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/ventas-prestadores
+ * Reporte de ventas agrupadas por prestador. Solo admins.
+ */
+export const getReporteVentasPrestadores = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const userId = req.user.userId;
+    const filters = req.validatedQuery ??
+        req.query;
+    const resultado = await reporteService.getReporteVentasPorPrestador(organizationId, filters, userId);
+    return sendSuccess(res, resultado, 'Reporte obtenido exitosamente');
+};
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/ventas-por-producto
+ * Reporte de ventas por producto y fecha. Solo admins.
+ */
+export const getReporteVentasPorProducto = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const userId = req.user.userId;
+    const filters = req.validatedQuery ??
+        req.query;
+    const resultado = await reporteService.getReporteVentasPorProducto(organizationId, filters, userId);
+    return sendSuccess(res, resultado, 'Reporte obtenido exitosamente');
+};
 //# sourceMappingURL=reporte.controller.js.map

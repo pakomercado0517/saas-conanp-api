@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ReporteEventosPorActividadSchema, ReporteEventosPorPrestadorSchema, ReporteEventosPorFechaSchema, ReporteCapacidadUtilizadaSchema, ReportePrestadoresActivosSchema, } from '../validators/reporte.validator.js';
+import { ReporteEventosPorActividadSchema, ReporteEventosPorPrestadorSchema, ReporteEventosPorFechaSchema, ReporteCapacidadUtilizadaSchema, ReportePrestadoresActivosSchema, ReporteStockActualSchema, ReporteSalidasStockSchema, ReporteVentasPrestadoresSchema, ReporteVentasPorProductoSchema, } from '../validators/reporte.validator.js';
 /**
  * Middleware de validación para reporte de eventos por actividad
  *
@@ -122,6 +122,102 @@ export const validateReporteCapacidadUtilizada = (req, res, next) => {
 export const validateReportePrestadoresActivos = (req, res, next) => {
     try {
         req.validatedQuery = ReportePrestadoresActivosSchema.parse(req.query);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los parámetros de consulta no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+export const validateReporteStockActual = (req, res, next) => {
+    try {
+        req.validatedQuery = ReporteStockActualSchema.parse(req.query ?? {});
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los parámetros de consulta no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+export const validateReporteSalidasStock = (req, res, next) => {
+    try {
+        req.validatedQuery = ReporteSalidasStockSchema.parse(req.query);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los parámetros de consulta no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+export const validateReporteVentasPrestadores = (req, res, next) => {
+    try {
+        req.validatedQuery = ReporteVentasPrestadoresSchema.parse(req.query);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los parámetros de consulta no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+export const validateReporteVentasPorProducto = (req, res, next) => {
+    try {
+        req.validatedQuery = ReporteVentasPorProductoSchema.parse(req.query);
         next();
     }
     catch (error) {

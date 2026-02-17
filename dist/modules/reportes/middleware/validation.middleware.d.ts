@@ -27,4 +27,8 @@ export declare const validateReporteCapacidadUtilizada: (req: Request, res: Resp
  * Middleware de validación para reporte de prestadores activos
  */
 export declare const validateReportePrestadoresActivos: (req: Request, res: Response, next: NextFunction) => void;
+export declare const validateReporteStockActual: (req: Request, res: Response, next: NextFunction) => void;
+export declare const validateReporteSalidasStock: (req: Request, res: Response, next: NextFunction) => void;
+export declare const validateReporteVentasPrestadores: (req: Request, res: Response, next: NextFunction) => void;
+export declare const validateReporteVentasPorProducto: (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=validation.middleware.d.ts.map

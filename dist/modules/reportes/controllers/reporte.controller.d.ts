@@ -126,4 +126,24 @@ export declare const getReporteCapacidadUtilizada: (req: Request, res: Response)
  * }
  */
 export declare const getReportePrestadoresActivos: (req: Request, res: Response) => Promise<Response>;
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/stock-acceso
+ * Reporte de stock actual por producto. Solo admins.
+ */
+export declare const getReporteStockActual: (req: Request, res: Response) => Promise<Response>;
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/salidas-stock
+ * Reporte de salidas de stock por período. Solo admins.
+ */
+export declare const getReporteSalidasStock: (req: Request, res: Response) => Promise<Response>;
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/ventas-prestadores
+ * Reporte de ventas agrupadas por prestador. Solo admins.
+ */
+export declare const getReporteVentasPrestadores: (req: Request, res: Response) => Promise<Response>;
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/ventas-por-producto
+ * Reporte de ventas por producto y fecha. Solo admins.
+ */
+export declare const getReporteVentasPorProducto: (req: Request, res: Response) => Promise<Response>;
 //# sourceMappingURL=reporte.controller.d.ts.map
