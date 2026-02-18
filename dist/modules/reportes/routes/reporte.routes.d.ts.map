@@ -1,1 +1,1 @@
-{"version":3,"file":"reporte.routes.d.ts","sourceRoot":"","sources":["../../../../src/modules/reportes/routes/reporte.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAU,KAAK,MAAM,IAAI,aAAa,EAAE,MAAM,SAAS,CAAC;AAqB/D;;;;;GAKG;AACH,QAAA,MAAM,aAAa,EAAE,aAA6C,CAAC;AAyKnE,eAAe,aAAa,CAAC"}
+{"version":3,"file":"reporte.routes.d.ts","sourceRoot":"","sources":["../../../../src/modules/reportes/routes/reporte.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAU,KAAK,MAAM,IAAI,aAAa,EAAE,MAAM,SAAS,CAAC;AA6B/D;;;;;GAKG;AACH,QAAA,MAAM,aAAa,EAAE,aAA6C,CAAC;AA6NnE,eAAe,aAAa,CAAC"}

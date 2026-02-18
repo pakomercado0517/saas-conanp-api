@@ -6,10 +6,11 @@ export {
   assertActiveSubscription,
   getSubscriptionStatus,
   getCurrentPlanInfo,
+  getBrazaletesConfig,
   createOrganization,
   getOrganizationById,
   listOrganizations,
   updateOrganization,
   deleteOrganization,
 } from './organization.service.js';
-export type { CurrentPlanInfo } from './organization.service.js';
+export type { CurrentPlanInfo, BrazaletesConfig } from './organization.service.js';

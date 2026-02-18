@@ -167,9 +167,90 @@ export const ReportePrestadoresActivosSchema = z.object({
 
 export type ReportePrestadoresActivosDTO = z.infer<typeof ReportePrestadoresActivosSchema>;
 
+/**
+ * Schema para reporte de stock actual por producto (sin filtros de query)
+ */
+export const ReporteStockActualSchema = z.object({});
+
+export type ReporteStockActualDTO = z.infer<typeof ReporteStockActualSchema>;
+
+/**
+ * Schema para reporte de salidas de stock por período
+ */
+export const ReporteSalidasStockSchema = z
+  .object({
+    dateFrom: optionalDateOnlySchema.transform((val) => (val === null ? undefined : val)),
+    dateTo: optionalDateOnlySchema.transform((val) => (val === null ? undefined : val)),
+    productoAccesoId: z
+      .string()
+      .uuid({ message: 'El ID de producto debe ser un UUID válido' })
+      .optional()
+      .transform((val) => (val === '' ? undefined : val)),
+  })
+  .refine(
+    (data) => {
+      if (data.dateFrom && data.dateTo) {
+        return data.dateFrom <= data.dateTo;
+      }
+      return true;
+    },
+    { message: 'La fecha de inicio debe ser anterior o igual a la fecha de fin', path: ['dateTo'] }
+  );
+
+export type ReporteSalidasStockDTO = z.infer<typeof ReporteSalidasStockSchema>;
+
+/**
+ * Schema para reporte de ventas por prestador
+ */
+export const ReporteVentasPrestadoresSchema = z
+  .object({
+    dateFrom: optionalDateOnlySchema.transform((val) => (val === null ? undefined : val)),
+    dateTo: optionalDateOnlySchema.transform((val) => (val === null ? undefined : val)),
+  })
+  .refine(
+    (data) => {
+      if (data.dateFrom && data.dateTo) {
+        return data.dateFrom <= data.dateTo;
+      }
+      return true;
+    },
+    { message: 'La fecha de inicio debe ser anterior o igual a la fecha de fin', path: ['dateTo'] }
+  );
+
+export type ReporteVentasPrestadoresDTO = z.infer<typeof ReporteVentasPrestadoresSchema>;
+
+/**
+ * Schema para reporte de ventas por producto y fecha
+ */
+export const ReporteVentasPorProductoSchema = z
+  .object({
+    dateFrom: optionalDateOnlySchema.transform((val) => (val === null ? undefined : val)),
+    dateTo: optionalDateOnlySchema.transform((val) => (val === null ? undefined : val)),
+    productoAccesoId: z
+      .string()
+      .uuid({ message: 'El ID de producto debe ser un UUID válido' })
+      .optional()
+      .transform((val) => (val === '' ? undefined : val)),
+  })
+  .refine(
+    (data) => {
+      if (data.dateFrom && data.dateTo) {
+        return data.dateFrom <= data.dateTo;
+      }
+      return true;
+    },
+    { message: 'La fecha de inicio debe ser anterior o igual a la fecha de fin', path: ['dateTo'] }
+  );
+
+export type ReporteVentasPorProductoDTO = z.infer<typeof ReporteVentasPorProductoSchema>;
+
 // Registrar schemas en el registry de Swagger
 registry.register('ReporteEventosPorActividad', ReporteEventosPorActividadSchema);
 registry.register('ReporteEventosPorPrestador', ReporteEventosPorPrestadorSchema);
 registry.register('ReporteEventosPorFecha', ReporteEventosPorFechaSchema);
 registry.register('ReporteCapacidadUtilizada', ReporteCapacidadUtilizadaSchema);
 registry.register('ReportePrestadoresActivos', ReportePrestadoresActivosSchema);
+registry.register('ReporteStockActual', ReporteStockActualSchema);
+registry.register('ReporteSalidasStock', ReporteSalidasStockSchema);
+registry.register('ReporteVentasPrestadores', ReporteVentasPrestadoresSchema);
+registry.register('ReporteVentasPorProducto', ReporteVentasPorProductoSchema);

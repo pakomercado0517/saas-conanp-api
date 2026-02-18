@@ -20,4 +20,7 @@ export { Payment } from '../../modules/payments/models/payment.model.js';
 export { StripeWebhookEvent } from '../../modules/payments/models/stripe-webhook-event.model.js';
 export { SubscriptionPlan } from '../../modules/subscriptions/models/subscription-plan.model.js';
 export { Subscription } from '../../modules/subscriptions/models/subscription.model.js';
+export { ProductoAcceso } from '../../modules/productos-acceso/models/producto-acceso.model.js';
+export { StockAcceso } from '../../modules/productos-acceso/models/stock-acceso.model.js';
+export { MovimientoStockAcceso } from '../../modules/productos-acceso/models/movimiento-stock-acceso.model.js';
 //# sourceMappingURL=models.d.ts.map

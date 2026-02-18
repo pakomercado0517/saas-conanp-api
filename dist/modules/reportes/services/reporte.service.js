@@ -7,6 +7,9 @@ import { User } from '../../../modules/users/models/user.model.js';
 import { Capacidad } from '../../../modules/actividades/models/capacidad.model.js';
 import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
 import { Permiso } from '../../../modules/permisos/models/permiso.model.js';
+import { StockAcceso } from '../../../modules/productos-acceso/models/stock-acceso.model.js';
+import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
+import { MovimientoStockAcceso } from '../../../modules/productos-acceso/models/movimiento-stock-acceso.model.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { toDateOnlyDB, DateTime } from '../../../shared/dates/index.js';
 import { ValidationError } from '../../../shared/errors/index.js';
@@ -703,5 +706,237 @@ export const getReportePrestadoresActivos = async (organizationId, filters, user
         };
     });
     return resultados.sort((a, b) => a.prestadorName.localeCompare(b.prestadorName));
+};
+// --- Reportes de stock y ventas (brazaletes/pasaportes) ---
+const toDateStr = (val) => {
+    if (!val)
+        return undefined;
+    if (typeof val === 'string')
+        return val;
+    return 'toFormat' in val ? val.toFormat('yyyy-MM-dd') : undefined;
+};
+/**
+ * Reporte de stock actual por producto (por organización).
+ */
+export const getReporteStockActual = async (organizationId, _filters, userId) => {
+    await assertCanAccessOrganization(userId, organizationId);
+    const stocks = await StockAcceso.findAll({
+        where: { organizationId },
+        include: [
+            {
+                model: ProductoAcceso,
+                as: 'ProductoAcceso',
+                required: true,
+                attributes: ['id', 'name', 'tipo', 'vigenciaDias'],
+            },
+        ],
+    });
+    return stocks.map((s) => ({
+        productoAccesoId: s.productoAccesoId,
+        productName: s.ProductoAcceso.name,
+        tipo: s.ProductoAcceso.tipo,
+        vigenciaDias: s.ProductoAcceso
+            .vigenciaDias,
+        cantidad: s.cantidad,
+    }));
+};
+/**
+ * Reporte de salidas de stock por período (cantidad y montos totales).
+ */
+export const getReporteSalidasPorPeriodo = async (organizationId, filters, userId) => {
+    await assertCanAccessOrganization(userId, organizationId);
+    validateDateRange(filters.dateFrom, filters.dateTo);
+    const dateFromStr = toDateStr(filters.dateFrom);
+    const dateToStr = toDateStr(filters.dateTo);
+    const where = {
+        organizationId,
+        tipo: 'salida',
+    };
+    if (filters.productoAccesoId)
+        where['productoAccesoId'] = filters.productoAccesoId;
+    if (dateFromStr && dateToStr) {
+        where['fecha'] = { [Op.between]: [dateFromStr, dateToStr] };
+    }
+    else if (dateFromStr) {
+        where['fecha'] = { [Op.gte]: dateFromStr };
+    }
+    else if (dateToStr) {
+        where['fecha'] = { [Op.lte]: dateToStr };
+    }
+    const [totals] = (await MovimientoStockAcceso.findAll({
+        where,
+        attributes: [
+            [sequelize.fn('SUM', sequelize.col('cantidad')), 'totalCantidad'],
+            [
+                sequelize.fn('SUM', sequelize.cast(sequelize.col('montoTotal'), 'DECIMAL(12,2)')),
+                'totalMontoTotal',
+            ],
+            [sequelize.fn('COUNT', sequelize.col('id')), 'cantidadMovimientos'],
+        ],
+        raw: true,
+    }));
+    const totalCantidad = totals ? Number(totals.totalCantidad) || 0 : 0;
+    const totalMontoTotal = totals?.totalMontoTotal != null ? Number(totals.totalMontoTotal) : 0;
+    const cantidadMovimientos = totals ? Number(totals.cantidadMovimientos) || 0 : 0;
+    let porProducto;
+    if (!filters.productoAccesoId && (dateFromStr || dateToStr)) {
+        const byProduct = (await MovimientoStockAcceso.findAll({
+            where,
+            attributes: [
+                'productoAccesoId',
+                [sequelize.fn('SUM', sequelize.col('cantidad')), 'cantidad'],
+                [
+                    sequelize.fn('SUM', sequelize.cast(sequelize.col('montoTotal'), 'DECIMAL(12,2)')),
+                    'montoTotal',
+                ],
+                [sequelize.fn('COUNT', sequelize.col('id')), 'cantidadMovimientos'],
+            ],
+            group: ['productoAccesoId'],
+            raw: true,
+        }));
+        const productIds = [...new Set((byProduct || []).map((r) => r.productoAccesoId))];
+        const products = productIds.length > 0
+            ? await ProductoAcceso.findAll({
+                where: { id: { [Op.in]: productIds }, organizationId },
+                attributes: ['id', 'name'],
+            })
+            : [];
+        const nameById = new Map(products.map((p) => [p.id, p.name]));
+        porProducto = (byProduct || []).map((r) => ({
+            productoAccesoId: r.productoAccesoId,
+            productName: nameById.get(r.productoAccesoId) ?? '',
+            cantidad: Number(r.cantidad) || 0,
+            montoTotal: r.montoTotal != null ? Number(r.montoTotal) : 0,
+            cantidadMovimientos: Number(r.cantidadMovimientos) || 0,
+        }));
+    }
+    return {
+        totalCantidad,
+        totalMontoTotal,
+        cantidadMovimientos,
+        dateFrom: dateFromStr ?? null,
+        dateTo: dateToStr ?? null,
+        ...(porProducto !== undefined && { porProducto }),
+    };
+};
+/**
+ * Reporte de ventas (salidas con motivo venta) agrupadas por prestador.
+ */
+export const getReporteVentasPorPrestador = async (organizationId, filters, userId) => {
+    await assertCanAccessOrganization(userId, organizationId);
+    validateDateRange(filters.dateFrom, filters.dateTo);
+    const dateFromStr = toDateStr(filters.dateFrom);
+    const dateToStr = toDateStr(filters.dateTo);
+    const where = {
+        organizationId,
+        tipo: 'salida',
+        motivo: 'venta',
+    };
+    if (dateFromStr && dateToStr) {
+        where['fecha'] = { [Op.between]: [dateFromStr, dateToStr] };
+    }
+    else if (dateFromStr) {
+        where['fecha'] = { [Op.gte]: dateFromStr };
+    }
+    else if (dateToStr) {
+        where['fecha'] = { [Op.lte]: dateToStr };
+    }
+    const rows = (await MovimientoStockAcceso.findAll({
+        where,
+        attributes: [
+            'prestadorId',
+            [sequelize.fn('SUM', sequelize.col('cantidad')), 'totalCantidad'],
+            [
+                sequelize.fn('SUM', sequelize.cast(sequelize.col('montoTotal'), 'DECIMAL(12,2)')),
+                'totalMontoTotal',
+            ],
+            [sequelize.fn('COUNT', sequelize.col('id')), 'cantidadMovimientos'],
+        ],
+        group: ['prestadorId'],
+        raw: true,
+    }));
+    const prestadorIds = [
+        ...new Set((rows || []).map((r) => r.prestadorId).filter(Boolean)),
+    ];
+    const prestadores = prestadorIds.length > 0
+        ? await PrestadorProfile.findAll({
+            where: { id: { [Op.in]: prestadorIds }, organizationId },
+            include: [{ model: User, as: 'User', attributes: ['name'] }],
+        })
+        : [];
+    const nameByPrestador = new Map();
+    for (const p of prestadores) {
+        const user = p.User;
+        nameByPrestador.set(p.id, user?.name ?? '');
+    }
+    const items = (rows || []).map((r) => ({
+        prestadorId: r.prestadorId,
+        prestadorName: r.prestadorId ? (nameByPrestador.get(r.prestadorId) ?? null) : null,
+        totalCantidad: Number(r.totalCantidad) || 0,
+        totalMontoTotal: r.totalMontoTotal != null ? Number(r.totalMontoTotal) : 0,
+        cantidadMovimientos: Number(r.cantidadMovimientos) || 0,
+    }));
+    return items.sort((a, b) => (a.prestadorName ?? '').localeCompare(b.prestadorName ?? ''));
+};
+/**
+ * Reporte de ventas por producto y fecha.
+ */
+export const getReporteVentasPorProducto = async (organizationId, filters, userId) => {
+    await assertCanAccessOrganization(userId, organizationId);
+    validateDateRange(filters.dateFrom, filters.dateTo);
+    const dateFromStr = toDateStr(filters.dateFrom);
+    const dateToStr = toDateStr(filters.dateTo);
+    const where = {
+        organizationId,
+        tipo: 'salida',
+        motivo: 'venta',
+    };
+    if (filters.productoAccesoId)
+        where['productoAccesoId'] = filters.productoAccesoId;
+    if (dateFromStr && dateToStr) {
+        where['fecha'] = { [Op.between]: [dateFromStr, dateToStr] };
+    }
+    else if (dateFromStr) {
+        where['fecha'] = { [Op.gte]: dateFromStr };
+    }
+    else if (dateToStr) {
+        where['fecha'] = { [Op.lte]: dateToStr };
+    }
+    const rows = (await MovimientoStockAcceso.findAll({
+        where,
+        attributes: [
+            'productoAccesoId',
+            'fecha',
+            [sequelize.fn('SUM', sequelize.col('cantidad')), 'totalCantidad'],
+            [
+                sequelize.fn('SUM', sequelize.cast(sequelize.col('montoTotal'), 'DECIMAL(12,2)')),
+                'totalMontoTotal',
+            ],
+            [sequelize.fn('COUNT', sequelize.col('id')), 'cantidadMovimientos'],
+        ],
+        group: ['productoAccesoId', 'fecha'],
+        order: [
+            ['fecha', 'ASC'],
+            ['productoAccesoId', 'ASC'],
+        ],
+        raw: true,
+        limit: MAX_RESULTS_LIMIT,
+    }));
+    const productIds = [...new Set((rows || []).map((r) => r.productoAccesoId))];
+    const products = productIds.length > 0
+        ? await ProductoAcceso.findAll({
+            where: { id: { [Op.in]: productIds }, organizationId },
+            attributes: ['id', 'name'],
+        })
+        : [];
+    const nameById = new Map(products.map((p) => [p.id, p.name]));
+    return (rows || []).map((r) => ({
+        productoAccesoId: r.productoAccesoId,
+        productName: nameById.get(r.productoAccesoId) ?? '',
+        fecha: r.fecha,
+        totalCantidad: Number(r.totalCantidad) || 0,
+        totalMontoTotal: r.totalMontoTotal != null ? Number(r.totalMontoTotal) : 0,
+        cantidadMovimientos: Number(r.cantidadMovimientos) || 0,
+    }));
 };
 //# sourceMappingURL=reporte.service.js.map

@@ -1,12 +1,17 @@
 import type { Request, Response } from 'express';
 import * as reporteService from '../services/reporte.service.js';
 import { sendSuccess } from '@/shared/responses/helpers.js';
+import { getBrazaletesConfig } from '@/modules/organizations/services/organization.service.js';
 import type {
   ReporteEventosPorActividadDTO,
   ReporteEventosPorPrestadorDTO,
   ReporteEventosPorFechaDTO,
   ReporteCapacidadUtilizadaDTO,
   ReportePrestadoresActivosDTO,
+  ReporteStockActualDTO,
+  ReporteSalidasStockDTO,
+  ReporteVentasPrestadoresDTO,
+  ReporteVentasPorProductoDTO,
 } from '../validators/reporte.validator.js';
 
 /**
@@ -257,4 +262,144 @@ export const getReportePrestadoresActivos = async (
   );
 
   return sendSuccess(res, resultado, 'Reporte obtenido exitosamente');
+};
+
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/stock-acceso
+ * Reporte de stock actual por producto. Solo admins.
+ * Incluye configAcceso para que el frontend distinga ANPs con/sin brazaletes obligatorios.
+ */
+export const getReporteStockActual = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const filters = (req.validatedQuery as ReporteStockActualDTO | undefined) ?? {};
+  const [resultado, configAcceso] = await Promise.all([
+    reporteService.getReporteStockActual(organizationId, filters, userId),
+    getBrazaletesConfig(organizationId),
+  ]);
+  return res.status(200).json({
+    success: true,
+    data: resultado,
+    configAcceso: {
+      brazaletesObligatorios: configAcceso.brazaletesObligatorios,
+      brazaletesExcluyenLocales: configAcceso.brazaletesExcluyenLocales,
+    },
+    message: 'Reporte obtenido exitosamente',
+    timestamp: new Date().toISOString(),
+  });
+};
+
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/salidas-stock
+ * Reporte de salidas de stock por período. Solo admins.
+ * Incluye configAcceso para que el frontend no muestre métricas como "obligatorias" cuando no aplica.
+ */
+export const getReporteSalidasStock = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const filters =
+    (req.validatedQuery as ReporteSalidasStockDTO | undefined) ??
+    (req.query as unknown as ReporteSalidasStockDTO);
+  const [resultado, configAcceso] = await Promise.all([
+    reporteService.getReporteSalidasPorPeriodo(organizationId, filters, userId),
+    getBrazaletesConfig(organizationId),
+  ]);
+  return res.status(200).json({
+    success: true,
+    data: resultado,
+    configAcceso: {
+      brazaletesObligatorios: configAcceso.brazaletesObligatorios,
+      brazaletesExcluyenLocales: configAcceso.brazaletesExcluyenLocales,
+    },
+    message: 'Reporte obtenido exitosamente',
+    timestamp: new Date().toISOString(),
+  });
+};
+
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/ventas-prestadores
+ * Reporte de ventas agrupadas por prestador. Solo admins.
+ * Incluye configAcceso para distinguir ANPs con/sin brazaletes obligatorios.
+ */
+export const getReporteVentasPrestadores = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const filters =
+    (req.validatedQuery as ReporteVentasPrestadoresDTO | undefined) ??
+    (req.query as unknown as ReporteVentasPrestadoresDTO);
+  const [resultado, configAcceso] = await Promise.all([
+    reporteService.getReporteVentasPorPrestador(organizationId, filters, userId),
+    getBrazaletesConfig(organizationId),
+  ]);
+  return res.status(200).json({
+    success: true,
+    data: resultado,
+    configAcceso: {
+      brazaletesObligatorios: configAcceso.brazaletesObligatorios,
+      brazaletesExcluyenLocales: configAcceso.brazaletesExcluyenLocales,
+    },
+    message: 'Reporte obtenido exitosamente',
+    timestamp: new Date().toISOString(),
+  });
+};
+
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/ventas-por-producto
+ * Reporte de ventas por producto y fecha. Solo admins.
+ * Incluye configAcceso para que el frontend no muestre brazaletes como obligatorios cuando no aplica.
+ */
+export const getReporteVentasPorProducto = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const filters =
+    (req.validatedQuery as ReporteVentasPorProductoDTO | undefined) ??
+    (req.query as unknown as ReporteVentasPorProductoDTO);
+  const [resultado, configAcceso] = await Promise.all([
+    reporteService.getReporteVentasPorProducto(organizationId, filters, userId),
+    getBrazaletesConfig(organizationId),
+  ]);
+  return res.status(200).json({
+    success: true,
+    data: resultado,
+    configAcceso: {
+      brazaletesObligatorios: configAcceso.brazaletesObligatorios,
+      brazaletesExcluyenLocales: configAcceso.brazaletesExcluyenLocales,
+    },
+    message: 'Reporte obtenido exitosamente',
+    timestamp: new Date().toISOString(),
+  });
 };

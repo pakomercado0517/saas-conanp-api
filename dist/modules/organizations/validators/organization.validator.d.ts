@@ -1,5 +1,15 @@
 import { z } from 'zod';
 /**
+ * Schema para settings.acceso (configuración de brazaletes por ANP).
+ * - brazaletesObligatorios: true | false | null (ausente = no configurado)
+ * - brazaletesExcluyenLocales: solo aplica cuando brazaletesObligatorios === true
+ */
+export declare const SettingsAccesoSchema: z.ZodObject<{
+    brazaletesObligatorios: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+    brazaletesExcluyenLocales: z.ZodOptional<z.ZodBoolean>;
+}, z.core.$strip>;
+export type SettingsAccesoDTO = z.infer<typeof SettingsAccesoSchema>;
+/**
  * Schema Zod para crear organización
  */
 export declare const CreateOrganizationSchema: z.ZodObject<{
@@ -9,7 +19,12 @@ export declare const CreateOrganizationSchema: z.ZodObject<{
         maritimo: "maritimo";
         mixto: "mixto";
     }>;
-    settings: z.ZodDefault<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>>;
+    settings: z.ZodDefault<z.ZodOptional<z.ZodObject<{
+        acceso: z.ZodOptional<z.ZodObject<{
+            brazaletesObligatorios: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+            brazaletesExcluyenLocales: z.ZodOptional<z.ZodBoolean>;
+        }, z.core.$strip>>;
+    }, z.core.$catchall<z.ZodUnknown>>>>;
 }, z.core.$strip>;
 export type CreateOrganizationDTO = z.infer<typeof CreateOrganizationSchema>;
 /**
@@ -22,7 +37,12 @@ export declare const UpdateOrganizationSchema: z.ZodObject<{
         maritimo: "maritimo";
         mixto: "mixto";
     }>>;
-    settings: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
+    settings: z.ZodOptional<z.ZodObject<{
+        acceso: z.ZodOptional<z.ZodObject<{
+            brazaletesObligatorios: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+            brazaletesExcluyenLocales: z.ZodOptional<z.ZodBoolean>;
+        }, z.core.$strip>>;
+    }, z.core.$catchall<z.ZodUnknown>>>;
 }, z.core.$strip>;
 export type UpdateOrganizationDTO = z.infer<typeof UpdateOrganizationSchema>;
 /**

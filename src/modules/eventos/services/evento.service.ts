@@ -242,6 +242,10 @@ export const createEvento = async (
   // Si en el futuro los eventos requieren activos, validar aquí:
   // await validateActivoAprobado(activoId, organizationId);
 
+  // 9. Brazaletes: no exigir brazaletes cuando brazaletesObligatorios es false o null.
+  // Si en el futuro se valida que el evento tenga salida de brazaletes asociada o exención,
+  // esa validación debe ejecutarse solo cuando getBrazaletesConfig(organizationId).brazaletesObligatorios === true.
+
   // Iniciar transacción
   const transaction = await sequelize.transaction();
 

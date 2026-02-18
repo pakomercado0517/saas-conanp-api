@@ -9,9 +9,56 @@ const ecosystemTypeEnum = z.enum(ECOSYSTEM_VALUES, {
   error: 'El tipo de ecosistema debe ser: terrestre, maritimo o mixto',
 });
 
-const settingsSchema = z.record(z.string(), z.unknown()).refine((val) => !Array.isArray(val), {
-  message: 'Settings debe ser un objeto',
-});
+/**
+ * Schema para settings.acceso (configuración de brazaletes por ANP).
+ * - brazaletesObligatorios: true | false | null (ausente = no configurado)
+ * - brazaletesExcluyenLocales: solo aplica cuando brazaletesObligatorios === true
+ */
+export const SettingsAccesoSchema = registry.register(
+  'SettingsAcceso',
+  z
+    .object({
+      brazaletesObligatorios: z
+        .boolean()
+        .nullable()
+        .optional()
+        .describe(
+          'true = obligatorios, false = no obligatorios, null/ausente = no configurado (tratar como opcional)'
+        ),
+      brazaletesExcluyenLocales: z
+        .boolean()
+        .optional()
+        .describe(
+          'Excluir visitantes locales del requisito de brazalete; solo si brazaletesObligatorios es true'
+        ),
+    })
+    .refine(
+      (data) => {
+        if (data.brazaletesExcluyenLocales === true && data.brazaletesObligatorios !== true) {
+          return false;
+        }
+        return true;
+      },
+      {
+        message: 'brazaletesExcluyenLocales solo aplica cuando brazaletesObligatorios es true',
+        path: ['brazaletesExcluyenLocales'],
+      }
+    )
+);
+
+export type SettingsAccesoDTO = z.infer<typeof SettingsAccesoSchema>;
+
+/**
+ * Schema para settings completo: valida "acceso" cuando está presente y permite otras claves.
+ */
+const settingsSchema = z
+  .object({
+    acceso: SettingsAccesoSchema.optional(),
+  })
+  .catchall(z.unknown())
+  .refine((val) => val !== null && typeof val === 'object' && !Array.isArray(val), {
+    message: 'Settings debe ser un objeto',
+  });
 
 /**
  * Schema Zod para crear organización
@@ -85,7 +132,10 @@ export const UpdateOrganizationSchema = registry.register(
       example: {
         name: 'Reserva de la Biosfera Los Tuxtlas - Actualizado',
         settings: {
-          capacidadMaxima: 600,
+          acceso: {
+            brazaletesObligatorios: true,
+            brazaletesExcluyenLocales: false,
+          },
         },
       },
     })

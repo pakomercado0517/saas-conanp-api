@@ -38,3 +38,12 @@ export type SubscriptionStatus =
   | 'incomplete_expired';
 
 export type BillingCycle = 'monthly' | 'yearly';
+
+/** Tipo de producto de acceso (brazalete o pasaporte turístico) */
+export type ProductoAccesoTipo = 'brazalete' | 'pasaporte';
+
+/** Tipo de movimiento de stock (entrada o salida) */
+export type MovimientoStockTipo = 'entrada' | 'salida';
+
+/** Motivo del movimiento de stock */
+export type MovimientoStockMotivo = 'compra' | 'venta' | 'ajuste' | 'devolucion';

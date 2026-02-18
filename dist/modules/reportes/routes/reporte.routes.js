@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getReporteEventosPorActividad, getReporteEventosPorPrestador, getReporteEventosPorFecha, getReporteCapacidadUtilizada, getReportePrestadoresActivos, } from '../controllers/reporte.controller.js';
-import { validateReporteEventosPorActividad, validateReporteEventosPorPrestador, validateReporteEventosPorFecha, validateReporteCapacidadUtilizada, validateReportePrestadoresActivos, } from '../middleware/validation.middleware.js';
+import { getReporteEventosPorActividad, getReporteEventosPorPrestador, getReporteEventosPorFecha, getReporteCapacidadUtilizada, getReportePrestadoresActivos, getReporteStockActual, getReporteSalidasStock, getReporteVentasPrestadores, getReporteVentasPorProducto, } from '../controllers/reporte.controller.js';
+import { validateReporteEventosPorActividad, validateReporteEventosPorPrestador, validateReporteEventosPorFecha, validateReporteCapacidadUtilizada, validateReportePrestadoresActivos, validateReporteStockActual, validateReporteSalidasStock, validateReporteVentasPrestadores, validateReporteVentasPorProducto, } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
 /**
  * Router de reportes
@@ -136,5 +136,25 @@ reporteRouter.get('/capacidad-utilizada', authenticate, requireOrganizationAcces
  * }
  */
 reporteRouter.get('/prestadores-activos', authenticate, requireOrganizationAccess, requireAdmin, validateReportePrestadoresActivos, getReportePrestadoresActivos);
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/stock-acceso
+ * Reporte de stock actual por producto. Solo admins.
+ */
+reporteRouter.get('/stock-acceso', authenticate, requireOrganizationAccess, requireAdmin, validateReporteStockActual, getReporteStockActual);
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/salidas-stock
+ * Reporte de salidas de stock por período. Solo admins.
+ */
+reporteRouter.get('/salidas-stock', authenticate, requireOrganizationAccess, requireAdmin, validateReporteSalidasStock, getReporteSalidasStock);
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/ventas-prestadores
+ * Reporte de ventas agrupadas por prestador. Solo admins.
+ */
+reporteRouter.get('/ventas-prestadores', authenticate, requireOrganizationAccess, requireAdmin, validateReporteVentasPrestadores, getReporteVentasPrestadores);
+/**
+ * GET /api/v1/organizations/:organizationId/reportes/ventas-por-producto
+ * Reporte de ventas por producto y fecha. Solo admins.
+ */
+reporteRouter.get('/ventas-por-producto', authenticate, requireOrganizationAccess, requireAdmin, validateReporteVentasPorProducto, getReporteVentasPorProducto);
 export default reporteRouter;
 //# sourceMappingURL=reporte.routes.js.map

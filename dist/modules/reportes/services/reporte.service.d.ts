@@ -1,6 +1,6 @@
 import type { UUID } from '../../../shared/database/types.js';
-import type { ReporteEventosPorActividadDTO, ReporteEventosPorPrestadorDTO, ReporteEventosPorFechaDTO, ReporteCapacidadUtilizadaDTO, ReportePrestadoresActivosDTO } from '../../../modules/reportes/validators/reporte.validator.js';
-import type { ReporteEventosPorActividadItem, ReporteEventosPorPrestadorItem, ReporteEventosPorFechaItem, ReporteCapacidadUtilizadaItem, ReportePrestadoresActivosItem } from '../../../modules/reportes/types/reporte.types.js';
+import type { ReporteEventosPorActividadDTO, ReporteEventosPorPrestadorDTO, ReporteEventosPorFechaDTO, ReporteCapacidadUtilizadaDTO, ReportePrestadoresActivosDTO, ReporteStockActualDTO, ReporteSalidasStockDTO, ReporteVentasPrestadoresDTO, ReporteVentasPorProductoDTO } from '../../../modules/reportes/validators/reporte.validator.js';
+import type { ReporteEventosPorActividadItem, ReporteEventosPorPrestadorItem, ReporteEventosPorFechaItem, ReporteCapacidadUtilizadaItem, ReportePrestadoresActivosItem, ReporteStockActualItem, ReporteSalidasStockItem, ReporteVentasPrestadoresItem, ReporteVentasPorProductoItem } from '../../../modules/reportes/types/reporte.types.js';
 /**
  * Obtiene reporte de eventos agrupados por actividad
  *
@@ -55,4 +55,20 @@ export declare const getReporteCapacidadUtilizada: (organizationId: UUID, filter
  * @throws {ForbiddenError} Si no tiene acceso a la organización
  */
 export declare const getReportePrestadoresActivos: (organizationId: UUID, filters: ReportePrestadoresActivosDTO, userId: UUID) => Promise<ReportePrestadoresActivosItem[]>;
+/**
+ * Reporte de stock actual por producto (por organización).
+ */
+export declare const getReporteStockActual: (organizationId: UUID, _filters: ReporteStockActualDTO, userId: UUID) => Promise<ReporteStockActualItem[]>;
+/**
+ * Reporte de salidas de stock por período (cantidad y montos totales).
+ */
+export declare const getReporteSalidasPorPeriodo: (organizationId: UUID, filters: ReporteSalidasStockDTO, userId: UUID) => Promise<ReporteSalidasStockItem>;
+/**
+ * Reporte de ventas (salidas con motivo venta) agrupadas por prestador.
+ */
+export declare const getReporteVentasPorPrestador: (organizationId: UUID, filters: ReporteVentasPrestadoresDTO, userId: UUID) => Promise<ReporteVentasPrestadoresItem[]>;
+/**
+ * Reporte de ventas por producto y fecha.
+ */
+export declare const getReporteVentasPorProducto: (organizationId: UUID, filters: ReporteVentasPorProductoDTO, userId: UUID) => Promise<ReporteVentasPorProductoItem[]>;
 //# sourceMappingURL=reporte.service.d.ts.map

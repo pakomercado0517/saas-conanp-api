@@ -6,6 +6,13 @@ import type { Request, Response } from 'express';
  */
 export declare const createOrganization: (req: Request, res: Response) => Promise<Response>;
 /**
+ * Obtiene la configuración de acceso (brazaletes/pasaporte) de la organización.
+ * El frontend usa esto para mostrar u ocultar secciones de brazaletes, stock y ventas.
+ *
+ * GET /api/v1/organizations/:organizationId/config-acceso
+ */
+export declare const getConfigAcceso: (req: Request, res: Response) => Promise<Response>;
+/**
  * Obtiene una organización por ID
  *
  * GET /api/v1/organizations/:organizationId

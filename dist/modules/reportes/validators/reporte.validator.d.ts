@@ -60,4 +60,35 @@ export declare const ReportePrestadoresActivosSchema: z.ZodObject<{
     conPermisosVigentes: z.ZodDefault<z.ZodOptional<z.ZodCoercedBoolean<unknown>>>;
 }, z.core.$strip>;
 export type ReportePrestadoresActivosDTO = z.infer<typeof ReportePrestadoresActivosSchema>;
+/**
+ * Schema para reporte de stock actual por producto (sin filtros de query)
+ */
+export declare const ReporteStockActualSchema: z.ZodObject<{}, z.core.$strip>;
+export type ReporteStockActualDTO = z.infer<typeof ReporteStockActualSchema>;
+/**
+ * Schema para reporte de salidas de stock por período
+ */
+export declare const ReporteSalidasStockSchema: z.ZodObject<{
+    dateFrom: z.ZodPipe<z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>, z.ZodTransform<import("luxon").DateTime<boolean> | undefined, import("luxon").DateTime<boolean> | null | undefined>>;
+    dateTo: z.ZodPipe<z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>, z.ZodTransform<import("luxon").DateTime<boolean> | undefined, import("luxon").DateTime<boolean> | null | undefined>>;
+    productoAccesoId: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<string | undefined, string | undefined>>;
+}, z.core.$strip>;
+export type ReporteSalidasStockDTO = z.infer<typeof ReporteSalidasStockSchema>;
+/**
+ * Schema para reporte de ventas por prestador
+ */
+export declare const ReporteVentasPrestadoresSchema: z.ZodObject<{
+    dateFrom: z.ZodPipe<z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>, z.ZodTransform<import("luxon").DateTime<boolean> | undefined, import("luxon").DateTime<boolean> | null | undefined>>;
+    dateTo: z.ZodPipe<z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>, z.ZodTransform<import("luxon").DateTime<boolean> | undefined, import("luxon").DateTime<boolean> | null | undefined>>;
+}, z.core.$strip>;
+export type ReporteVentasPrestadoresDTO = z.infer<typeof ReporteVentasPrestadoresSchema>;
+/**
+ * Schema para reporte de ventas por producto y fecha
+ */
+export declare const ReporteVentasPorProductoSchema: z.ZodObject<{
+    dateFrom: z.ZodPipe<z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>, z.ZodTransform<import("luxon").DateTime<boolean> | undefined, import("luxon").DateTime<boolean> | null | undefined>>;
+    dateTo: z.ZodPipe<z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>, z.ZodTransform<import("luxon").DateTime<boolean> | undefined, import("luxon").DateTime<boolean> | null | undefined>>;
+    productoAccesoId: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<string | undefined, string | undefined>>;
+}, z.core.$strip>;
+export type ReporteVentasPorProductoDTO = z.infer<typeof ReporteVentasPorProductoSchema>;
 //# sourceMappingURL=reporte.validator.d.ts.map

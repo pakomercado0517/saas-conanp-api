@@ -9,6 +9,7 @@ import type {
   UpdateOrganizationDTO,
   ListOrganizationsDTO,
 } from '@/modules/organizations/validators/organization.validator';
+import type { SettingsAccesoDTO } from '@/modules/organizations/validators/organization.validator';
 import { ForbiddenError, NotFoundError } from '@/shared/errors';
 import type { PaginationMeta } from '@/shared/responses/types';
 import { logger } from '@/shared/logger';
@@ -145,6 +146,63 @@ export interface CurrentPlanInfo {
     maxActividades: number | null;
   };
 }
+
+/** Configuración de brazaletes por ANP (extraída de settings.acceso). */
+export interface BrazaletesConfig {
+  brazaletesObligatorios: boolean | null;
+  brazaletesExcluyenLocales: boolean;
+}
+
+/**
+ * Obtiene la configuración de brazaletes/pasaporte de una organización.
+ * No valida acceso ni suscripción; usar después de assertCanAccessOrganization si aplica.
+ *
+ * @returns { brazaletesObligatorios, brazaletesExcluyenLocales } normalizado
+ * @throws {NotFoundError} Si la organización no existe
+ */
+export const getBrazaletesConfig = async (organizationId: UUID): Promise<BrazaletesConfig> => {
+  const org = await Organization.findByPk(organizationId);
+  if (!org) {
+    throw new NotFoundError('Organización', { organizationId });
+  }
+  const acceso = (org.settings as Record<string, unknown> | null)?.['acceso'] as
+    | SettingsAccesoDTO
+    | undefined
+    | null;
+  const brazaletesObligatorios =
+    acceso?.brazaletesObligatorios !== undefined ? acceso.brazaletesObligatorios : null;
+  const brazaletesExcluyenLocales = acceso?.brazaletesExcluyenLocales === true;
+  return {
+    brazaletesObligatorios,
+    brazaletesExcluyenLocales,
+  };
+};
+
+/**
+ * Obtiene la configuración de acceso (brazaletes/pasaporte) para el frontend.
+ * Incluye organizationId, name y acceso (brazaletesObligatorios, brazaletesExcluyenLocales).
+ * Valida que el usuario tenga acceso a la organización.
+ */
+export const getConfigAcceso = async (
+  organizationId: UUID,
+  userId: UUID
+): Promise<{
+  organizationId: UUID;
+  name: string;
+  acceso: BrazaletesConfig;
+}> => {
+  await assertCanAccessOrganization(userId, organizationId);
+  const org = await Organization.findByPk(organizationId);
+  if (!org) {
+    throw new NotFoundError('Organización', { organizationId });
+  }
+  const acceso = await getBrazaletesConfig(organizationId);
+  return {
+    organizationId: org.id,
+    name: org.name,
+    acceso,
+  };
+};
 
 /**
  * Obtiene la información del plan actual de la organización (solo si la suscripción está activa).
@@ -289,10 +347,28 @@ export const updateOrganization = async (
     throw new NotFoundError('Organización', { organizationId });
   }
 
+  let newSettings: Record<string, unknown> | undefined;
+  if (data.settings !== undefined) {
+    const current = (org.settings as Record<string, unknown>) ?? {};
+    const incoming = data.settings as Record<string, unknown>;
+    const mergedAcceso =
+      incoming['acceso'] != null
+        ? {
+            ...((current['acceso'] as Record<string, unknown>) ?? {}),
+            ...(incoming['acceso'] as Record<string, unknown>),
+          }
+        : current['acceso'];
+    newSettings = {
+      ...current,
+      ...incoming,
+      ...(mergedAcceso !== undefined && { acceso: mergedAcceso }),
+    };
+  }
+
   await org.update({
     ...(data.name !== undefined && { name: data.name }),
     ...(data.ecosystem_type !== undefined && { ecosystem_type: data.ecosystem_type }),
-    ...(data.settings !== undefined && { settings: data.settings }),
+    ...(newSettings !== undefined && { settings: newSettings }),
   });
 
   // Invalidar caché después de actualizar organización

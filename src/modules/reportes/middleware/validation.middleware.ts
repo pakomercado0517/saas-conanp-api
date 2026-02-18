@@ -6,6 +6,10 @@ import {
   ReporteEventosPorFechaSchema,
   ReporteCapacidadUtilizadaSchema,
   ReportePrestadoresActivosSchema,
+  ReporteStockActualSchema,
+  ReporteSalidasStockSchema,
+  ReporteVentasPrestadoresSchema,
+  ReporteVentasPorProductoSchema,
 } from '../validators/reporte.validator.js';
 
 /**
@@ -177,6 +181,118 @@ export const validateReportePrestadoresActivos = (
       return;
     }
 
+    next(error);
+  }
+};
+
+export const validateReporteStockActual = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.validatedQuery = ReporteStockActualSchema.parse(req.query ?? {});
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err: z.ZodIssue) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los parámetros de consulta no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+export const validateReporteSalidasStock = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.validatedQuery = ReporteSalidasStockSchema.parse(req.query);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err: z.ZodIssue) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los parámetros de consulta no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+export const validateReporteVentasPrestadores = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.validatedQuery = ReporteVentasPrestadoresSchema.parse(req.query);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err: z.ZodIssue) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los parámetros de consulta no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+export const validateReporteVentasPorProducto = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.validatedQuery = ReporteVentasPorProductoSchema.parse(req.query);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err: z.ZodIssue) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los parámetros de consulta no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
     next(error);
   }
 };
