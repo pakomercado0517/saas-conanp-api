@@ -1,5 +1,7 @@
 import * as stockAccesoService from '../services/stock-acceso.service.js';
 import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
 /**
  * POST .../productos-acceso/:productoAccesoId/entrada
  * Registra una entrada de stock.
@@ -59,6 +61,7 @@ export const getStockDisponible = async (req, res) => {
 /**
  * GET .../movimientos-stock-acceso
  * Lista movimientos con paginación y filtros.
+ * Los prestadores solo pueden ver sus propios movimientos (salidas/ventas asociadas a su perfil).
  */
 export const listMovimientos = async (req, res) => {
     if (!req.user) {
@@ -70,8 +73,21 @@ export const listMovimientos = async (req, res) => {
     }
     const organizationId = req.organizationId;
     const userId = req.user.userId;
-    const filters = req.validatedQuery ??
-        req.query;
+    const filters = {
+        ...(req.validatedQuery ??
+            req.query),
+    };
+    const membership = await Membership.findOne({
+        where: { userId, organizationId, status: 'activo' },
+    });
+    if (membership?.role === 'prestador') {
+        const myProfile = await PrestadorProfile.findOne({
+            where: { userId, organizationId },
+        });
+        if (myProfile) {
+            filters.prestadorId = myProfile.id;
+        }
+    }
     const result = await stockAccesoService.listMovimientos(organizationId, filters, userId);
     return sendPaginated(res, result.data, result.pagination, 'Movimientos obtenidos exitosamente');
 };

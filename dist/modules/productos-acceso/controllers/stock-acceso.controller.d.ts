@@ -17,6 +17,7 @@ export declare const getStockDisponible: (req: Request, res: Response) => Promis
 /**
  * GET .../movimientos-stock-acceso
  * Lista movimientos con paginación y filtros.
+ * Los prestadores solo pueden ver sus propios movimientos (salidas/ventas asociadas a su perfil).
  */
 export declare const listMovimientos: (req: Request, res: Response) => Promise<Response>;
 //# sourceMappingURL=stock-acceso.controller.d.ts.map

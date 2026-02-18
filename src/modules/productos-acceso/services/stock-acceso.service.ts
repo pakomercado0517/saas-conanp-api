@@ -4,6 +4,8 @@ import { sequelize } from '@/shared/database/index.js';
 import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
 import { StockAcceso } from '@/modules/productos-acceso/models/stock-acceso.model.js';
 import { MovimientoStockAcceso } from '@/modules/productos-acceso/models/movimiento-stock-acceso.model.js';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
 import type {
   EntradaStockDTO,
   SalidaStockDTO,
@@ -48,6 +50,33 @@ const getOrCreateStock = async (
     });
   }
   return stock;
+};
+
+/**
+ * Verifica que el prestador exista y pertenezca a la organización.
+ */
+const assertPrestadorBelongsToOrg = async (
+  organizationId: UUID,
+  prestadorId: UUID
+): Promise<void> => {
+  const prestador = await PrestadorProfile.findOne({
+    where: { id: prestadorId, organizationId },
+  });
+  if (!prestador) {
+    throw new NotFoundError('Prestador', { prestadorId, organizationId });
+  }
+};
+
+/**
+ * Verifica que el evento exista y pertenezca a la organización.
+ */
+const assertEventoBelongsToOrg = async (organizationId: UUID, eventoId: UUID): Promise<void> => {
+  const evento = await EventoOperativo.findOne({
+    where: { id: eventoId, organizationId },
+  });
+  if (!evento) {
+    throw new NotFoundError('Evento operativo', { eventoId, organizationId });
+  }
 };
 
 /**
@@ -107,6 +136,12 @@ export const registrarSalida = async (
 ): Promise<MovimientoStockAcceso> => {
   await assertCanAccessOrganization(userId, organizationId);
   await assertProductoBelongsToOrg(organizationId, productoAccesoId);
+  if (data.prestadorId) {
+    await assertPrestadorBelongsToOrg(organizationId, data.prestadorId);
+  }
+  if (data.eventoId) {
+    await assertEventoBelongsToOrg(organizationId, data.eventoId);
+  }
 
   const stock = await StockAcceso.findOne({
     where: { organizationId, productoAccesoId },

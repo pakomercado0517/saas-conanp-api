@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrganization, getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, } from '../controllers/organization.controller.js';
+import { createOrganization, getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, getConfigAcceso, } from '../controllers/organization.controller.js';
 import { validateCreateOrganization, validateUpdateOrganization, validateListOrganizations, } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
 import membershipRouter from '../../../modules/users/routes/membership.routes.js';
@@ -80,6 +80,11 @@ organizationRouter.get('/', authenticate, validateListOrganizations, listOrganiz
  *   message: "Organización obtenida exitosamente"
  * }
  */
+/**
+ * GET /api/v1/organizations/:organizationId/config-acceso
+ * Configuración de acceso (brazaletes/pasaporte) para el frontend. Ruta más específica primero.
+ */
+organizationRouter.get('/:organizationId/config-acceso', authenticate, requireOrganizationAccess, getConfigAcceso);
 organizationRouter.get('/:organizationId', authenticate, requireOrganizationAccess, getOrganizationById);
 /**
  * PATCH /api/v1/organizations/:organizationId

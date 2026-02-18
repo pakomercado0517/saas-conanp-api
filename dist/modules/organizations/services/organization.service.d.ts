@@ -52,6 +52,16 @@ export interface BrazaletesConfig {
  */
 export declare const getBrazaletesConfig: (organizationId: UUID) => Promise<BrazaletesConfig>;
 /**
+ * Obtiene la configuración de acceso (brazaletes/pasaporte) para el frontend.
+ * Incluye organizationId, name y acceso (brazaletesObligatorios, brazaletesExcluyenLocales).
+ * Valida que el usuario tenga acceso a la organización.
+ */
+export declare const getConfigAcceso: (organizationId: UUID, userId: UUID) => Promise<{
+    organizationId: UUID;
+    name: string;
+    acceso: BrazaletesConfig;
+}>;
+/**
  * Obtiene la información del plan actual de la organización (solo si la suscripción está activa).
  *
  * @returns Información del plan y periodo, o null si no hay suscripción activa

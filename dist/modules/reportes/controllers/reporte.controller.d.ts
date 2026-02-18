@@ -129,21 +129,25 @@ export declare const getReportePrestadoresActivos: (req: Request, res: Response)
 /**
  * GET /api/v1/organizations/:organizationId/reportes/stock-acceso
  * Reporte de stock actual por producto. Solo admins.
+ * Incluye configAcceso para que el frontend distinga ANPs con/sin brazaletes obligatorios.
  */
 export declare const getReporteStockActual: (req: Request, res: Response) => Promise<Response>;
 /**
  * GET /api/v1/organizations/:organizationId/reportes/salidas-stock
  * Reporte de salidas de stock por período. Solo admins.
+ * Incluye configAcceso para que el frontend no muestre métricas como "obligatorias" cuando no aplica.
  */
 export declare const getReporteSalidasStock: (req: Request, res: Response) => Promise<Response>;
 /**
  * GET /api/v1/organizations/:organizationId/reportes/ventas-prestadores
  * Reporte de ventas agrupadas por prestador. Solo admins.
+ * Incluye configAcceso para distinguir ANPs con/sin brazaletes obligatorios.
  */
 export declare const getReporteVentasPrestadores: (req: Request, res: Response) => Promise<Response>;
 /**
  * GET /api/v1/organizations/:organizationId/reportes/ventas-por-producto
  * Reporte de ventas por producto y fecha. Solo admins.
+ * Incluye configAcceso para que el frontend no muestre brazaletes como obligatorios cuando no aplica.
  */
 export declare const getReporteVentasPorProducto: (req: Request, res: Response) => Promise<Response>;
 //# sourceMappingURL=reporte.controller.d.ts.map

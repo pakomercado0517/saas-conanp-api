@@ -123,6 +123,24 @@ export const getBrazaletesConfig = async (organizationId) => {
     };
 };
 /**
+ * Obtiene la configuración de acceso (brazaletes/pasaporte) para el frontend.
+ * Incluye organizationId, name y acceso (brazaletesObligatorios, brazaletesExcluyenLocales).
+ * Valida que el usuario tenga acceso a la organización.
+ */
+export const getConfigAcceso = async (organizationId, userId) => {
+    await assertCanAccessOrganization(userId, organizationId);
+    const org = await Organization.findByPk(organizationId);
+    if (!org) {
+        throw new NotFoundError('Organización', { organizationId });
+    }
+    const acceso = await getBrazaletesConfig(organizationId);
+    return {
+        organizationId: org.id,
+        name: org.name,
+        acceso,
+    };
+};
+/**
  * Obtiene la información del plan actual de la organización (solo si la suscripción está activa).
  *
  * @returns Información del plan y periodo, o null si no hay suscripción activa

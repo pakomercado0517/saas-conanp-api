@@ -3,6 +3,8 @@ import { sequelize } from '../../../shared/database/index.js';
 import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
 import { StockAcceso } from '../../../modules/productos-acceso/models/stock-acceso.model.js';
 import { MovimientoStockAcceso } from '../../../modules/productos-acceso/models/movimiento-stock-acceso.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
@@ -33,6 +35,28 @@ const getOrCreateStock = async (organizationId, productoAccesoId) => {
         });
     }
     return stock;
+};
+/**
+ * Verifica que el prestador exista y pertenezca a la organización.
+ */
+const assertPrestadorBelongsToOrg = async (organizationId, prestadorId) => {
+    const prestador = await PrestadorProfile.findOne({
+        where: { id: prestadorId, organizationId },
+    });
+    if (!prestador) {
+        throw new NotFoundError('Prestador', { prestadorId, organizationId });
+    }
+};
+/**
+ * Verifica que el evento exista y pertenezca a la organización.
+ */
+const assertEventoBelongsToOrg = async (organizationId, eventoId) => {
+    const evento = await EventoOperativo.findOne({
+        where: { id: eventoId, organizationId },
+    });
+    if (!evento) {
+        throw new NotFoundError('Evento operativo', { eventoId, organizationId });
+    }
 };
 /**
  * Registra una entrada de stock.
@@ -72,6 +96,12 @@ export const registrarEntrada = async (organizationId, productoAccesoId, data, u
 export const registrarSalida = async (organizationId, productoAccesoId, data, userId) => {
     await assertCanAccessOrganization(userId, organizationId);
     await assertProductoBelongsToOrg(organizationId, productoAccesoId);
+    if (data.prestadorId) {
+        await assertPrestadorBelongsToOrg(organizationId, data.prestadorId);
+    }
+    if (data.eventoId) {
+        await assertEventoBelongsToOrg(organizationId, data.eventoId);
+    }
     const stock = await StockAcceso.findOne({
         where: { organizationId, productoAccesoId },
     });

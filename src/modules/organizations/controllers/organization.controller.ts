@@ -25,6 +25,26 @@ export const createOrganization = async (req: Request, res: Response): Promise<R
 };
 
 /**
+ * Obtiene la configuración de acceso (brazaletes/pasaporte) de la organización.
+ * El frontend usa esto para mostrar u ocultar secciones de brazaletes, stock y ventas.
+ *
+ * GET /api/v1/organizations/:organizationId/config-acceso
+ */
+export const getConfigAcceso = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const config = await organizationService.getConfigAcceso(organizationId, userId);
+  return sendSuccess(res, config, 'Configuración de acceso obtenida exitosamente');
+};
+
+/**
  * Obtiene una organización por ID
  *
  * GET /api/v1/organizations/:organizationId
