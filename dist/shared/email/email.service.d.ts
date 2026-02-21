@@ -9,6 +9,10 @@ export declare const buildVerificationUrl: (token: string) => string;
  */
 export declare const buildPasswordResetUrl: (token: string) => string;
 /**
+ * Construye la URL de registro con invitación (invitationId + token en query)
+ */
+export declare const buildInvitationUrl: (invitationId: string, token: string) => string;
+/**
  * Envía email de verificación de cuenta
  *
  * @param params - Destinatario, nombre y token para construir la URL
@@ -33,4 +37,16 @@ export declare const sendPasswordResetEmail: (params: Omit<PasswordResetEmailPar
  * @returns messageId del correo enviado
  */
 export declare const sendPasswordChangedEmail: (params: PasswordChangedEmailParams) => Promise<string>;
+export interface SendInvitationEmailParams {
+    to: string;
+    organizationName: string;
+    role: string;
+    invitationId: string;
+    token: string;
+    invitedBy: string;
+}
+/**
+ * Envía email de invitación a organización con enlace y token manual de fallback.
+ */
+export declare const sendInvitationEmail: (params: SendInvitationEmailParams) => Promise<string>;
 //# sourceMappingURL=email.service.d.ts.map

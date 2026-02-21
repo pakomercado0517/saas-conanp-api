@@ -54,8 +54,8 @@ export declare const ListSubscriptionsSchema: z.ZodObject<{
     limit: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     sortBy: z.ZodOptional<z.ZodEnum<{
         createdAt: "createdAt";
-        organizationId: "organizationId";
         status: "status";
+        organizationId: "organizationId";
         planId: "planId";
         billingCycle: "billingCycle";
         currentPeriodEnd: "currentPeriodEnd";

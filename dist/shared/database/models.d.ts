@@ -6,6 +6,7 @@ import './index.js';
 export { Organization } from '../../modules/organizations/models/organization.model.js';
 export { User } from '../../modules/users/models/user.model.js';
 export { Membership } from '../../modules/users/models/membership.model.js';
+export { Invitation } from '../../modules/users/models/invitation.model.js';
 export { RefreshToken } from '../../modules/auth/models/refresh-token.model.js';
 export { PrestadorProfile } from '../../modules/prestadores/models/prestador-profile.model.js';
 export { Actividad } from '../../modules/actividades/models/actividad.model.js';

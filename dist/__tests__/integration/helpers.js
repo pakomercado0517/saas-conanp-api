@@ -1,28 +1,108 @@
 import request from 'supertest';
+import bcrypt from 'bcrypt';
 import { User } from '../../modules/users/models/user.model.js';
 import { Membership } from '../../modules/users/models/membership.model.js';
+import { Invitation } from '../../modules/users/models/invitation.model.js';
+import { Organization } from '../../modules/organizations/models/organization.model.js';
 import { SubscriptionPlan } from '../../modules/subscriptions/models/subscription-plan.model.js';
 import { Subscription } from '../../modules/subscriptions/models/subscription.model.js';
 const API_PREFIX = '/api/v1';
+const BCRYPT_ROUNDS = 10;
 /**
  * Registra un usuario vía API, lo marca como verificado y hace login para devolver tokens.
- * (El registro ahora requiere verificación de email; para tests marcamos el usuario como verificado en BD.)
+ * En test con ALLOW_REGISTER_WITHOUT_INVITATION=1 no requiere invitación (para tests existentes).
+ * Sin bypass: usa invitationId y token (crear invitación antes vía API o con createTestInvitationInDb).
  */
 export async function createTestUserAndToken(app, overrides) {
     const email = overrides?.email ?? `test-${Date.now()}@example.com`;
     const password = overrides?.password ?? 'password123';
     const name = overrides?.name ?? 'Test User';
-    const res = await request(app)
-        .post(`${API_PREFIX}/auth/register`)
-        .send({ email, password, name })
-        .expect(201);
+    const useBypass = process.env['NODE_ENV'] === 'test' &&
+        process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] === 'true';
+    const payload = useBypass
+        ? { email, password, name }
+        : await getRegisterPayloadWithInvitation(app, email);
+    const res = await request(app).post(`${API_PREFIX}/auth/register`).send(payload).expect(201);
     const body = res.body;
     if (!body.success || !body.data?.user)
         throw new Error('Register failed');
     const userId = body.data.user.id;
-    // Marcar como verificado para permitir login (bypass de email en tests)
     await User.update({ emailVerified: true, emailVerificationToken: null, emailVerificationExpiresAt: null }, { where: { id: userId } });
     return loginAs(app, email, password);
+}
+/**
+ * Crea en BD una org con suscripción, un usuario admin y una invitación para el email dado.
+ * Devuelve { invitationId, token } para usar en register. Usado por createTestUserAndToken cuando no hay bypass.
+ */
+async function getRegisterPayloadWithInvitation(_app, email) {
+    const crypto = await import('node:crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
+    let plan = await SubscriptionPlan.findOne({ where: { active: true } });
+    if (!plan) {
+        plan = await SubscriptionPlan.create({
+            name: 'básico',
+            description: 'Plan de pruebas',
+            priceMonthly: 0,
+            priceYearly: 0,
+            maxUsers: 10,
+            maxEventos: 100,
+            maxActividades: 20,
+            active: true,
+        });
+    }
+    const org = await Organization.create({
+        name: `Org Invitation ${Date.now()}`,
+        ecosystem_type: 'terrestre',
+        settings: {},
+    });
+    const periodEnd = new Date();
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    await Subscription.create({
+        organizationId: org.id,
+        planId: plan.id,
+        status: 'active',
+        billingCycle: 'monthly',
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: periodEnd,
+        metadata: null,
+    });
+    const [adminUser] = await User.findOrCreate({
+        where: { email: 'test-inviter@example.com' },
+        defaults: {
+            email: 'test-inviter@example.com',
+            password: await bcrypt.hash('password123', BCRYPT_ROUNDS),
+            name: 'Test Inviter',
+            emailVerified: true,
+        },
+    });
+    const [_adminMembership] = await Membership.findOrCreate({
+        where: { userId: adminUser.id, organizationId: org.id },
+        defaults: {
+            userId: adminUser.id,
+            organizationId: org.id,
+            role: 'admin',
+            status: 'activo',
+        },
+    });
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    const invitation = await Invitation.create({
+        organizationId: org.id,
+        email: email.trim().toLowerCase(),
+        role: 'prestador',
+        tokenHash,
+        invitedBy: adminUser.id,
+        status: 'pending',
+        expiresAt,
+    });
+    return {
+        email,
+        password: 'password123',
+        name: 'Test User',
+        invitationId: invitation.id,
+        token,
+    };
 }
 /**
  * Inicia sesión y devuelve tokens.
@@ -38,15 +118,22 @@ export async function loginAs(app, email, password) {
     return body.data;
 }
 /**
- * Crea una organización vía API (no requiere auth).
+ * Crea una organización. En test usa BD directamente para no depender de super admin.
  */
 export async function createTestOrganization(app, body) {
+    const name = body?.name ?? `Org ${Date.now()}`;
+    const ecosystem_type = body?.ecosystem_type ?? 'terrestre';
+    if (process.env['NODE_ENV'] === 'test') {
+        const org = await Organization.create({
+            name,
+            ecosystem_type,
+            settings: {},
+        });
+        return org.toJSON();
+    }
     const res = await request(app)
         .post(`${API_PREFIX}/organizations`)
-        .send({
-        name: body?.name ?? `Org ${Date.now()}`,
-        ecosystem_type: body?.ecosystem_type ?? 'terrestre',
-    })
+        .send({ name, ecosystem_type })
         .expect(201);
     const data = res.body.data;
     if (!data?.id)

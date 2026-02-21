@@ -19,6 +19,7 @@ export default defineConfig({
     setupFiles: [path.resolve(__dirname, 'vitest.integration.setup.ts')],
     env: {
       NODE_ENV: 'test',
+      ALLOW_REGISTER_WITHOUT_INVITATION: 'true',
       JWT_SECRET: 'test-secret-for-integration-tests',
       JWT_ACCESS_EXPIRES_IN: '15m',
       JWT_REFRESH_EXPIRES_IN: '7d',

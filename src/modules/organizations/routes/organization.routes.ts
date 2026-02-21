@@ -12,6 +12,7 @@ import {
 } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess } from '@/shared/middleware/index.js';
 import membershipRouter from '@/modules/users/routes/membership.routes.js';
+import invitationRouter from '@/modules/users/routes/invitation.routes.js';
 import actividadRouter from '@/modules/actividades/routes/actividad.routes.js';
 import bloqueRouter, { bloqueActividadRouter } from '@/modules/actividades/routes/bloque.routes.js';
 import capacidadActividadRouter from '@/modules/actividades/routes/capacidad.routes.js';
@@ -147,6 +148,12 @@ organizationRouter.delete(
  * Montadas bajo /api/v1/organizations/:organizationId/memberships
  */
 organizationRouter.use('/:organizationId/memberships', membershipRouter);
+
+/**
+ * Rutas anidadas de invitaciones
+ * Montadas bajo /api/v1/organizations/:organizationId/invitations
+ */
+organizationRouter.use('/:organizationId/invitations', invitationRouter);
 
 /**
  * Rutas anidadas de actividades

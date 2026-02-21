@@ -1,11 +1,13 @@
 import { z } from 'zod';
 /**
- * Schema Zod para registro de usuario
+ * Schema Zod para registro de usuario (solo con invitación válida)
  */
 export declare const RegisterSchema: z.ZodObject<{
     email: z.ZodString;
     password: z.ZodString;
     name: z.ZodString;
+    invitationId: z.ZodOptional<z.ZodString>;
+    token: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 /**
  * Tipo TypeScript inferido desde RegisterSchema

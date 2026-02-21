@@ -1,8 +1,10 @@
 import { sendEmail } from './client.js';
-import { getVerificationEmailContent, getPasswordResetEmailContent, getPasswordChangedEmailContent, } from './templates/index.js';
+import { getVerificationEmailContent, getPasswordResetEmailContent, getPasswordChangedEmailContent, getInvitationEmailContent, } from './templates/index.js';
 import { logger } from '../../shared/logger/index.js';
 /** URL base del frontend para construir enlaces (ej: http://localhost:3000) */
 const FRONTEND_URL = process.env['FRONTEND_URL'] ?? 'http://localhost:3000';
+/** Días de validez de una invitación (solo para texto en email) */
+const INVITATION_EXPIRES_DAYS_TEXT = '7 días';
 /**
  * Construye la URL de verificación de email
  * El frontend debe tener una ruta que reciba el token y llame al backend
@@ -15,6 +17,12 @@ export const buildVerificationUrl = (token) => {
  */
 export const buildPasswordResetUrl = (token) => {
     return `${FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
+};
+/**
+ * Construye la URL de registro con invitación (invitationId + token en query)
+ */
+export const buildInvitationUrl = (invitationId, token) => {
+    return `${FRONTEND_URL}/register?invitationId=${encodeURIComponent(invitationId)}&token=${encodeURIComponent(token)}`;
 };
 /**
  * Envía email de verificación de cuenta
@@ -78,6 +86,30 @@ export const sendPasswordChangedEmail = async (params) => {
         tags: ['password-changed', 'auth'],
     });
     logger.info({ to: params.to, messageId }, 'Email de cambio de contraseña enviado');
+    return messageId;
+};
+/**
+ * Envía email de invitación a organización con enlace y token manual de fallback.
+ */
+export const sendInvitationEmail = async (params) => {
+    const invitationUrl = buildInvitationUrl(params.invitationId, params.token);
+    const { html, text } = getInvitationEmailContent({
+        to: params.to,
+        organizationName: params.organizationName,
+        role: params.role,
+        invitationUrl,
+        tokenManual: params.token,
+        invitedBy: params.invitedBy,
+        expiresIn: INVITATION_EXPIRES_DAYS_TEXT,
+    });
+    const messageId = await sendEmail({
+        to: [{ email: params.to }],
+        subject: `Invitación a ${params.organizationName}`,
+        htmlContent: html,
+        textContent: text,
+        tags: ['invitation', 'organization'],
+    });
+    logger.info({ to: params.to, organizationName: params.organizationName, messageId }, 'Email de invitación enviado');
     return messageId;
 };
 //# sourceMappingURL=email.service.js.map

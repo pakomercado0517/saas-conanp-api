@@ -4,10 +4,15 @@ import { Op } from 'sequelize';
 import { DateTime } from 'luxon';
 import { randomBytes } from 'crypto';
 import { User } from '@/modules/users/models/user.model.js';
+import { Membership } from '@/modules/users/models/membership.model.js';
 import { RefreshToken } from '@/modules/auth/models/refresh-token.model.js';
 import type { RegisterDTO, LoginDTO } from '../validators/auth.validator.js';
 import { ConflictError, UnauthorizedError, BadRequestError } from '@/shared/errors/index.js';
 import { logger } from '@/shared/logger/index.js';
+import {
+  consumeInvitationForRegistration,
+  type ConsumeInvitationResult,
+} from '@/modules/users/services/invitation.service.js';
 import type {
   AuthResponse,
   RegisterResponse,
@@ -151,12 +156,28 @@ const generateVerificationToken = async (): Promise<{
   return { token, hashedToken };
 };
 
+const isTestBypassRegister =
+  process.env['NODE_ENV'] === 'test' && process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] === 'true';
+
 /**
- * Registra un nuevo usuario
- * Envía email de verificación. El usuario debe verificar su correo antes de poder iniciar sesión.
+ * Registra un nuevo usuario con invitación válida (o sin ella solo en test con bypass).
+ * Consume la invitación, crea usuario y membership, envía email de verificación.
  */
 export const register = async (data: RegisterDTO): Promise<RegisterResponse> => {
-  // Verificar si el email ya existe
+  let invitationData: ConsumeInvitationResult | null = null;
+
+  if (data.invitationId && data.token) {
+    invitationData = await consumeInvitationForRegistration(
+      data.invitationId,
+      data.token,
+      data.email
+    );
+  } else if (!isTestBypassRegister) {
+    throw new BadRequestError(
+      'Se requiere una invitación válida (invitationId y token) para registrarse'
+    );
+  }
+
   const existingUser = await User.findOne({
     where: { email: data.email },
   });
@@ -167,17 +188,14 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
     });
   }
 
-  // Hashear contraseña
   const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
 
-  // Generar token de verificación
   const { token: verificationToken, hashedToken: hashedVerificationToken } =
     await generateVerificationToken();
   const verificationExpiresAt = DateTime.now()
     .plus({ hours: EMAIL_VERIFICATION_EXPIRES_HOURS })
     .toJSDate();
 
-  // Crear usuario (sin verificar)
   const user = await User.create({
     email: data.email,
     password: hashedPassword,
@@ -187,7 +205,15 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
     emailVerificationExpiresAt: verificationExpiresAt,
   });
 
-  // Enviar email de verificación
+  if (invitationData) {
+    await Membership.create({
+      userId: user.id,
+      organizationId: invitationData.organizationId,
+      role: invitationData.role,
+      status: 'activo',
+    });
+  }
+
   await sendVerificationEmail({
     to: user.email,
     name: user.name,
@@ -198,8 +224,11 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
     {
       userId: user.id,
       email: user.email,
+      ...(invitationData && { organizationId: invitationData.organizationId }),
     },
-    'Usuario registrado, email de verificación enviado'
+    invitationData
+      ? 'Usuario registrado con invitación, email de verificación enviado'
+      : 'Usuario registrado, email de verificación enviado'
   );
 
   return {

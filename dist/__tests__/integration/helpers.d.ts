@@ -13,7 +13,8 @@ export interface AuthResult {
 }
 /**
  * Registra un usuario vía API, lo marca como verificado y hace login para devolver tokens.
- * (El registro ahora requiere verificación de email; para tests marcamos el usuario como verificado en BD.)
+ * En test con ALLOW_REGISTER_WITHOUT_INVITATION=1 no requiere invitación (para tests existentes).
+ * Sin bypass: usa invitationId y token (crear invitación antes vía API o con createTestInvitationInDb).
  */
 export declare function createTestUserAndToken(app: Application, overrides?: {
     email?: string;
@@ -33,7 +34,7 @@ export interface OrganizationData {
     updatedAt: string;
 }
 /**
- * Crea una organización vía API (no requiere auth).
+ * Crea una organización. En test usa BD directamente para no depender de super admin.
  */
 export declare function createTestOrganization(app: Application, body?: {
     name?: string;

@@ -4,9 +4,10 @@ import { registry } from '../../../shared/swagger/index.js';
 // Extender Zod con funcionalidad OpenAPI
 extendZodWithOpenApi(z);
 /**
- * Schema Zod para registro de usuario
+ * Schema Zod para registro de usuario (solo con invitación válida)
  */
-export const RegisterSchema = registry.register('RegisterRequest', z.object({
+export const RegisterSchema = registry.register('RegisterRequest', z
+    .object({
     email: z
         .string({
         message: 'El email es requerido y debe ser un texto',
@@ -16,7 +17,7 @@ export const RegisterSchema = registry.register('RegisterRequest', z.object({
     })
         .toLowerCase()
         .trim()
-        .describe('Correo electrónico del usuario. Debe ser único en el sistema.')
+        .describe('Correo electrónico. Debe coincidir con el de la invitación.')
         .openapi({ example: 'usuario@example.com' }),
     password: z
         .string({
@@ -43,6 +44,20 @@ export const RegisterSchema = registry.register('RegisterRequest', z.object({
         .trim()
         .describe('Nombre completo del usuario')
         .openapi({ example: 'Juan Pérez García' }),
+    invitationId: z
+        .string()
+        .uuid('El ID de invitación debe ser un UUID válido')
+        .describe('ID de la invitación recibida por correo')
+        .optional(),
+    token: z
+        .string()
+        .min(1, 'El token de invitación es requerido')
+        .describe('Token de la invitación (enlace o código manual)')
+        .optional(),
+})
+    .refine((data) => (data.invitationId != null) === (data.token != null), {
+    message: 'invitationId y token deben enviarse juntos',
+    path: ['invitationId'],
 }));
 /**
  * Schema Zod para login de usuario

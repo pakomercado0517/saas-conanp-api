@@ -97,12 +97,14 @@ import { usersRoutes } from './modules/users/routes/index.js';
 import subscriptionPlanRouter from './modules/subscriptions/routes/subscription-plan.routes.js';
 import subscriptionRouter from './modules/subscriptions/routes/subscription.routes.js';
 import adminOrganizationRouter from './modules/organizations/routes/organization-admin.routes.js';
+import invitationValidateRouter from './modules/users/routes/invitation-validate.routes.js';
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/organizations', organizationsRoutes);
 app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/subscription-plans', subscriptionPlanRouter);
 app.use('/api/v1/subscriptions', subscriptionRouter);
 app.use('/api/v1/admin/organizations', adminOrganizationRouter);
+app.use('/api/v1/invitations', invitationValidateRouter);
 
 // Middleware de manejo de errores globales
 // IMPORTANTE: Debe ir después de todas las rutas pero antes del 404

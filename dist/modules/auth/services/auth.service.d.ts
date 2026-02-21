@@ -2,8 +2,8 @@ import type { RegisterDTO, LoginDTO } from '../validators/auth.validator.js';
 import type { AuthResponse, RegisterResponse, RefreshTokenResponse, JWTPayload } from '../types/auth.types.js';
 import type { UUID } from '../../../shared/database/types.js';
 /**
- * Registra un nuevo usuario
- * Envía email de verificación. El usuario debe verificar su correo antes de poder iniciar sesión.
+ * Registra un nuevo usuario con invitación válida (o sin ella solo en test con bypass).
+ * Consume la invitación, crea usuario y membership, envía email de verificación.
  */
 export declare const register: (data: RegisterDTO) => Promise<RegisterResponse>;
 /**
