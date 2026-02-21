@@ -12,7 +12,11 @@ import {
   validateUpdateOrganization,
   validateListOrganizations,
 } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess } from '@/shared/middleware/index.js';
+import {
+  authenticate,
+  requireOrganizationAccess,
+  requireSuperAdmin,
+} from '@/shared/middleware/index.js';
 import membershipRouter from '@/modules/users/routes/membership.routes.js';
 import actividadRouter from '@/modules/actividades/routes/actividad.routes.js';
 import bloqueRouter, { bloqueActividadRouter } from '@/modules/actividades/routes/bloque.routes.js';
@@ -51,7 +55,13 @@ const organizationRouter: ExpressRouter = Router();
  *   message: "Organización creada exitosamente"
  * }
  */
-organizationRouter.post('/', validateCreateOrganization, createOrganization);
+organizationRouter.post(
+  '/',
+  authenticate,
+  requireSuperAdmin,
+  validateCreateOrganization,
+  createOrganization
+);
 
 /**
  * GET /api/v1/organizations

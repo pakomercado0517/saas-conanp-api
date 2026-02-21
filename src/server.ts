@@ -30,12 +30,21 @@ app.use(cors(corsOptions));
 app.use(apiLimiter);
 
 // Logging HTTP con Pino: Diferente formato según entorno
-// Development: logs legibles (similar a morgan "dev")
+// Development: una línea por request (método, url, status, tiempo)
 // Production: JSON estructurado (similar a morgan "combined")
 import { logger } from './shared/logger/index.js';
+const isDev = process.env['NODE_ENV'] !== 'production';
 app.use(
   pinoHttp({
     logger,
+    ...(isDev && {
+      serializers: {
+        req: (req: Request) => ({ method: req.method, url: req.url }),
+        res: (res: Response) => ({ statusCode: res.statusCode }),
+      },
+      customSuccessMessage: (req: Request, res: Response) =>
+        `${req.method} ${req.url} ${res.statusCode}`,
+    }),
   })
 );
 
