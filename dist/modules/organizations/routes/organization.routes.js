@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { createOrganization, getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, getConfigAcceso, } from '../controllers/organization.controller.js';
-import { validateCreateOrganization, validateUpdateOrganization, validateListOrganizations, } from '../middleware/validation.middleware.js';
+import { getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, getConfigAcceso, } from '../controllers/organization.controller.js';
+import { validateUpdateOrganization, validateListOrganizations, } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
 import membershipRouter from '../../../modules/users/routes/membership.routes.js';
 import actividadRouter from '../../../modules/actividades/routes/actividad.routes.js';
@@ -22,23 +22,6 @@ import movimientoStockAccesoRouter from '../../../modules/productos-acceso/route
  * Todas las rutas están bajo el prefijo /api/v1/organizations
  */
 const organizationRouter = Router();
-/**
- * POST /api/v1/organizations
- * Crea una nueva organización
- *
- * Body:
- * - name: string (1-255 caracteres)
- * - ecosystem_type: 'terrestre' | 'maritimo' | 'mixto'
- * - settings: object (opcional, default {})
- *
- * Respuesta 201:
- * {
- *   success: true,
- *   data: { id, name, ecosystem_type, settings, createdAt, updatedAt },
- *   message: "Organización creada exitosamente"
- * }
- */
-organizationRouter.post('/', validateCreateOrganization, createOrganization);
 /**
  * GET /api/v1/organizations
  * Lista organizaciones con paginación y filtros (solo las que el usuario tiene acceso)

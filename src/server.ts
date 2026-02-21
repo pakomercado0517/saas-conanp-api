@@ -39,10 +39,15 @@ app.use(
     logger,
     ...(isDev && {
       serializers: {
-        req: (req: Request) => ({ method: req.method, url: req.url }),
-        res: (res: Response) => ({ statusCode: res.statusCode }),
+        req: (req: Request): { method: string; url: string } => ({
+          method: req.method,
+          url: req.url,
+        }),
+        res: (res: Response): { statusCode: number } => ({
+          statusCode: res.statusCode,
+        }),
       },
-      customSuccessMessage: (req: Request, res: Response) =>
+      customSuccessMessage: (req: Request, res: Response): string =>
         `${req.method} ${req.url} ${res.statusCode}`,
     }),
   })
@@ -91,11 +96,13 @@ import { organizationsRoutes } from './modules/organizations/routes/index.js';
 import { usersRoutes } from './modules/users/routes/index.js';
 import subscriptionPlanRouter from './modules/subscriptions/routes/subscription-plan.routes.js';
 import subscriptionRouter from './modules/subscriptions/routes/subscription.routes.js';
+import adminOrganizationRouter from './modules/organizations/routes/organization-admin.routes.js';
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/organizations', organizationsRoutes);
 app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/subscription-plans', subscriptionPlanRouter);
 app.use('/api/v1/subscriptions', subscriptionRouter);
+app.use('/api/v1/admin/organizations', adminOrganizationRouter);
 
 // Middleware de manejo de errores globales
 // IMPORTANTE: Debe ir después de todas las rutas pero antes del 404
