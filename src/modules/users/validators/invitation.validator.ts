@@ -52,3 +52,32 @@ export const ValidateInvitationTokenSchema = registry.register(
 );
 
 export type ValidateInvitationTokenDTO = z.infer<typeof ValidateInvitationTokenSchema>;
+
+/** Body para iniciar verificación de email (envío de OTP) en flujo código manual */
+export const StartVerifyEmailSchema = registry.register(
+  'StartVerifyEmail',
+  z.object({
+    invitationId: z.string().uuid('ID de la invitación'),
+    email: z
+      .string()
+      .email('Email debe ser válido')
+      .transform((v) => v.trim().toLowerCase()),
+  })
+);
+
+export type StartVerifyEmailDTO = z.infer<typeof StartVerifyEmailSchema>;
+
+/** Body para confirmar OTP y obtener invitationProof */
+export const ConfirmVerifyEmailSchema = registry.register(
+  'ConfirmVerifyEmail',
+  z.object({
+    invitationId: z.string().uuid('ID de la invitación'),
+    email: z
+      .string()
+      .email('Email debe ser válido')
+      .transform((v) => v.trim().toLowerCase()),
+    otp: z.string().min(1, 'El código OTP es requerido').max(10),
+  })
+);
+
+export type ConfirmVerifyEmailDTO = z.infer<typeof ConfirmVerifyEmailSchema>;

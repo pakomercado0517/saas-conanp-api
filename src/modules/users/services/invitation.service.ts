@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import type { UUID } from '@/shared/database/types.js';
 import { Invitation } from '@/modules/users/models/invitation.model.js';
+import { InvitationEmailProof } from '@/modules/users/models/invitation-email-proof.model.js';
 import { User } from '@/modules/users/models/user.model.js';
 import { Organization } from '@/modules/organizations/models/organization.model.js';
 import type {
@@ -325,6 +326,77 @@ export const consumeInvitationForRegistration = async (
   logger.info(
     { invitationId, organizationId: invitation.organizationId, email: emailNormalized },
     'Invitación consumida para registro'
+  );
+
+  return {
+    organizationId: invitation.organizationId,
+    role: invitation.role,
+  };
+};
+
+/**
+ * Consume una invitaci?n tras haber validado la prueba de email (flujo invitation_code).
+ * Requiere que exista un InvitationEmailProof ya usado (usedAt no null) para esta invitaci?n y email.
+ */
+export const consumeInvitationAfterProof = async (
+  invitationId: UUID,
+  email: string
+): Promise<ConsumeInvitationResult> => {
+  const invitation = await Invitation.findByPk(invitationId);
+
+  if (!invitation) {
+    throw new NotFoundError('Invitaci?n', { invitationId });
+  }
+
+  const emailNormalized = email.trim().toLowerCase();
+  if (invitation.email !== emailNormalized) {
+    throw new ForbiddenError('El email del registro debe coincidir con el de la invitaci?n', {
+      invitationId,
+    });
+  }
+
+  if (invitation.status !== 'pending') {
+    throw new ForbiddenError('Esta invitaci?n ya no est? disponible', {
+      invitationId,
+      status: invitation.status,
+    });
+  }
+
+  if (invitation.revokedAt) {
+    throw new ForbiddenError('Esta invitaci?n ha sido revocada', { invitationId });
+  }
+
+  if (new Date() > invitation.expiresAt) {
+    throw new ForbiddenError('Esta invitaci?n ha expirado', { invitationId });
+  }
+
+  const proofUsed = await InvitationEmailProof.findOne({
+    where: {
+      invitationId,
+      email: emailNormalized,
+      usedAt: { [Op.ne]: null },
+    },
+    order: [['createdAt', 'DESC']],
+  });
+
+  if (!proofUsed) {
+    throw new ForbiddenError(
+      'Debes verificar tu email con el c?digo enviado antes de completar el registro',
+      { invitationId }
+    );
+  }
+
+  await checkUsersLimit(invitation.organizationId);
+
+  const now = new Date();
+  await invitation.update({
+    status: 'accepted',
+    usedAt: now,
+  });
+
+  logger.info(
+    { invitationId, organizationId: invitation.organizationId, email: emailNormalized },
+    'Invitaci?n consumida para registro (tras proof de email)'
   );
 
   return {

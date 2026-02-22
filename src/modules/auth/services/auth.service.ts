@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import { DateTime } from 'luxon';
 import { randomBytes } from 'crypto';
-import { User } from '@/modules/users/models/user.model.js';
+import { User, type UserCreationAttributes } from '@/modules/users/models/user.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
 import { RefreshToken } from '@/modules/auth/models/refresh-token.model.js';
 import type { RegisterDTO, LoginDTO } from '../validators/auth.validator.js';
@@ -11,8 +11,10 @@ import { ConflictError, UnauthorizedError, BadRequestError } from '@/shared/erro
 import { logger } from '@/shared/logger/index.js';
 import {
   consumeInvitationForRegistration,
+  consumeInvitationAfterProof,
   type ConsumeInvitationResult,
 } from '@/modules/users/services/invitation.service.js';
+import { consumeProofForRegistration } from '@/modules/users/services/invitation-email-proof.service.js';
 import type {
   AuthResponse,
   RegisterResponse,
@@ -161,7 +163,8 @@ const isTestBypassRegister =
 
 /**
  * Registra un nuevo usuario con invitación válida (o sin ella solo en test con bypass).
- * Consume la invitación, crea usuario y membership, envía email de verificación.
+ * - Con invitación (link/token): consume invitación, crea usuario con emailVerified=true, no envía correo de verificación.
+ * - Sin invitación (solo test bypass): crea usuario con emailVerified=false y envía email de verificación.
  */
 export const register = async (data: RegisterDTO): Promise<RegisterResponse> => {
   let invitationData: ConsumeInvitationResult | null = null;
@@ -172,9 +175,12 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
       data.token,
       data.email
     );
+  } else if (data.invitationId && data.invitationProof && data.email) {
+    await consumeProofForRegistration(data.invitationId, data.email, data.invitationProof);
+    invitationData = await consumeInvitationAfterProof(data.invitationId, data.email);
   } else if (!isTestBypassRegister) {
     throw new BadRequestError(
-      'Se requiere una invitación válida (invitationId y token) para registrarse'
+      'Se requiere una invitación válida (invitationId y token, o invitationId e invitationProof) para registrarse'
     );
   }
 
@@ -190,20 +196,28 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
 
   const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
 
-  const { token: verificationToken, hashedToken: hashedVerificationToken } =
-    await generateVerificationToken();
-  const verificationExpiresAt = DateTime.now()
-    .plus({ hours: EMAIL_VERIFICATION_EXPIRES_HOURS })
-    .toJSDate();
+  const registeredViaInvitation = invitationData != null;
 
-  const user = await User.create({
+  let verificationTokenPlain: string | null = null;
+  const userPayload: UserCreationAttributes = {
     email: data.email,
     password: hashedPassword,
     name: data.name,
-    emailVerified: false,
-    emailVerificationToken: hashedVerificationToken,
-    emailVerificationExpiresAt: verificationExpiresAt,
-  });
+    emailVerified: registeredViaInvitation,
+    emailVerificationToken: null,
+    emailVerificationExpiresAt: null,
+  };
+
+  if (!registeredViaInvitation) {
+    const { token, hashedToken } = await generateVerificationToken();
+    verificationTokenPlain = token;
+    userPayload['emailVerificationToken'] = hashedToken;
+    userPayload['emailVerificationExpiresAt'] = DateTime.now()
+      .plus({ hours: EMAIL_VERIFICATION_EXPIRES_HOURS })
+      .toJSDate();
+  }
+
+  const user = await User.create(userPayload);
 
   if (invitationData) {
     await Membership.create({
@@ -214,20 +228,23 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
     });
   }
 
-  await sendVerificationEmail({
-    to: user.email,
-    name: user.name,
-    token: verificationToken,
-  });
+  if (!registeredViaInvitation && verificationTokenPlain) {
+    await sendVerificationEmail({
+      to: user.email,
+      name: user.name,
+      token: verificationTokenPlain,
+    });
+  }
 
   logger.info(
     {
       userId: user.id,
       email: user.email,
       ...(invitationData && { organizationId: invitationData.organizationId }),
+      emailVerifiedViaInvitation: registeredViaInvitation,
     },
-    invitationData
-      ? 'Usuario registrado con invitación, email de verificación enviado'
+    registeredViaInvitation
+      ? 'Usuario registrado con invitación, email considerado verificado'
       : 'Usuario registrado, email de verificación enviado'
   );
 
@@ -237,7 +254,9 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
       email: user.email,
       name: user.name,
     },
-    message: 'Revisa tu correo electrónico para verificar tu cuenta',
+    message: registeredViaInvitation
+      ? 'Cuenta creada. Ya puedes iniciar sesión.'
+      : 'Revisa tu correo electrónico para verificar tu cuenta',
   };
 };
 

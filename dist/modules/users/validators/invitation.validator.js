@@ -31,4 +31,21 @@ export const ValidateInvitationTokenSchema = registry.register('ValidateInvitati
     invitationId: z.string().uuid('El ID de invitación debe ser un UUID válido'),
     token: z.string().min(1, 'El token es requerido'),
 }));
+/** Body para iniciar verificación de email (envío de OTP) en flujo código manual */
+export const StartVerifyEmailSchema = registry.register('StartVerifyEmail', z.object({
+    invitationId: z.string().uuid('ID de la invitación'),
+    email: z
+        .string()
+        .email('Email debe ser válido')
+        .transform((v) => v.trim().toLowerCase()),
+}));
+/** Body para confirmar OTP y obtener invitationProof */
+export const ConfirmVerifyEmailSchema = registry.register('ConfirmVerifyEmail', z.object({
+    invitationId: z.string().uuid('ID de la invitación'),
+    email: z
+        .string()
+        .email('Email debe ser válido')
+        .transform((v) => v.trim().toLowerCase()),
+    otp: z.string().min(1, 'El código OTP es requerido').max(10),
+}));
 //# sourceMappingURL=invitation.validator.js.map

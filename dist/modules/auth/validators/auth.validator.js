@@ -52,11 +52,26 @@ export const RegisterSchema = registry.register('RegisterRequest', z
     token: z
         .string()
         .min(1, 'El token de invitación es requerido')
-        .describe('Token de la invitación (enlace o código manual)')
+        .describe('Token de la invitación (enlace; usar con invitationId)')
+        .optional(),
+    invitationProof: z
+        .string()
+        .min(1, 'El comprobante de verificación es requerido')
+        .describe('Comprobante obtenido tras verificar email con OTP (flujo código manual)')
         .optional(),
 })
-    .refine((data) => (data.invitationId != null) === (data.token != null), {
-    message: 'invitationId y token deben enviarse juntos',
+    .refine((data) => {
+    if (data.invitationId == null)
+        return true;
+    const hasToken = data.token != null && data.token.length > 0;
+    const hasProof = data.invitationProof != null && data.invitationProof.length > 0;
+    return (hasToken && !hasProof) || (!hasToken && hasProof);
+}, {
+    message: 'Con invitationId debes enviar o bien token (enlace) o bien invitationProof (tras verificar email con código), pero no ambos',
+    path: ['invitationId'],
+})
+    .refine((data) => data.invitationId == null || data.token != null || data.invitationProof != null, {
+    message: 'invitationId requiere token o invitationProof',
     path: ['invitationId'],
 }));
 /**

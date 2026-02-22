@@ -1,4 +1,5 @@
 import * as invitationService from '../services/invitation.service.js';
+import * as invitationEmailProofService from '../services/invitation-email-proof.service.js';
 import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
 const getOrganizationId = (req) => {
     const id = req.params['organizationId'];
@@ -46,5 +47,23 @@ export const validateInvitationToken = async (req, res) => {
     const { invitationId, token } = req.body;
     const result = await invitationService.validateInvitationToken(invitationId, token);
     return sendSuccess(res, result, 'Invitación válida');
+};
+/**
+ * POST /api/v1/invitations/verify-email/start
+ * Público: inicia verificación de email para flujo código manual; envía OTP por correo.
+ */
+export const startVerifyEmail = async (req, res) => {
+    const data = req.body;
+    const result = await invitationEmailProofService.startVerifyEmail(data.invitationId, data.email);
+    return sendSuccess(res, result, result.message);
+};
+/**
+ * POST /api/v1/invitations/verify-email/confirm
+ * Público: confirma OTP y devuelve invitationProof para usar en registro.
+ */
+export const confirmVerifyEmail = async (req, res) => {
+    const data = req.body;
+    const result = await invitationEmailProofService.confirmVerifyEmail(data.invitationId, data.email, data.otp);
+    return sendSuccess(res, result, 'Comprobante generado. Completa el registro con invitationProof.');
 };
 //# sourceMappingURL=invitation.controller.js.map

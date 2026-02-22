@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import * as invitationService from '../services/invitation.service.js';
+import * as invitationEmailProofService from '../services/invitation-email-proof.service.js';
 import {
   sendSuccess,
   sendCreated,
@@ -9,6 +10,8 @@ import {
 import type {
   CreateInvitationDTO,
   ListInvitationsDTO,
+  StartVerifyEmailDTO,
+  ConfirmVerifyEmailDTO,
 } from '../validators/invitation.validator.js';
 
 const getOrganizationId = (req: Request): string => {
@@ -62,4 +65,32 @@ export const validateInvitationToken = async (req: Request, res: Response): Prom
   const { invitationId, token } = req.body as { invitationId: string; token: string };
   const result = await invitationService.validateInvitationToken(invitationId, token);
   return sendSuccess(res, result, 'Invitación válida');
+};
+
+/**
+ * POST /api/v1/invitations/verify-email/start
+ * Público: inicia verificación de email para flujo código manual; envía OTP por correo.
+ */
+export const startVerifyEmail = async (req: Request, res: Response): Promise<Response> => {
+  const data = req.body as StartVerifyEmailDTO;
+  const result = await invitationEmailProofService.startVerifyEmail(data.invitationId, data.email);
+  return sendSuccess(res, result, result.message);
+};
+
+/**
+ * POST /api/v1/invitations/verify-email/confirm
+ * Público: confirma OTP y devuelve invitationProof para usar en registro.
+ */
+export const confirmVerifyEmail = async (req: Request, res: Response): Promise<Response> => {
+  const data = req.body as ConfirmVerifyEmailDTO;
+  const result = await invitationEmailProofService.confirmVerifyEmail(
+    data.invitationId,
+    data.email,
+    data.otp
+  );
+  return sendSuccess(
+    res,
+    result,
+    'Comprobante generado. Completa el registro con invitationProof.'
+  );
 };

@@ -7,6 +7,7 @@ export { Organization } from '../../modules/organizations/models/organization.mo
 export { User } from '../../modules/users/models/user.model.js';
 export { Membership } from '../../modules/users/models/membership.model.js';
 export { Invitation } from '../../modules/users/models/invitation.model.js';
+export { InvitationEmailProof } from '../../modules/users/models/invitation-email-proof.model.js';
 export { RefreshToken } from '../../modules/auth/models/refresh-token.model.js';
 export { PrestadorProfile } from '../../modules/prestadores/models/prestador-profile.model.js';
 export { Actividad } from '../../modules/actividades/models/actividad.model.js';

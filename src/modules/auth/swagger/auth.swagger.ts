@@ -75,19 +75,32 @@ registry.registerPath({
   path: '/api/v1/auth/register',
   tags: ['Autenticación'],
   summary: 'Registrar nuevo usuario',
-  description: 'Crea una nueva cuenta de usuario en el sistema. El email debe ser único.',
+  description:
+    'Crea una nueva cuenta. Requiere invitación válida: (1) invitationId + token (enlace; email queda verificado) o (2) invitationId + invitationProof (tras verificar email con OTP en flujo código manual). El email debe coincidir con el de la invitación.',
   request: {
     body: {
       content: {
         'application/json': {
           schema: RegisterSchema,
           examples: {
-            example1: {
-              summary: 'Registro de usuario básico',
+            invitationLink: {
+              summary: 'Registro por enlace de invitación',
               value: {
                 email: 'juan.perez@example.com',
                 password: 'MiPassword123!',
                 name: 'Juan Pérez García',
+                invitationId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+                token: 'token_recibido_por_correo',
+              },
+            },
+            invitationCode: {
+              summary: 'Registro por código manual (tras verify-email/confirm)',
+              value: {
+                email: 'juan.perez@example.com',
+                password: 'MiPassword123!',
+                name: 'Juan Pérez García',
+                invitationId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+                invitationProof: 'comprobante_obtenido_de_verify_email_confirm',
               },
             },
           },

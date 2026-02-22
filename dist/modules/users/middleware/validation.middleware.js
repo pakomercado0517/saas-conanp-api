@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { UpdateProfileSchema, ChangePasswordSchema } from '../validators/user.validator.js';
 import { CreateMembershipSchema, UpdateMembershipSchema, ListMembershipsSchema, } from '../validators/membership.validator.js';
-import { CreateInvitationSchema, ListInvitationsSchema, ValidateInvitationTokenSchema, } from '../validators/invitation.validator.js';
+import { CreateInvitationSchema, ListInvitationsSchema, ValidateInvitationTokenSchema, StartVerifyEmailSchema, ConfirmVerifyEmailSchema, } from '../validators/invitation.validator.js';
 /**
  * Middleware de validación para actualizar perfil de usuario
  *
@@ -237,6 +237,54 @@ export const validateListInvitations = (req, res, next) => {
 export const validateInvitationToken = (req, res, next) => {
     try {
         req.body = ValidateInvitationTokenSchema.parse(req.body);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+export const validateStartVerifyEmail = (req, res, next) => {
+    try {
+        req.body = StartVerifyEmailSchema.parse(req.body);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+export const validateConfirmVerifyEmail = (req, res, next) => {
+    try {
+        req.body = ConfirmVerifyEmailSchema.parse(req.body);
         next();
     }
     catch (error) {

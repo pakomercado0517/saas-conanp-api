@@ -1,5 +1,5 @@
 import { sendEmail } from './client.js';
-import { getVerificationEmailContent, getPasswordResetEmailContent, getPasswordChangedEmailContent, getInvitationEmailContent, } from './templates/index.js';
+import { getVerificationEmailContent, getPasswordResetEmailContent, getPasswordChangedEmailContent, getInvitationEmailContent, getInvitationOtpEmailContent, } from './templates/index.js';
 import { logger } from '../../shared/logger/index.js';
 /** URL base del frontend para construir enlaces (ej: http://localhost:3000) */
 const FRONTEND_URL = process.env['FRONTEND_URL'] ?? 'http://localhost:3000';
@@ -112,4 +112,27 @@ export const sendInvitationEmail = async (params) => {
     logger.info({ to: params.to, organizationName: params.organizationName, messageId }, 'Email de invitación enviado');
     return messageId;
 };
+/** OTP expiration for invitation email proof (minutes) */
+const INVITATION_OTP_EXPIRES_MINUTES = 10;
+/**
+ * Envía email con código OTP para verificar email en flujo de invitación por código manual.
+ */
+export const sendInvitationOtpEmail = async (params) => {
+    const { html, text } = getInvitationOtpEmailContent({
+        to: params.to,
+        organizationName: params.organizationName,
+        otp: params.otp,
+        expiresInMinutes: INVITATION_OTP_EXPIRES_MINUTES,
+    });
+    const messageId = await sendEmail({
+        to: [{ email: params.to }],
+        subject: 'Código de verificación para tu registro',
+        htmlContent: html,
+        textContent: text,
+        tags: ['invitation', 'otp', 'verification'],
+    });
+    logger.info({ to: params.to, messageId }, 'Email OTP invitación enviado');
+    return messageId;
+};
+export { INVITATION_OTP_EXPIRES_MINUTES };
 //# sourceMappingURL=email.service.js.map

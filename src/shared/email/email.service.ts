@@ -4,6 +4,7 @@ import {
   getPasswordResetEmailContent,
   getPasswordChangedEmailContent,
   getInvitationEmailContent,
+  getInvitationOtpEmailContent,
 } from './templates/index.js';
 import type {
   VerificationEmailParams,
@@ -161,3 +162,36 @@ export const sendInvitationEmail = async (params: SendInvitationEmailParams): Pr
 
   return messageId;
 };
+
+/** OTP expiration for invitation email proof (minutes) */
+const INVITATION_OTP_EXPIRES_MINUTES = 10;
+
+/**
+ * Envía email con código OTP para verificar email en flujo de invitación por código manual.
+ */
+export const sendInvitationOtpEmail = async (params: {
+  to: string;
+  organizationName: string;
+  otp: string;
+}): Promise<string> => {
+  const { html, text } = getInvitationOtpEmailContent({
+    to: params.to,
+    organizationName: params.organizationName,
+    otp: params.otp,
+    expiresInMinutes: INVITATION_OTP_EXPIRES_MINUTES,
+  });
+
+  const messageId = await sendEmail({
+    to: [{ email: params.to }],
+    subject: 'Código de verificación para tu registro',
+    htmlContent: html,
+    textContent: text,
+    tags: ['invitation', 'otp', 'verification'],
+  });
+
+  logger.info({ to: params.to, messageId }, 'Email OTP invitación enviado');
+
+  return messageId;
+};
+
+export { INVITATION_OTP_EXPIRES_MINUTES };

@@ -35,4 +35,17 @@ export declare const ValidateInvitationTokenSchema: z.ZodObject<{
     token: z.ZodString;
 }, z.core.$strip>;
 export type ValidateInvitationTokenDTO = z.infer<typeof ValidateInvitationTokenSchema>;
+/** Body para iniciar verificación de email (envío de OTP) en flujo código manual */
+export declare const StartVerifyEmailSchema: z.ZodObject<{
+    invitationId: z.ZodString;
+    email: z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>;
+}, z.core.$strip>;
+export type StartVerifyEmailDTO = z.infer<typeof StartVerifyEmailSchema>;
+/** Body para confirmar OTP y obtener invitationProof */
+export declare const ConfirmVerifyEmailSchema: z.ZodObject<{
+    invitationId: z.ZodString;
+    email: z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>;
+    otp: z.ZodString;
+}, z.core.$strip>;
+export type ConfirmVerifyEmailDTO = z.infer<typeof ConfirmVerifyEmailSchema>;
 //# sourceMappingURL=invitation.validator.d.ts.map

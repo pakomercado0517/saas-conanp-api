@@ -1,6 +1,6 @@
 import { type Router as ExpressRouter } from 'express';
 /**
- * Router público para validar token de invitación (pre-registro).
+ * Router público para validar token de invitación y verificación de email (pre-registro).
  * Prefijo: /api/v1/invitations
  */
 declare const invitationValidateRouter: ExpressRouter;

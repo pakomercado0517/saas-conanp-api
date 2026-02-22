@@ -8,6 +8,7 @@ export declare const RegisterSchema: z.ZodObject<{
     name: z.ZodString;
     invitationId: z.ZodOptional<z.ZodString>;
     token: z.ZodOptional<z.ZodString>;
+    invitationProof: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 /**
  * Tipo TypeScript inferido desde RegisterSchema
