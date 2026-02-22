@@ -7,7 +7,7 @@ import { EventoOperativo } from '../../../modules/eventos/models/evento-operativ
 import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
-import { getPlanById, getPlanByStripePriceId, assertPlanExistsAndActive, } from '../../../modules/subscriptions/services/subscription-plan.service.js';
+import { getPlanById, getPlanByStripePriceId, assertPlanExistsAndActive, getFreePlan, } from '../../../modules/subscriptions/services/subscription-plan.service.js';
 import { sequelize } from '../../../shared/database/index.js';
 import { stripeClient, handleStripeError } from '../../../shared/stripe/index.js';
 import { ConflictError, NotFoundError, ValidationError } from '../../../shared/errors/index.js';
@@ -225,6 +225,38 @@ export const createSubscriptionInDatabase = async (data, transaction) => {
         planId: data.planId,
         status: data.status,
     }, 'Suscripción creada en base de datos');
+    return subscription;
+};
+/**
+ * Crea una suscripción FREE para una organización (sin Stripe).
+ * Usado al crear una organización por super admin para que tenga suscripción activa
+ * desde el inicio y el primer admin invitado pueda registrarse.
+ *
+ * @param organizationId - ID de la organización
+ * @param transaction - Transacción opcional (ej. la de creación de la org)
+ * @returns Suscripción creada con plan "free"
+ * @throws {NotFoundError} Si no existe el plan "free"
+ * @throws {ConflictError} Si la organización ya tiene suscripción
+ */
+export const createFreeSubscriptionForOrganization = async (organizationId, transaction) => {
+    await assertNoExistingSubscription(organizationId);
+    const plan = await getFreePlan(transaction);
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    const subscription = await createSubscriptionInDatabase({
+        organizationId,
+        planId: plan.id,
+        status: 'active',
+        billingCycle: 'monthly',
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        stripeSubscriptionId: null,
+        stripeCustomerId: null,
+        stripePriceId: null,
+    }, transaction);
+    await invalidateSubscriptionCache(organizationId);
+    logger.info({ subscriptionId: subscription.id, organizationId, planId: plan.id }, 'Suscripción FREE creada para organización');
     return subscription;
 };
 /**

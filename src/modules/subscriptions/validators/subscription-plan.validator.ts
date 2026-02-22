@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 // Helpers reutilizables
 
-const PLAN_NAMES = ['básico', 'profesional', 'empresarial'] as const;
+const PLAN_NAMES = ['free', 'básico', 'profesional', 'empresarial'] as const;
 const planNameEnum = z.enum(PLAN_NAMES, {
-  error: 'El nombre del plan debe ser: básico, profesional o empresarial',
+  error: 'El nombre del plan debe ser: free, básico, profesional o empresarial',
 });
 
 const priceSchema = z

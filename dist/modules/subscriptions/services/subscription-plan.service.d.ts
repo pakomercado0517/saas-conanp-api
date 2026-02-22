@@ -39,6 +39,15 @@ export declare const getPlanById: (planId: UUID) => Promise<SubscriptionPlan>;
  */
 export declare const assertPlanExistsAndActive: (planId: UUID) => Promise<SubscriptionPlan>;
 /**
+ * Obtiene el plan gratuito "free" (activo).
+ * Usado al crear una organización para asignarle una suscripción inicial sin Stripe.
+ *
+ * @param transaction - Transacción opcional
+ * @returns Plan free
+ * @throws {NotFoundError} Si no existe un plan "free" activo
+ */
+export declare const getFreePlan: (transaction?: import("sequelize").Transaction) => Promise<SubscriptionPlan>;
+/**
  * Obtiene un plan por Stripe Price ID (monthly o yearly).
  * Usado desde webhooks para resolver planId cuando solo se recibe price.id.
  *

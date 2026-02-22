@@ -72,6 +72,24 @@ export default [
     },
   },
   
+  // Seeders: Node.js CommonJS (process, console, etc.)
+  {
+    files: ['database/seeders/**/*.cjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        exports: 'writable',
+      },
+    },
+  },
+
   // Deshabilitar reglas que conflictúan con Prettier
   prettierConfig,
 ];

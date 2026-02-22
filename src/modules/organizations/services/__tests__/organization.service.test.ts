@@ -186,6 +186,7 @@ describe('organization.service', () => {
       const result = await organizationService.createOrganization({
         name: 'Test Org',
         ecosystem_type: 'terrestre',
+        admin_email: 'admin@test.com',
         settings: {},
       });
 

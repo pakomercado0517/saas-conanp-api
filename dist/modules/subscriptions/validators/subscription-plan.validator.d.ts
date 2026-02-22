@@ -4,6 +4,7 @@ import { z } from 'zod';
  */
 export declare const CreateSubscriptionPlanSchema: z.ZodObject<{
     name: z.ZodEnum<{
+        free: "free";
         básico: "básico";
         profesional: "profesional";
         empresarial: "empresarial";
@@ -27,6 +28,7 @@ export type CreateSubscriptionPlanDTO = z.infer<typeof CreateSubscriptionPlanSch
  */
 export declare const UpdateSubscriptionPlanSchema: z.ZodObject<{
     name: z.ZodOptional<z.ZodEnum<{
+        free: "free";
         básico: "básico";
         profesional: "profesional";
         empresarial: "empresarial";

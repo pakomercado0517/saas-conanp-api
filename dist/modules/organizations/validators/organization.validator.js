@@ -61,6 +61,16 @@ export const CreateOrganizationSchema = registry.register('CreateOrganization', 
         .trim()
         .describe('Nombre de la organización (ANP)'),
     ecosystem_type: ecosystemTypeEnum.describe('Tipo de ecosistema de la ANP: terrestre, marítimo o mixto'),
+    admin_email: z
+        .string({
+        message: 'El email del administrador inicial es requerido y debe ser un texto',
+    })
+        .email({
+        message: 'El email del administrador inicial debe tener un formato válido',
+    })
+        .trim()
+        .toLowerCase()
+        .describe('Email del primer administrador de la organización'),
     settings: settingsSchema
         .optional()
         .default({})
@@ -70,6 +80,7 @@ export const CreateOrganizationSchema = registry.register('CreateOrganization', 
     example: {
         name: 'Reserva de la Biosfera Los Tuxtlas',
         ecosystem_type: 'mixto',
+        admin_email: 'admin@conanp.gob.mx',
         settings: {
             capacidadMaxima: 500,
             horaApertura: '08:00',

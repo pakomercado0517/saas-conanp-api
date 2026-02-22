@@ -7,7 +7,16 @@ import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../.
  */
 export const createOrganization = async (req, res) => {
     const data = req.body;
-    const result = await adminService.createOrganization(data);
+    const userId = req.user?.userId;
+    const email = req.user?.email;
+    if (!userId || !email) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const result = await adminService.createOrganization(data, { userId, email });
     return sendCreated(res, result, 'Organización creada exitosamente');
 };
 /**

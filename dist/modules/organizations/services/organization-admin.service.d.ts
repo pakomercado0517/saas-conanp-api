@@ -2,10 +2,20 @@ import type { UUID } from '../../../shared/database/types';
 import { Organization } from '../../../modules/organizations/models/organization.model';
 import type { CreateOrganizationDTO, UpdateOrganizationDTO, ListOrganizationsDTO } from '../../../modules/organizations/validators/organization.validator';
 import type { PaginationMeta } from '../../../shared/responses/types';
+type AdminAssignment = 'membership_created' | 'invitation_created';
+export interface CreateOrganizationAdminResult extends Record<string, unknown> {
+    adminAssignment: AdminAssignment;
+    adminEmail: string;
+    membershipId?: UUID;
+    invitationId?: UUID;
+}
 /**
  * Crea una nueva organización (super admin).
  */
-export declare const createOrganization: (data: CreateOrganizationDTO) => Promise<Organization>;
+export declare const createOrganization: (data: CreateOrganizationDTO, actor: {
+    userId: UUID;
+    email: string;
+}) => Promise<CreateOrganizationAdminResult>;
 /**
  * Lista todas las organizaciones con paginación y filtros.
  * Sin filtro de membresía — el super admin ve todas.
@@ -28,4 +38,5 @@ export declare const updateOrganization: (organizationId: UUID, data: UpdateOrga
  * Elimina una organización (soft delete) sin validar membresía ni suscripción.
  */
 export declare const deleteOrganization: (organizationId: UUID) => Promise<void>;
+export {};
 //# sourceMappingURL=organization-admin.service.d.ts.map

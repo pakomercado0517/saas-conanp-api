@@ -26,7 +26,7 @@ export type PaymentStatus =
   | 'refunded'
   | 'cancelled';
 
-export type SubscriptionPlanName = 'básico' | 'profesional' | 'empresarial';
+export type SubscriptionPlanName = 'free' | 'básico' | 'profesional' | 'empresarial';
 
 export type SubscriptionStatus =
   | 'active'

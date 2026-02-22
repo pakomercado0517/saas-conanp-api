@@ -19,6 +19,7 @@ export declare const CreateOrganizationSchema: z.ZodObject<{
         maritimo: "maritimo";
         mixto: "mixto";
     }>;
+    admin_email: z.ZodString;
     settings: z.ZodDefault<z.ZodOptional<z.ZodObject<{
         acceso: z.ZodOptional<z.ZodObject<{
             brazaletesObligatorios: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;

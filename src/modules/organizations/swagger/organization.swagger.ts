@@ -23,6 +23,25 @@ const OrganizationSchema = registry.register(
       ),
     createdAt: z.string().datetime().describe('Fecha de creación'),
     updatedAt: z.string().datetime().describe('Fecha de última actualización'),
+    adminAssignment: z
+      .enum(['membership_created', 'invitation_created'])
+      .optional()
+      .describe('Resultado de asignación del admin inicial (solo creación por super admin)'),
+    adminEmail: z
+      .string()
+      .email()
+      .optional()
+      .describe('Email normalizado del admin inicial (solo creación por super admin)'),
+    membershipId: z
+      .string()
+      .uuid()
+      .optional()
+      .describe('ID de membership creada cuando el admin ya existía'),
+    invitationId: z
+      .string()
+      .uuid()
+      .optional()
+      .describe('ID de invitación creada cuando el admin no existía'),
   })
 );
 
@@ -62,14 +81,15 @@ const OrganizationListResponseSchema = registry.register(
  * Registrar rutas de organizaciones en OpenAPI
  */
 
-// POST /api/v1/organizations
+// POST /api/v1/admin/organizations
 registry.registerPath({
   method: 'post',
-  path: '/api/v1/organizations',
+  path: '/api/v1/admin/organizations',
   tags: ['Organizaciones'],
-  summary: 'Crear nueva organización',
+  summary: 'Crear nueva organización (super admin) con admin inicial',
   description:
-    'Crea una nueva organización (ANP - Área Natural Protegida). No requiere autenticación para permitir el registro inicial.',
+    'Crea una nueva organización y asigna el primer administrador. Si el email existe, crea membership admin; si no existe, crea invitación admin.',
+  security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
@@ -94,6 +114,9 @@ registry.registerPath({
                   id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
                   name: 'Reserva de la Biosfera Los Tuxtlas',
                   ecosystem_type: 'mixto',
+                  adminAssignment: 'membership_created',
+                  adminEmail: 'admin@conanp.gob.mx',
+                  membershipId: 'd3f5a0ec-36bf-4f39-97ad-cd1cc8c3a2f2',
                   settings: {
                     capacidadMaxima: 500,
                     horaApertura: '08:00',
@@ -111,6 +134,8 @@ registry.registerPath({
       },
     },
     400: commonErrorResponses[400],
+    401: commonErrorResponses[401],
+    403: commonErrorResponses[403],
     500: commonErrorResponses[500],
   },
 });

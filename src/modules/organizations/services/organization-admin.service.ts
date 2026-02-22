@@ -1,19 +1,39 @@
 import { Op } from 'sequelize';
+import bcrypt from 'bcrypt';
+import { randomBytes } from 'node:crypto';
+import { DateTime } from 'luxon';
 import type { UUID } from '@/shared/database/types';
 import { Organization } from '@/modules/organizations/models/organization.model';
 import { Subscription } from '@/modules/subscriptions/models/subscription.model';
 import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model';
+import { createFreeSubscriptionForOrganization } from '@/modules/subscriptions/services/subscription.service.js';
 import { Membership } from '@/modules/users/models/membership.model';
+import { User } from '@/modules/users/models/user.model';
+import { Invitation } from '@/modules/users/models/invitation.model';
 import type {
   CreateOrganizationDTO,
   UpdateOrganizationDTO,
   ListOrganizationsDTO,
 } from '@/modules/organizations/validators/organization.validator';
-import { NotFoundError } from '@/shared/errors';
+import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/shared/errors';
 import type { PaginationMeta } from '@/shared/responses/types';
 import { logger } from '@/shared/logger';
 import { cache } from '@/shared/cache';
 import { CacheKeys } from '@/shared/cache/keys';
+import { sendInvitationEmail } from '@/shared/email/email.service.js';
+import { sequelize } from '@/shared/database/index.js';
+
+const BCRYPT_ROUNDS = 10;
+const INVITATION_EXPIRES_DAYS = 7;
+
+type AdminAssignment = 'membership_created' | 'invitation_created';
+
+export interface CreateOrganizationAdminResult extends Record<string, unknown> {
+  adminAssignment: AdminAssignment;
+  adminEmail: string;
+  membershipId?: UUID;
+  invitationId?: UUID;
+}
 
 const invalidateOrganizationCache = async (organizationId: UUID): Promise<void> => {
   const cacheKey = CacheKeys.organization(organizationId);
@@ -23,19 +43,131 @@ const invalidateOrganizationCache = async (organizationId: UUID): Promise<void> 
 /**
  * Crea una nueva organización (super admin).
  */
-export const createOrganization = async (data: CreateOrganizationDTO): Promise<Organization> => {
-  const org = await Organization.create({
-    name: data.name,
-    ecosystem_type: data.ecosystem_type,
-    settings: data.settings ?? {},
+export const createOrganization = async (
+  data: CreateOrganizationDTO,
+  actor: { userId: UUID; email: string }
+): Promise<CreateOrganizationAdminResult> => {
+  return sequelize.transaction(async (transaction): Promise<CreateOrganizationAdminResult> => {
+    const normalizedAdminEmail = data.admin_email.trim().toLowerCase();
+
+    const org = await Organization.create(
+      {
+        name: data.name,
+        ecosystem_type: data.ecosystem_type,
+        settings: data.settings ?? {},
+      },
+      { transaction }
+    );
+
+    const targetUser = await User.findOne({
+      where: { email: normalizedAdminEmail },
+      paranoid: false,
+      transaction,
+    });
+
+    // Si existe pero está soft-deleted, bloquear explícitamente.
+    if (targetUser?.deletedAt) {
+      throw new ValidationError(
+        'No se puede asignar como admin a un usuario eliminado. Usa otro email.',
+        undefined,
+        {
+          admin_email: normalizedAdminEmail,
+        }
+      );
+    }
+
+    let adminAssignment: AdminAssignment;
+    let membershipId: UUID | undefined;
+    let invitationId: UUID | undefined;
+
+    if (targetUser) {
+      const existingMembership = await Membership.findOne({
+        where: {
+          userId: targetUser.id,
+          organizationId: org.id,
+        },
+        transaction,
+      });
+
+      if (existingMembership) {
+        throw new ConflictError('El usuario ya tiene una membresía en esta organización', {
+          userId: targetUser.id,
+          organizationId: org.id,
+          membershipId: existingMembership.id,
+        });
+      }
+
+      const membership = await Membership.create(
+        {
+          userId: targetUser.id,
+          organizationId: org.id,
+          role: 'admin',
+          status: 'activo',
+        },
+        { transaction }
+      );
+
+      adminAssignment = 'membership_created';
+      membershipId = membership.id;
+    } else {
+      const token = randomBytes(32).toString('hex');
+      const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
+      const expiresAt = DateTime.now().plus({ days: INVITATION_EXPIRES_DAYS }).toJSDate();
+
+      const invitation = await Invitation.create(
+        {
+          organizationId: org.id,
+          email: normalizedAdminEmail,
+          role: 'admin',
+          tokenHash,
+          invitedBy: actor.userId,
+          status: 'pending',
+          expiresAt,
+        },
+        { transaction }
+      );
+
+      try {
+        await sendInvitationEmail({
+          to: normalizedAdminEmail,
+          organizationName: org.name,
+          role: 'admin',
+          invitationId: invitation.id,
+          token,
+          invitedBy: actor.email,
+        });
+      } catch {
+        throw new BadRequestError(
+          'No se pudo enviar la invitación del admin inicial. Intenta nuevamente.'
+        );
+      }
+
+      adminAssignment = 'invitation_created';
+      invitationId = invitation.id;
+    }
+
+    await createFreeSubscriptionForOrganization(org.id, transaction);
+
+    logger.info(
+      {
+        organizationId: org.id,
+        name: org.name,
+        ecosystem_type: org.ecosystem_type,
+        adminAssignment,
+        admin_email: normalizedAdminEmail,
+        invitedByUserId: actor.userId,
+      },
+      'Organización creada por super admin con admin inicial'
+    );
+
+    return {
+      ...(org.toJSON() as unknown as Record<string, unknown>),
+      adminAssignment,
+      adminEmail: normalizedAdminEmail,
+      ...(membershipId && { membershipId }),
+      ...(invitationId && { invitationId }),
+    };
   });
-
-  logger.info(
-    { organizationId: org.id, name: org.name, ecosystem_type: org.ecosystem_type },
-    'Organización creada por super admin'
-  );
-
-  return org;
 };
 
 /**

@@ -47,6 +47,7 @@ export interface SubscriptionPlanCreationAttributes extends Optional<
 > {}
 
 export const SUBSCRIPTION_PLAN_NAMES: SubscriptionPlanName[] = [
+  'free',
   'básico',
   'profesional',
   'empresarial',
@@ -96,7 +97,7 @@ SubscriptionPlan.init(
         },
         isIn: {
           args: [SUBSCRIPTION_PLAN_NAMES],
-          msg: 'El nombre del plan debe ser: básico, profesional o empresarial',
+          msg: 'El nombre del plan debe ser: free, básico, profesional o empresarial',
         },
       },
     },

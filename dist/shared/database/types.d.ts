@@ -10,7 +10,7 @@ export type ActivoType = 'embarcacion' | 'vehiculo' | 'guia' | 'equipo';
 export type EventoStatus = 'programado' | 'en_curso' | 'completado' | 'cancelado';
 export type Role = 'admin' | 'gestor' | 'prestador' | 'observador';
 export type PaymentStatus = 'pending' | 'processing' | 'succeeded' | 'failed' | 'refunded' | 'cancelled';
-export type SubscriptionPlanName = 'básico' | 'profesional' | 'empresarial';
+export type SubscriptionPlanName = 'free' | 'básico' | 'profesional' | 'empresarial';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing' | 'incomplete' | 'incomplete_expired';
 export type BillingCycle = 'monthly' | 'yearly';
 /** Tipo de producto de acceso (brazalete o pasaporte turístico) */

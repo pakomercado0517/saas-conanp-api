@@ -77,6 +77,18 @@ export declare const createSubscriptionInDatabase: (data: {
     metadata?: Record<string, unknown> | null;
 }, transaction?: Transaction) => Promise<Subscription>;
 /**
+ * Crea una suscripción FREE para una organización (sin Stripe).
+ * Usado al crear una organización por super admin para que tenga suscripción activa
+ * desde el inicio y el primer admin invitado pueda registrarse.
+ *
+ * @param organizationId - ID de la organización
+ * @param transaction - Transacción opcional (ej. la de creación de la org)
+ * @returns Suscripción creada con plan "free"
+ * @throws {NotFoundError} Si no existe el plan "free"
+ * @throws {ConflictError} Si la organización ya tiene suscripción
+ */
+export declare const createFreeSubscriptionForOrganization: (organizationId: UUID, transaction?: Transaction) => Promise<Subscription>;
+/**
  * Crea una suscripción completa: Stripe + base de datos.
  *
  * @param data - Datos para crear la suscripción

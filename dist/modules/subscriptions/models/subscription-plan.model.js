@@ -1,6 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../../../shared/database';
 export const SUBSCRIPTION_PLAN_NAMES = [
+    'free',
     'básico',
     'profesional',
     'empresarial',
@@ -27,7 +28,7 @@ SubscriptionPlan.init({
             },
             isIn: {
                 args: [SUBSCRIPTION_PLAN_NAMES],
-                msg: 'El nombre del plan debe ser: básico, profesional o empresarial',
+                msg: 'El nombre del plan debe ser: free, básico, profesional o empresarial',
             },
         },
     },
