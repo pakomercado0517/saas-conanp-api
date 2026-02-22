@@ -47,4 +47,9 @@ export interface ConsumeInvitationResult {
  * Debe llamarse antes de crear el usuario. Revalida límite de usuarios del plan.
  */
 export declare const consumeInvitationForRegistration: (invitationId: UUID, token: string, email: string) => Promise<ConsumeInvitationResult>;
+/**
+ * Consume una invitaci?n tras haber validado la prueba de email (flujo invitation_code).
+ * Requiere que exista un InvitationEmailProof ya usado (usedAt no null) para esta invitaci?n y email.
+ */
+export declare const consumeInvitationAfterProof: (invitationId: UUID, email: string) => Promise<ConsumeInvitationResult>;
 //# sourceMappingURL=invitation.service.d.ts.map

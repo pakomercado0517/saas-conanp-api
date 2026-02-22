@@ -10,6 +10,8 @@ import {
   CreateInvitationSchema,
   ListInvitationsSchema,
   ValidateInvitationTokenSchema,
+  StartVerifyEmailSchema,
+  ConfirmVerifyEmailSchema,
 } from '../validators/invitation.validator.js';
 
 /**
@@ -257,6 +259,58 @@ export const validateListInvitations = (req: Request, res: Response, next: NextF
 export const validateInvitationToken = (req: Request, res: Response, next: NextFunction): void => {
   try {
     req.body = ValidateInvitationTokenSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err: z.ZodIssue) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los datos proporcionados no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+export const validateStartVerifyEmail = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    req.body = StartVerifyEmailSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err: z.ZodIssue) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los datos proporcionados no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+export const validateConfirmVerifyEmail = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.body = ConfirmVerifyEmailSchema.parse(req.body);
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {

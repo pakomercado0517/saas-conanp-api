@@ -10,16 +10,19 @@ import {
   type AuthResult,
   type OrganizationData,
 } from './helpers.js';
+import { DateTime } from 'luxon';
 import { Invitation } from '@/modules/users/models/invitation.model.js';
+import { InvitationEmailProof } from '@/modules/users/models/invitation-email-proof.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
+import { User } from '@/modules/users/models/user.model.js';
 
 const API = '/api/v1';
+const BCRYPT_ROUNDS = 10;
 
 describe('Invitaciones y registro con invitación (integration)', () => {
   let adminAuth: AuthResult;
   let org: OrganizationData;
   const invitedEmail = `invited-${Date.now()}@example.com`;
-  const BCRYPT_ROUNDS = 10;
 
   beforeAll(async () => {
     adminAuth = await createTestUserAndToken(app, {
@@ -137,6 +140,143 @@ describe('Invitaciones y registro con invitación (integration)', () => {
 
       expect(res.body.success).toBe(false);
       expect(res.body.message).toMatch(/invitación|invitationId|token/i);
+
+      process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'true';
+    });
+
+    it('tras registrar por invitación (link) el usuario puede iniciar sesión sin verificar email', async () => {
+      const emailLink = `link-${Date.now()}@example.com`;
+      const crypto = await import('node:crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const invitation = await Invitation.create({
+        organizationId: org.id,
+        email: emailLink,
+        role: 'observador',
+        tokenHash,
+        invitedBy: adminAuth.user.id,
+        status: 'pending',
+        expiresAt,
+      });
+
+      process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'false';
+
+      const registerRes = await request(app)
+        .post(`${API}/auth/register`)
+        .send({
+          email: emailLink,
+          password: 'password123',
+          name: 'Usuario Link',
+          invitationId: invitation.id,
+          token,
+        })
+        .expect(201);
+
+      expect(registerRes.body.data.message).toMatch(/iniciar sesión|ya puedes/i);
+
+      const loginRes = await request(app)
+        .post(`${API}/auth/login`)
+        .send({ email: emailLink, password: 'password123' })
+        .expect(200);
+
+      expect(loginRes.body.success).toBe(true);
+      expect(loginRes.body.data).toHaveProperty('accessToken');
+
+      const user = await User.findByPk((registerRes.body.data.user as { id: string }).id);
+      expect(user?.emailVerified).toBe(true);
+
+      process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'true';
+    });
+  });
+
+  describe('POST /invitations/verify-email/start y confirm + registro con invitationProof', () => {
+    it('start devuelve 200; confirm con OTP correcto devuelve invitationProof; registro con proof permite login', async () => {
+      const emailProof = `proof-${Date.now()}@example.com`;
+      const crypto = await import('node:crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const invitation = await Invitation.create({
+        organizationId: org.id,
+        email: emailProof,
+        role: 'prestador',
+        tokenHash,
+        invitedBy: adminAuth.user.id,
+        status: 'pending',
+        expiresAt,
+      });
+
+      const otp = '123456';
+      const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
+      const otpExpiresAt = DateTime.now().plus({ minutes: 10 }).toJSDate();
+
+      await InvitationEmailProof.create({
+        invitationId: invitation.id,
+        email: emailProof,
+        otpHash,
+        attempts: 0,
+        maxAttempts: 5,
+        otpExpiresAt,
+      });
+
+      const confirmRes = await request(app)
+        .post(`${API}/invitations/verify-email/confirm`)
+        .send({
+          invitationId: invitation.id,
+          email: emailProof,
+          otp,
+        })
+        .expect(200);
+
+      expect(confirmRes.body.data).toHaveProperty('invitationProof');
+      const invitationProof = confirmRes.body.data.invitationProof as string;
+
+      process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'false';
+
+      await request(app)
+        .post(`${API}/auth/register`)
+        .send({
+          email: emailProof,
+          password: 'password123',
+          name: 'Usuario Proof',
+          invitationId: invitation.id,
+          invitationProof,
+        })
+        .expect(201);
+
+      const loginRes = await request(app)
+        .post(`${API}/auth/login`)
+        .send({ email: emailProof, password: 'password123' })
+        .expect(200);
+
+      expect(loginRes.body.success).toBe(true);
+      expect(loginRes.body.data).toHaveProperty('accessToken');
+
+      const user = await User.findOne({ where: { email: emailProof } });
+      expect(user?.emailVerified).toBe(true);
+
+      process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'true';
+    });
+
+    it('registro con invitationId pero sin token ni invitationProof devuelve 400', async () => {
+      process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'false';
+
+      const res = await request(app)
+        .post(`${API}/auth/register`)
+        .send({
+          email: `noproof-${Date.now()}@example.com`,
+          password: 'password123',
+          name: 'No Proof',
+          invitationId: '550e8400-e29b-41d4-a716-446655440000',
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
 
       process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'true';
     });

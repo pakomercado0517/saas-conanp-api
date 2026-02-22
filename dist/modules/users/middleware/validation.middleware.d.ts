@@ -62,4 +62,6 @@ export declare const validateListMemberships: (req: Request, res: Response, next
 export declare const validateCreateInvitation: (req: Request, res: Response, next: NextFunction) => void;
 export declare const validateListInvitations: (req: Request, res: Response, next: NextFunction) => void;
 export declare const validateInvitationToken: (req: Request, res: Response, next: NextFunction) => void;
+export declare const validateStartVerifyEmail: (req: Request, res: Response, next: NextFunction) => void;
+export declare const validateConfirmVerifyEmail: (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=validation.middleware.d.ts.map

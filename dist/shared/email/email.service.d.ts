@@ -49,4 +49,15 @@ export interface SendInvitationEmailParams {
  * Envía email de invitación a organización con enlace y token manual de fallback.
  */
 export declare const sendInvitationEmail: (params: SendInvitationEmailParams) => Promise<string>;
+/** OTP expiration for invitation email proof (minutes) */
+declare const INVITATION_OTP_EXPIRES_MINUTES = 10;
+/**
+ * Envía email con código OTP para verificar email en flujo de invitación por código manual.
+ */
+export declare const sendInvitationOtpEmail: (params: {
+    to: string;
+    organizationName: string;
+    otp: string;
+}) => Promise<string>;
+export { INVITATION_OTP_EXPIRES_MINUTES };
 //# sourceMappingURL=email.service.d.ts.map
