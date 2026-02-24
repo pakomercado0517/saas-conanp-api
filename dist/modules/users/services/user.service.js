@@ -1,9 +1,9 @@
 import bcrypt from 'bcrypt';
-import { User } from '../../../modules/users/models/user.model.js';
-import { Membership } from '../../../modules/users/models/membership.model.js';
-import { NotFoundError, ConflictError, UnauthorizedError, ValidationError, } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { revokeAllUserRefreshTokens } from '../../../modules/auth/services/auth.service.js';
+import { User } from '@/modules/users/models/user.model.js';
+import { Membership } from '@/modules/users/models/membership.model.js';
+import { NotFoundError, ConflictError, UnauthorizedError, ValidationError, } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
+import { revokeAllUserRefreshTokens } from '@/modules/auth/services/auth.service.js';
 /**
  * Configuración de bcrypt
  */

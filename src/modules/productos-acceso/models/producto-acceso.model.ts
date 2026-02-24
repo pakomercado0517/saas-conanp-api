@@ -2,11 +2,11 @@ import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
 import type { ProductoAccesoTipo } from '@/shared/database/types';
-import { Organization } from '@/modules/organizations/models/organization.model';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
 
 export interface ProductoAccesoAttributes {
   id: UUID;
-  organizationId: UUID;
+  dependenciaId: UUID;
   name: string;
   tipo: ProductoAccesoTipo;
   vigenciaDias: number;
@@ -27,7 +27,7 @@ export class ProductoAcceso
   implements ProductoAccesoAttributes
 {
   declare id: UUID;
-  declare organizationId: UUID;
+  declare dependenciaId: UUID;
   declare name: string;
   declare tipo: ProductoAccesoTipo;
   declare vigenciaDias: number;
@@ -37,7 +37,7 @@ export class ProductoAcceso
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
 
-  declare Organization?: Organization;
+  declare Dependencia?: Dependencia;
 }
 
 ProductoAcceso.init(
@@ -48,16 +48,16 @@ ProductoAcceso.init(
       primaryKey: true,
       allowNull: false,
     },
-    organizationId: {
+    dependenciaId: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'organizations',
+        model: 'dependencias',
         key: 'id',
       },
       validate: {
         notEmpty: {
-          msg: 'El ID de organización es requerido',
+          msg: 'El ID de dependencia es requerido',
         },
       },
     },
@@ -122,12 +122,12 @@ ProductoAcceso.init(
     paranoid: true,
     underscored: false,
     indexes: [
-      { name: 'idx_productos_acceso_organization', fields: ['organizationId'] },
+      { name: 'idx_productos_acceso_dependencia', fields: ['dependenciaId'] },
       { name: 'idx_productos_acceso_tipo', fields: ['tipo'] },
       { name: 'idx_productos_acceso_active', fields: ['active'] },
     ],
   }
 );
 
-ProductoAcceso.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
-Organization.hasMany(ProductoAcceso, { foreignKey: 'organizationId', as: 'ProductosAcceso' });
+ProductoAcceso.belongsTo(Dependencia, { foreignKey: 'dependenciaId', as: 'Dependencia' });
+Dependencia.hasMany(ProductoAcceso, { foreignKey: 'dependenciaId', as: 'ProductosAcceso' });

@@ -1,10 +1,10 @@
 import { Op } from 'sequelize';
-import { EvidenciaAmbiental } from '../../../modules/evidencias/models/evidencia-ambiental.model.js';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { uploadFile, deleteFile, getSignedUrl, generateFileKey } from '../../../shared/storage/index.js';
+import { EvidenciaAmbiental } from '@/modules/evidencias/models/evidencia-ambiental.model.js';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { uploadFile, deleteFile, getSignedUrl, generateFileKey } from '@/shared/storage/index.js';
 import { URL } from 'url';
 /**
  * Constantes de validación de archivos

@@ -1,12 +1,12 @@
 import { Op } from 'sequelize';
-import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model';
-import { Subscription } from '../../../modules/subscriptions/models/subscription.model';
-import { stripeClient, handleStripeError, getDefaultCurrency } from '../../../shared/stripe';
-import { ConflictError, NotFoundError, ValidationError } from '../../../shared/errors';
-import { logger } from '../../../shared/logger';
-import { cache } from '../../../shared/cache';
-import { CacheKeys } from '../../../shared/cache/keys';
-import { cacheConfig } from '../../../shared/cache/config';
+import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model';
+import { Subscription } from '@/modules/subscriptions/models/subscription.model';
+import { stripeClient, handleStripeError, getDefaultCurrency } from '@/shared/stripe';
+import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors';
+import { logger } from '@/shared/logger';
+import { cache } from '@/shared/cache';
+import { CacheKeys } from '@/shared/cache/keys';
+import { cacheConfig } from '@/shared/cache/config';
 /**
  * Invalida el caché de planes de suscripción.
  * Se llama después de CREATE/UPDATE/DELETE de planes.

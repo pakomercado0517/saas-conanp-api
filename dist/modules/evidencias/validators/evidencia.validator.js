@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { URL } from 'url';
-import { registry } from '../../../shared/swagger/index.js';
+import { registry } from '@/shared/swagger/index.js';
 /**
  * Schema Zod para validar URL con protocolos http/https
  */

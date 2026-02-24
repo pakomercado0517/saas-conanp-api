@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../../../shared/database';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { User } from './user.model';
+import { sequelize } from '@/shared/database';
+import { Area } from '@/modules/areas/models/area.model.js';
+import { User } from './user.model.js';
 export class Invitation extends Model {
 }
 Invitation.init({
@@ -11,15 +11,15 @@ Invitation.init({
         primaryKey: true,
         allowNull: false,
     },
-    organizationId: {
+    areaId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'organizations',
+            model: 'areas',
             key: 'id',
         },
         validate: {
-            notEmpty: { msg: 'El ID de organización es requerido' },
+            notEmpty: { msg: 'El ID de área es requerido' },
         },
     },
     email: {
@@ -107,16 +107,16 @@ Invitation.init({
             fields: ['tokenHash'],
         },
         {
-            name: 'idx_invitations_org_email_status',
-            fields: ['organizationId', 'email', 'status'],
+            name: 'idx_invitations_area_email_status',
+            fields: ['areaId', 'email', 'status'],
         },
         {
             name: 'idx_invitations_expires_at',
             fields: ['expiresAt'],
         },
         {
-            name: 'idx_invitations_organization',
-            fields: ['organizationId'],
+            name: 'idx_invitations_area',
+            fields: ['areaId'],
         },
         {
             name: 'idx_invitations_email',
@@ -124,8 +124,8 @@ Invitation.init({
         },
     ],
 });
-Invitation.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+Invitation.belongsTo(Area, { foreignKey: 'areaId', as: 'Area' });
 Invitation.belongsTo(User, { foreignKey: 'invitedBy', as: 'InvitedByUser' });
-Organization.hasMany(Invitation, { foreignKey: 'organizationId', as: 'Invitations' });
+Area.hasMany(Invitation, { foreignKey: 'areaId', as: 'Invitations' });
 User.hasMany(Invitation, { foreignKey: 'invitedBy', as: 'InvitationsSent' });
 //# sourceMappingURL=invitation.model.js.map

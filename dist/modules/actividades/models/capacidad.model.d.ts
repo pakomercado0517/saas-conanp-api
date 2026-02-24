@@ -1,10 +1,10 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '../../../shared/database/types.js';
-import { Organization } from '../../../modules/organizations/models/organization.model.js';
+import type { UUID } from '@/shared/database/types.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import { Actividad } from './actividad.model.js';
 export interface CapacidadAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     actividadId: UUID;
     date: string;
     limit: number;
@@ -15,13 +15,13 @@ export interface CapacidadCreationAttributes extends Optional<CapacidadAttribute
 }
 export declare class Capacidad extends Model<CapacidadAttributes, CapacidadCreationAttributes> implements CapacidadAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     actividadId: UUID;
     date: string;
     limit: number;
     readonly createdAt: Date;
     readonly updatedAt: Date;
-    Organization?: Organization;
+    Area?: Area;
     Actividad?: Actividad;
 }
 //# sourceMappingURL=capacidad.model.d.ts.map

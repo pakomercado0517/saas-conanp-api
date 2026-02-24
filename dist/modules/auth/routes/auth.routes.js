@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { register, login, refresh, logout, me, verifyEmail, resendVerification, forgotPassword, resetPassword, } from '../controllers/auth.controller.js';
 import { validateRegister, validateLogin, validateRefreshToken, validateResendVerification, validateForgotPassword, validateResetPassword, } from '../middleware/validation.middleware.js';
-import { authenticate, authLimiter, forgotPasswordLimiter, resendVerificationLimiter, } from '../../../shared/middleware/index.js';
+import { authenticate, authLimiter, forgotPasswordLimiter, resendVerificationLimiter, } from '@/shared/middleware/index.js';
 /**
  * Router de autenticación
  *

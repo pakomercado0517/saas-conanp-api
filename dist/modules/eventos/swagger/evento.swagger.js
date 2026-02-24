@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
 import { CreateEventoSchema, UpdateEventoSchema, ListEventosSchema, } from '../validators/evento.validator.js';
 /**
  * Schema para respuesta de evento operativo

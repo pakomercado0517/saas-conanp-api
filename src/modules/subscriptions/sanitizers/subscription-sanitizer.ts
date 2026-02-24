@@ -26,10 +26,10 @@ export const sanitizeSubscriptionForResponse = <T extends Record<string, unknown
     sanitized['metadata'] = null;
   }
 
-  // Sanitizar objetos anidados (Organization, SubscriptionPlan)
-  if (sanitized['Organization'] != null && typeof sanitized['Organization'] === 'object') {
-    sanitized['Organization'] = stripSensitiveKeys(
-      sanitized['Organization'] as Record<string, unknown>
+  // Sanitizar objetos anidados (Dependencia, SubscriptionPlan)
+  if (sanitized['Dependencia'] != null && typeof sanitized['Dependencia'] === 'object') {
+    sanitized['Dependencia'] = stripSensitiveKeys(
+      sanitized['Dependencia'] as Record<string, unknown>
     );
   }
   if (sanitized['SubscriptionPlan'] != null && typeof sanitized['SubscriptionPlan'] === 'object') {

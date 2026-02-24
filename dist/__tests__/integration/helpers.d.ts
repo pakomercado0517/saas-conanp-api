@@ -1,6 +1,6 @@
 import type { Application } from 'express';
 import request from 'supertest';
-import type { UUID } from '../../shared/database/types.js';
+import type { UUID } from '@/shared/database/types.js';
 export interface AuthResult {
     user: {
         id: string;

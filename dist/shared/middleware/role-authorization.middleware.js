@@ -1,5 +1,5 @@
-import { UnauthorizedError, ForbiddenError, BadRequestError } from '../../shared/errors/index.js';
-import { Membership } from '../../modules/users/models/membership.model.js';
+import { UnauthorizedError, ForbiddenError, BadRequestError } from '@/shared/errors/index.js';
+import { Membership } from '@/modules/users/models/membership.model.js';
 /**
  * Middleware genérico para validar que el usuario tenga uno de los roles especificados
  * en la organización del contexto.
@@ -17,7 +17,7 @@ import { Membership } from '../../modules/users/models/membership.model.js';
  *
  * @example
  * ```typescript
- * import { requireRole } from '../../shared/middleware';
+ * import { requireRole } from '@/shared/middleware';
  *
  * // Solo admins y gestores pueden acceder
  * router.post('/endpoint', authenticate, requireOrganizationAccess, requireRole(['admin', 'gestor']), controller);
@@ -70,7 +70,7 @@ export const requireRole = (allowedRoles) => async (req, _res, next) => {
  *
  * @example
  * ```typescript
- * import { requireAdmin } from '../../shared/middleware';
+ * import { requireAdmin } from '@/shared/middleware';
  *
  * // Solo admins pueden acceder
  * router.post('/endpoint', authenticate, requireOrganizationAccess, requireAdmin, controller);

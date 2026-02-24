@@ -1,11 +1,11 @@
 import { Op } from 'sequelize';
-import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
-import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
-import { toDateOnlyDB, toTimeOnly, parseTimeOnly, parseDateOnly, doTimeRangesOverlap, DateTime, } from '../../../shared/dates/index.js';
+import { Bloque } from '@/modules/actividades/models/bloque.model.js';
+import { Actividad } from '@/modules/actividades/models/actividad.model.js';
+import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
+import { toDateOnlyDB, toTimeOnly, parseTimeOnly, parseDateOnly, doTimeRangesOverlap, DateTime, } from '@/shared/dates/index.js';
 /**
  * Valida que una actividad tenga tipo de agenda BLOQUES
  *

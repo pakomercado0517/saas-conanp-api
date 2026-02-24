@@ -1,10 +1,10 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '../../../shared/database/types';
-import type { ProductoAccesoTipo } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
+import type { UUID } from '@/shared/database/types';
+import type { ProductoAccesoTipo } from '@/shared/database/types';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
 export interface ProductoAccesoAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     name: string;
     tipo: ProductoAccesoTipo;
     vigenciaDias: number;
@@ -18,7 +18,7 @@ export interface ProductoAccesoCreationAttributes extends Optional<ProductoAcces
 }
 export declare class ProductoAcceso extends Model<ProductoAccesoAttributes, ProductoAccesoCreationAttributes> implements ProductoAccesoAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     name: string;
     tipo: ProductoAccesoTipo;
     vigenciaDias: number;
@@ -27,6 +27,6 @@ export declare class ProductoAcceso extends Model<ProductoAccesoAttributes, Prod
     readonly createdAt: Date;
     readonly updatedAt: Date;
     deletedAt: Date | null;
-    Organization?: Organization;
+    Dependencia?: Dependencia;
 }
 //# sourceMappingURL=producto-acceso.model.d.ts.map

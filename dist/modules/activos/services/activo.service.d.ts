@@ -1,7 +1,7 @@
-import type { UUID } from '../../../shared/database/types.js';
-import { Activo } from '../../../modules/activos/models/activo.model.js';
-import type { CreateActivoDTO, UpdateActivoDTO, ListActivosDTO } from '../../../modules/activos/validators/activo.validator.js';
-import type { PaginationMeta } from '../../../shared/responses/types.js';
+import type { UUID } from '@/shared/database/types.js';
+import { Activo } from '@/modules/activos/models/activo.model.js';
+import type { CreateActivoDTO, UpdateActivoDTO, ListActivosDTO } from '@/modules/activos/validators/activo.validator.js';
+import type { PaginationMeta } from '@/shared/responses/types.js';
 /**
  * Tipo para estados de activo
  */
@@ -30,7 +30,7 @@ export declare const validateEstadoTransition: (currentStatus: ActivoStatus, new
  * @throws {NotFoundError} Si el activo no existe o no pertenece a la organización
  * @throws {ValidationError} Si el activo no está aprobado
  */
-export declare const validateActivoAprobado: (activoId: UUID, organizationId: UUID) => Promise<Activo>;
+export declare const validateActivoAprobado: (activoId: UUID, areaId: UUID) => Promise<Activo>;
 /**
  * Crea un nuevo activo.
  *

@@ -1,5 +1,5 @@
 import * as subscriptionPlanService from '../services/subscription-plan.service.js';
-import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '@/shared/responses/helpers.js';
 /**
  * Crea un plan de suscripción.
  * Solo super administradores.

@@ -1,5 +1,5 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '../../../shared/database/types';
+import type { UUID } from '@/shared/database/types';
 import { Invitation } from './invitation.model';
 export interface InvitationEmailProofAttributes {
     id: UUID;

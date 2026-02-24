@@ -1,9 +1,9 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, ActividadType, AgendaType } from '../../../shared/database/types.js';
-import { Organization } from '../../../modules/organizations/models/organization.model.js';
+import type { UUID, ActividadType, AgendaType } from '@/shared/database/types.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 export interface ActividadAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     name: string;
     type: ActividadType;
     agendaType: AgendaType;
@@ -18,7 +18,7 @@ export interface ActividadCreationAttributes extends Optional<ActividadAttribute
 }
 export declare class Actividad extends Model<ActividadAttributes, ActividadCreationAttributes> implements ActividadAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     name: string;
     type: ActividadType;
     agendaType: AgendaType;
@@ -28,6 +28,6 @@ export declare class Actividad extends Model<ActividadAttributes, ActividadCreat
     readonly createdAt: Date;
     readonly updatedAt: Date;
     deletedAt: Date | null;
-    Organization?: Organization;
+    Area?: Area;
 }
 //# sourceMappingURL=actividad.model.d.ts.map

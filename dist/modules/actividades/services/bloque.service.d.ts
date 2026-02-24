@@ -1,7 +1,7 @@
-import type { UUID } from '../../../shared/database/types.js';
-import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
-import type { CreateBloqueDTO, CreateBloqueFromTemplateDTO, UpdateBloqueDTO, ListBloquesDTO } from '../../../modules/actividades/validators/bloque.validator.js';
-import type { PaginationMeta } from '../../../shared/responses/types.js';
+import type { UUID } from '@/shared/database/types.js';
+import { Bloque } from '@/modules/actividades/models/bloque.model.js';
+import type { CreateBloqueDTO, CreateBloqueFromTemplateDTO, UpdateBloqueDTO, ListBloquesDTO } from '@/modules/actividades/validators/bloque.validator.js';
+import type { PaginationMeta } from '@/shared/responses/types.js';
 /**
  * Obtiene todas las plantillas de bloques para una actividad
  *

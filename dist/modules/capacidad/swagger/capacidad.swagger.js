@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
 import { CreateCapacidadSchema, VerificarDisponibilidadSchema, } from '../validators/capacidad.validator.js';
 /**
  * Schema de capacidad en respuestas

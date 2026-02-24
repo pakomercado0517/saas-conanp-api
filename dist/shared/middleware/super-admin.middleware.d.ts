@@ -9,7 +9,7 @@ import type { Request, Response, NextFunction } from 'express';
  *
  * @example
  * ```typescript
- * import { requireSuperAdmin } from '../../shared/middleware';
+ * import { requireSuperAdmin } from '@/shared/middleware';
  *
  * router.post('/admin-only', authenticate, requireSuperAdmin, controller);
  * ```

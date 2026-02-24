@@ -1,7 +1,7 @@
-import type { UUID } from '../../../shared/database/types.js';
-import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
-import type { CreateProductoAccesoDTO, UpdateProductoAccesoDTO, ListProductosAccesoDTO } from '../../../modules/productos-acceso/validators/producto-acceso.validator.js';
-import type { PaginationMeta } from '../../../shared/responses/types.js';
+import type { UUID } from '@/shared/database/types.js';
+import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
+import type { CreateProductoAccesoDTO, UpdateProductoAccesoDTO, ListProductosAccesoDTO } from '@/modules/productos-acceso/validators/producto-acceso.validator.js';
+import type { PaginationMeta } from '@/shared/responses/types.js';
 /**
  * Crea un nuevo producto de acceso y su registro de stock inicial (cantidad 0).
  * Solo los administradores pueden crear productos.

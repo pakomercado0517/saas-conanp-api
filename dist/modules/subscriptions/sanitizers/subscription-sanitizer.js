@@ -1,4 +1,4 @@
-import { stripSensitiveKeys } from '../../../shared/sanitizers/stripe-sanitizer.js';
+import { stripSensitiveKeys } from '@/shared/sanitizers/stripe-sanitizer.js';
 /**
  * Sanitiza una suscripción para enviarla en respuestas de API.
  * - Elimina metadata (puede contener datos internos de Stripe).

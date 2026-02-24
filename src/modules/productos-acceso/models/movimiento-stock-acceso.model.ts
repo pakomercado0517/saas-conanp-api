@@ -2,15 +2,15 @@ import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
 import type { MovimientoStockTipo, MovimientoStockMotivo } from '@/shared/database/types';
-import { Organization } from '@/modules/organizations/models/organization.model';
-import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model';
-import { User } from '@/modules/users/models/user.model';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { User } from '@/modules/users/models/user.model.js';
 
 export interface MovimientoStockAccesoAttributes {
   id: UUID;
-  organizationId: UUID;
+  dependenciaId: UUID;
   productoAccesoId: UUID;
   tipo: MovimientoStockTipo;
   cantidad: number;
@@ -45,7 +45,7 @@ export class MovimientoStockAcceso
   implements MovimientoStockAccesoAttributes
 {
   declare id: UUID;
-  declare organizationId: UUID;
+  declare dependenciaId: UUID;
   declare productoAccesoId: UUID;
   declare tipo: MovimientoStockTipo;
   declare cantidad: number;
@@ -61,7 +61,7 @@ export class MovimientoStockAcceso
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 
-  declare Organization?: Organization;
+  declare Dependencia?: Dependencia;
   declare ProductoAcceso?: ProductoAcceso;
   declare PrestadorProfile?: PrestadorProfile | null;
   declare EventoOperativo?: EventoOperativo | null;
@@ -76,15 +76,15 @@ MovimientoStockAcceso.init(
       primaryKey: true,
       allowNull: false,
     },
-    organizationId: {
+    dependenciaId: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'organizations',
+        model: 'dependencias',
         key: 'id',
       },
       validate: {
-        notEmpty: { msg: 'El ID de organización es requerido' },
+        notEmpty: { msg: 'El ID de dependencia es requerido' },
       },
     },
     productoAccesoId: {
@@ -195,7 +195,7 @@ MovimientoStockAcceso.init(
     paranoid: false,
     underscored: false,
     indexes: [
-      { name: 'idx_movimientos_stock_acceso_organization', fields: ['organizationId'] },
+      { name: 'idx_movimientos_stock_acceso_dependencia', fields: ['dependenciaId'] },
       { name: 'idx_movimientos_stock_acceso_producto', fields: ['productoAccesoId'] },
       { name: 'idx_movimientos_stock_acceso_fecha', fields: ['fecha'] },
       { name: 'idx_movimientos_stock_acceso_tipo', fields: ['tipo'] },
@@ -205,9 +205,9 @@ MovimientoStockAcceso.init(
   }
 );
 
-MovimientoStockAcceso.belongsTo(Organization, {
-  foreignKey: 'organizationId',
-  as: 'Organization',
+MovimientoStockAcceso.belongsTo(Dependencia, {
+  foreignKey: 'dependenciaId',
+  as: 'Dependencia',
 });
 MovimientoStockAcceso.belongsTo(ProductoAcceso, {
   foreignKey: 'productoAccesoId',
@@ -226,8 +226,8 @@ MovimientoStockAcceso.belongsTo(User, {
   as: 'CreatedByUser',
 });
 
-Organization.hasMany(MovimientoStockAcceso, {
-  foreignKey: 'organizationId',
+Dependencia.hasMany(MovimientoStockAcceso, {
+  foreignKey: 'dependenciaId',
   as: 'MovimientosStockAcceso',
 });
 ProductoAcceso.hasMany(MovimientoStockAcceso, {

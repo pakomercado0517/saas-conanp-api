@@ -1,7 +1,7 @@
 import type { UUID, Role } from '@/shared/database/types.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
 import { User } from '@/modules/users/models/user.model.js';
-import { Organization } from '@/modules/organizations/models/organization.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import type {
   CreateMembershipDTO,
   UpdateMembershipDTO,
@@ -23,28 +23,28 @@ import { checkUsersLimit } from '@/modules/subscriptions/services/subscription-l
  * Verifica membresía activa con rol 'admin'.
  *
  * @param userId - ID del usuario a validar
- * @param organizationId - ID de la organización
+ * @param areaId - ID del área
  * @throws {ForbiddenError} Si no tiene acceso a la organización o no es admin
  */
-export const assertIsAdmin = async (userId: UUID, organizationId: UUID): Promise<void> => {
+export const assertIsAdmin = async (userId: UUID, areaId: UUID): Promise<void> => {
   const membership = await Membership.findOne({
     where: {
       userId,
-      organizationId,
+      areaId,
       status: 'activo',
     },
   });
 
   if (!membership) {
-    throw new ForbiddenError('No tienes acceso a esta organización', {
-      organizationId,
+    throw new ForbiddenError('No tienes acceso a esta área', {
+      areaId,
       userId,
     });
   }
 
   if (membership.role !== 'admin') {
     throw new ForbiddenError('Solo los administradores pueden gestionar memberships', {
-      organizationId,
+      areaId,
       userId,
       currentRole: membership.role,
     });
@@ -55,7 +55,7 @@ export const assertIsAdmin = async (userId: UUID, organizationId: UUID): Promise
  * Invita un usuario a una organización creando una nueva membership.
  * Solo los administradores pueden invitar usuarios.
  *
- * @param organizationId - ID de la organización
+ * @param areaId - ID del área
  * @param data - Datos de la membership (userId, role, status opcional)
  * @param inviterUserId - ID del usuario que invita (debe ser admin)
  * @returns Membership creada con relaciones User y Organization
@@ -65,16 +65,13 @@ export const assertIsAdmin = async (userId: UUID, organizationId: UUID): Promise
  * @throws {ValidationError} Si el usuario está eliminado (soft delete)
  */
 export const inviteUserToOrganization = async (
-  organizationId: UUID,
+  areaId: UUID,
   data: CreateMembershipDTO,
   inviterUserId: UUID
 ): Promise<Membership> => {
-  // Nota: La validación de rol admin se hace en el middleware requireAdmin
-
-  // Validar que la organización existe
-  const organization = await Organization.findByPk(organizationId);
-  if (!organization) {
-    throw new NotFoundError('Organización', { organizationId });
+  const area = await Area.findByPk(areaId);
+  if (!area) {
+    throw new NotFoundError('Área', { areaId });
   }
 
   // Validar que el usuario a invitar existe y no está eliminado
@@ -90,69 +87,61 @@ export const inviteUserToOrganization = async (
     });
   }
 
-  // Validar que no existe ya una membership para ese usuario en esa organización
   const existingMembership = await Membership.findOne({
-    where: {
-      userId: data.userId,
-      organizationId,
-    },
+    where: { userId: data.userId, areaId },
   });
 
   if (existingMembership) {
-    throw new ConflictError('El usuario ya tiene una membresía en esta organización', {
+    throw new ConflictError('El usuario ya tiene una membresía en esta área', {
       userId: data.userId,
-      organizationId,
+      areaId,
       existingMembershipId: existingMembership.id,
       existingRole: existingMembership.role,
       existingStatus: existingMembership.status,
     });
   }
 
-  // Validar límite de usuarios del plan de suscripción
-  await checkUsersLimit(organizationId);
+  await checkUsersLimit(areaId);
 
-  // Crear la membership
   let membership: Membership;
   try {
     membership = await Membership.create({
       userId: data.userId,
-      organizationId,
+      areaId,
       role: data.role,
       status: data.status ?? 'activo',
     });
   } catch (error) {
-    // Capturar error de constraint único (índice único en userId + organizationId)
     if (
       error instanceof Error &&
       'name' in error &&
       error.name === 'SequelizeUniqueConstraintError'
     ) {
-      throw new ConflictError('El usuario ya tiene una membresía en esta organización', {
+      throw new ConflictError('El usuario ya tiene una membresía en esta área', {
         userId: data.userId,
-        organizationId,
+        areaId,
       });
     }
     throw error;
   }
 
-  // Cargar relaciones para retornar datos completos
   await membership.reload({
     include: [
       { model: User, as: 'User' },
-      { model: Organization, as: 'Organization' },
+      { model: Area, as: 'Area' },
     ],
   });
 
   logger.info(
     {
       membershipId: membership.id,
-      organizationId,
+      areaId,
       userId: data.userId,
       role: data.role,
       status: membership.status,
       inviterUserId,
     },
-    'Usuario invitado a organización exitosamente'
+    'Usuario invitado a área exitosamente'
   );
 
   return membership;
@@ -163,7 +152,7 @@ export const inviteUserToOrganization = async (
  * Solo los administradores pueden actualizar memberships.
  *
  * @param membershipId - ID de la membership a actualizar
- * @param organizationId - ID de la organización
+ * @param areaId - ID del área
  * @param data - Datos a actualizar (role y/o status opcionales)
  * @param updaterUserId - ID del usuario que actualiza (debe ser admin)
  * @returns Membership actualizada con relaciones User y Organization
@@ -172,22 +161,16 @@ export const inviteUserToOrganization = async (
  */
 export const updateMembershipRole = async (
   membershipId: UUID,
-  organizationId: UUID,
+  areaId: UUID,
   data: UpdateMembershipDTO,
   updaterUserId: UUID
 ): Promise<Membership> => {
-  // Nota: La validación de rol admin se hace en el middleware requireAdmin
-
-  // Buscar la membership por ID y organizationId
   const membership = await Membership.findOne({
-    where: {
-      id: membershipId,
-      organizationId,
-    },
+    where: { id: membershipId, areaId },
   });
 
   if (!membership) {
-    throw new NotFoundError('Membership', { membershipId, organizationId });
+    throw new NotFoundError('Membership', { membershipId, areaId });
   }
 
   // Actualizar solo los campos proporcionados
@@ -205,7 +188,7 @@ export const updateMembershipRole = async (
   await membership.reload({
     include: [
       { model: User, as: 'User' },
-      { model: Organization, as: 'Organization' },
+      { model: Area, as: 'Area' },
     ],
   });
 
@@ -217,7 +200,7 @@ export const updateMembershipRole = async (
   logger.info(
     {
       membershipId: membership.id,
-      organizationId,
+      areaId,
       userId: membership.userId,
       updatedFields: updatedKeys,
       updaterUserId,
@@ -230,71 +213,45 @@ export const updateMembershipRole = async (
 
 /**
  * Elimina una membership.
- * Solo los administradores pueden eliminar memberships.
- *
- * @param membershipId - ID de la membership a eliminar
- * @param organizationId - ID de la organización
- * @param deleterUserId - ID del usuario que elimina (debe ser admin)
- * @throws {ForbiddenError} Si el deleter no es admin
- * @throws {NotFoundError} Si la membership no existe
  */
 export const deleteMembership = async (
   membershipId: UUID,
-  organizationId: UUID,
+  areaId: UUID,
   deleterUserId: UUID
 ): Promise<void> => {
-  // Nota: La validación de rol admin se hace en el middleware requireAdmin
-
-  // Buscar la membership por ID y organizationId
   const membership = await Membership.findOne({
-    where: {
-      id: membershipId,
-      organizationId,
-    },
+    where: { id: membershipId, areaId },
   });
 
   if (!membership) {
-    throw new NotFoundError('Membership', { membershipId, organizationId });
+    throw new NotFoundError('Membership', { membershipId, areaId });
   }
 
-  // Guardar información para logging antes de eliminar
   const userId = membership.userId;
-
-  // Eliminar la membership (hard delete, no hay soft delete en el modelo)
   await membership.destroy();
 
-  logger.info(
-    {
-      membershipId,
-      organizationId,
-      userId,
-      deleterUserId,
-    },
-    'Membership eliminada exitosamente'
-  );
+  logger.info({ membershipId, areaId, userId, deleterUserId }, 'Membership eliminada exitosamente');
 };
 
 /**
  * Lista las memberships de una organización con paginación y filtros.
  * El usuario debe tener acceso a la organización (membership activa).
  *
- * @param organizationId - ID de la organización
+ * @param areaId - ID del área
  * @param filters - Filtros de paginación, ordenamiento y filtros (role, status)
  * @param userId - ID del usuario que solicita (debe tener acceso a la organización)
  * @returns Datos paginados de memberships con relaciones User y Organization
  * @throws {ForbiddenError} Si el usuario no tiene acceso a la organización
  */
 export const listMemberships = async (
-  organizationId: UUID,
+  areaId: UUID,
   filters: ListMembershipsDTO,
   userId: UUID
 ): Promise<{ data: Membership[]; pagination: PaginationMeta }> => {
-  // Validar que el usuario tiene acceso a la organización
-  await assertCanAccessOrganization(userId, organizationId);
+  await assertCanAccessOrganization(userId, areaId);
 
-  // Construir query con filtros
   const where: Record<string, unknown> = {
-    organizationId, // Multi-tenant obligatorio
+    areaId,
   };
 
   // Aplicar filtros opcionales
@@ -319,7 +276,7 @@ export const listMemberships = async (
     order: [[sortBy, sortOrder]],
     include: [
       { model: User, as: 'User' },
-      { model: Organization, as: 'Organization' },
+      { model: Area, as: 'Area' },
     ],
   });
 

@@ -1,12 +1,12 @@
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import { DateTime } from 'luxon';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { Invitation } from '../../../modules/users/models/invitation.model';
-import { InvitationEmailProof } from '../../../modules/users/models/invitation-email-proof.model';
-import { sendInvitationOtpEmail, INVITATION_OTP_EXPIRES_MINUTES, } from '../../../shared/email/email.service';
-import { ForbiddenError, NotFoundError, ValidationError } from '../../../shared/errors';
-import { logger } from '../../../shared/logger';
+import { Area } from '@/modules/areas/models/area.model.js';
+import { Invitation } from '@/modules/users/models/invitation.model.js';
+import { InvitationEmailProof } from '@/modules/users/models/invitation-email-proof.model';
+import { sendInvitationOtpEmail, INVITATION_OTP_EXPIRES_MINUTES, } from '@/shared/email/email.service';
+import { ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
+import { logger } from '@/shared/logger';
 const BCRYPT_ROUNDS = 10;
 const OTP_LENGTH = 6;
 const PROOF_EXPIRES_MINUTES = 5;
@@ -34,7 +34,7 @@ const generateProofToken = async () => {
  */
 const assertInvitationValidForEmailProof = async (invitationId, email) => {
     const invitation = await Invitation.findByPk(invitationId, {
-        include: [{ model: Organization, as: 'Organization', attributes: ['id', 'name'] }],
+        include: [{ model: Area, as: 'Area', attributes: ['id', 'name'] }],
     });
     if (!invitation) {
         throw new NotFoundError('Invitación', { invitationId });
@@ -84,8 +84,7 @@ export const startVerifyEmail = async (invitationId, email) => {
         maxAttempts: MAX_ATTEMPTS,
         otpExpiresAt,
     });
-    const organizationName = invitation.Organization?.name ??
-        'la organización';
+    const organizationName = invitation.Area?.name ?? 'el área';
     await sendInvitationOtpEmail({
         to: emailNormalized,
         organizationName,
@@ -171,7 +170,7 @@ export const consumeProofForRegistration = async (invitationId, email, invitatio
     await proofRecord.update({ usedAt: new Date() });
     const invitation = proofRecord.Invitation;
     return {
-        organizationId: invitation.organizationId,
+        organizationId: invitation.areaId,
         role: invitation.role,
     };
 };

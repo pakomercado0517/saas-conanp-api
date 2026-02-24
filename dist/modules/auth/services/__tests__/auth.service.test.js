@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ConflictError, UnauthorizedError, BadRequestError } from '../../../../shared/errors/index.js';
+import { ConflictError, UnauthorizedError, BadRequestError } from '@/shared/errors/index.js';
 import jwt from 'jsonwebtoken';
 import * as authService from '../auth.service.js';
 const USER_ID = '11111111-1111-1111-1111-111111111111';

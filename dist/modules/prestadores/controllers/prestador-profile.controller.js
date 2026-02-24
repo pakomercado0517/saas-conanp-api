@@ -1,5 +1,5 @@
 import * as prestadorProfileService from '../services/prestador-profile.service.js';
-import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated } from '@/shared/responses/helpers.js';
 /**
  * Crea un nuevo perfil de prestador.
  * Solo los administradores pueden crear perfiles de prestador.

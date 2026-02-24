@@ -1,11 +1,11 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, Role } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { User } from './user.model';
+import type { UUID, Role } from '@/shared/database/types';
+import { Area } from '@/modules/areas/models/area.model.js';
+import { User } from './user.model.js';
 export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked';
 export interface InvitationAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     email: string;
     role: Role;
     tokenHash: string;
@@ -21,7 +21,7 @@ export interface InvitationCreationAttributes extends Optional<InvitationAttribu
 }
 export declare class Invitation extends Model<InvitationAttributes, InvitationCreationAttributes> implements InvitationAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     email: string;
     role: Role;
     tokenHash: string;
@@ -32,7 +32,7 @@ export declare class Invitation extends Model<InvitationAttributes, InvitationCr
     revokedAt: Date | null;
     readonly createdAt: Date;
     readonly updatedAt: Date;
-    Organization?: Organization;
+    Area?: Area;
     InvitedByUser?: User;
 }
 //# sourceMappingURL=invitation.model.d.ts.map

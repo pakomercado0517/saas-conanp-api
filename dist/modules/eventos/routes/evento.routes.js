@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { createEvento, getEventoById, listEventos, updateEvento, deleteEvento, } from '../controllers/evento.controller.js';
 import { validateCreateEvento, validateUpdateEvento, validateListEventos, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, attachSubscriptionLimits, } from '../../../shared/middleware/index.js';
-import evidenciaRouter from '../../../modules/evidencias/routes/evidencia.routes.js';
+import { authenticate, requireOrganizationAccess, attachSubscriptionLimits, } from '@/shared/middleware/index.js';
+import evidenciaRouter from '@/modules/evidencias/routes/evidencia.routes.js';
 /**
  * Router de eventos
  *

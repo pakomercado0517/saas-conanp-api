@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
 import { UpdateProfileSchema, ChangePasswordSchema } from '../validators/user.validator.js';
 /**
  * Schema de perfil de usuario en respuestas

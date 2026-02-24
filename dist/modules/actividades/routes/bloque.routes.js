@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createBloque, createBloqueFromTemplate, getBloqueById, listBloques, listBloquesByActividad, updateBloque, deleteBloque, } from '../controllers/bloque.controller.js';
 import { validateCreateBloque, validateCreateBloqueFromTemplate, validateUpdateBloque, validateListBloques, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, } from '@/shared/middleware/index.js';
 /**
  * Router de bloques (rutas generales)
  *

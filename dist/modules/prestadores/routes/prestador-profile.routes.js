@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createPrestadorProfile, getPrestadorProfileById, listPrestadores, updatePrestadorProfile, } from '../controllers/prestador-profile.controller.js';
 import { validateCreatePrestadorProfile, validateUpdatePrestadorProfile, validateListPrestadores, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, } from '@/shared/middleware/index.js';
 /**
  * Router de prestadores
  *

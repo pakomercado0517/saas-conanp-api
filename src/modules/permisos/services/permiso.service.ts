@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import type { UUID } from '@/shared/database/types.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import { Permiso } from '@/modules/permisos/models/permiso.model.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
 import { User } from '@/modules/users/models/user.model.js';
@@ -14,6 +15,13 @@ import type { PaginationMeta } from '@/shared/responses/types.js';
 import { logger } from '@/shared/logger/index.js';
 import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
 import { now, isWithinValidityRange, DateTime, fromJSDate } from '@/shared/dates/index.js';
+
+/** Resuelve areaId (organizationId en API) a dependenciaId. Prestadores son por dependencia, actividades por área. */
+const getDependenciaIdFromAreaId = async (areaId: UUID): Promise<UUID> => {
+  const area = await Area.findByPk(areaId);
+  if (!area) throw new NotFoundError('Área', { areaId });
+  return area.dependenciaId;
+};
 /**
  * Valida que las fechas de vigencia sean correctas.
  *
@@ -70,56 +78,47 @@ export const isPermisoVigente = (permiso: Permiso, date?: DateTime): boolean => 
 
 /**
  * Valida que un prestador tenga un permiso vigente para una actividad específica.
+ * Prestador por dependencia, actividad por área; el área debe ser de la misma dependencia.
  *
  * @param prestadorId - ID del prestador
  * @param actividadId - ID de la actividad
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param areaId - ID del área (organizationId en API)
  * @param date - Fecha a verificar (opcional, default: fecha actual)
  * @returns Permiso vigente o null si no existe
- * @throws {ValidationError} Si el prestador o actividad no pertenecen a la organización
+ * @throws {ValidationError} Si el prestador o actividad no pertenecen al contexto
  */
 export const validatePrestadorHasPermisoVigente = async (
   prestadorId: UUID,
   actividadId: UUID,
-  organizationId: UUID,
+  areaId: UUID,
   date?: DateTime
 ): Promise<Permiso | null> => {
-  // Verificar que el prestador existe y pertenece a la organización
+  const dependenciaId = await getDependenciaIdFromAreaId(areaId);
+
   const prestador = await PrestadorProfile.findOne({
-    where: {
-      id: prestadorId,
-      organizationId,
-    },
+    where: { id: prestadorId, dependenciaId },
   });
 
   if (!prestador) {
     throw new ValidationError(
-      'El prestador no existe o no pertenece a esta organización',
+      'El prestador no existe o no pertenece a esta dependencia',
       undefined,
       {
         prestadorId,
-        organizationId,
+        dependenciaId,
       }
     );
   }
 
-  // Verificar que la actividad existe y pertenece a la organización
   const actividad = await Actividad.findOne({
-    where: {
-      id: actividadId,
-      organizationId,
-    },
+    where: { id: actividadId, areaId },
   });
 
   if (!actividad) {
-    throw new ValidationError(
-      'La actividad no existe o no pertenece a esta organización',
-      undefined,
-      {
-        actividadId,
-        organizationId,
-      }
-    );
+    throw new ValidationError('La actividad no existe o no pertenece a esta área', undefined, {
+      actividadId,
+      areaId,
+    });
   }
 
   // Usar fecha actual si no se proporciona
@@ -164,50 +163,32 @@ export const createPermiso = async (
   organizationId: UUID,
   creatorUserId: UUID
 ): Promise<Permiso> => {
-  // Validar acceso a la organización
   await assertCanAccessOrganization(creatorUserId, organizationId);
+  const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
 
-  // Validar que el prestador existe y pertenece a la organización
   const prestador = await PrestadorProfile.findOne({
-    where: {
-      id: data.prestadorId,
-      organizationId,
-    },
+    where: { id: data.prestadorId, dependenciaId },
   });
 
   if (!prestador) {
     throw new NotFoundError('Prestador', {
       prestadorId: data.prestadorId,
-      organizationId,
+      dependenciaId,
     });
   }
 
-  // Validar que la actividad existe y pertenece a la organización
   const actividad = await Actividad.findOne({
-    where: {
-      id: data.actividadId,
-      organizationId,
-    },
+    where: { id: data.actividadId, areaId: organizationId },
   });
 
   if (!actividad) {
     throw new NotFoundError('Actividad', {
       actividadId: data.actividadId,
-      organizationId,
+      areaId: organizationId,
     });
   }
 
-  // Validar que el prestador y la actividad pertenecen a la misma organización
-  if (prestador.organizationId !== actividad.organizationId) {
-    throw new ValidationError(
-      'El prestador y la actividad deben pertenecer a la misma organización',
-      undefined,
-      {
-        prestadorOrganizationId: prestador.organizationId,
-        actividadOrganizationId: actividad.organizationId,
-      }
-    );
-  }
+  // Prestador (dependencia) y actividad (área) ya están en el mismo contexto: área pertenece a dependenciaId
 
   // Convertir fechas DateTime a Date para guardar en BD
   const validFromDate = data.validFrom.toJSDate();
@@ -280,22 +261,16 @@ export const getPermisoById = async (
   organizationId: UUID,
   requestingUserId: UUID
 ): Promise<Permiso> => {
-  // Validar acceso a la organización
   await assertCanAccessOrganization(requestingUserId, organizationId);
+  const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
 
-  // Buscar permiso con filtro multi-tenant
-  // Necesitamos verificar que el prestador o la actividad pertenezcan a la organización
   const permiso = await Permiso.findOne({
-    where: {
-      id: permisoId,
-    },
+    where: { id: permisoId },
     include: [
       {
         model: PrestadorProfile,
         as: 'PrestadorProfile',
-        where: {
-          organizationId,
-        },
+        where: { dependenciaId },
         required: true,
       },
       { model: Actividad, as: 'Actividad' },
@@ -306,8 +281,7 @@ export const getPermisoById = async (
     throw new NotFoundError('Permiso', { permisoId, organizationId });
   }
 
-  // Verificar que la actividad también pertenece a la organización
-  if (permiso.Actividad && permiso.Actividad.organizationId !== organizationId) {
+  if (permiso.Actividad && permiso.Actividad.areaId !== organizationId) {
     throw new NotFoundError('Permiso', { permisoId, organizationId });
   }
 
@@ -331,22 +305,17 @@ export const listPermisosByPrestador = async (
   filters: ListPermisosDTO,
   requestingUserId: UUID
 ): Promise<{ data: Permiso[]; pagination: PaginationMeta }> => {
-  // Validar acceso a la organización
   await assertCanAccessOrganization(requestingUserId, organizationId);
+  const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
 
-  // Validar que el prestador existe y pertenece a la organización
   const prestador = await PrestadorProfile.findOne({
-    where: {
-      id: prestadorId,
-      organizationId,
-    },
+    where: { id: prestadorId, dependenciaId },
   });
 
   if (!prestador) {
     throw new NotFoundError('Prestador', { prestadorId, organizationId });
   }
 
-  // Construir query con filtros multi-tenant obligatorio
   const where: Record<string, unknown> = {
     prestadorId,
   };
@@ -398,7 +367,7 @@ export const listPermisosByPrestador = async (
       {
         model: PrestadorProfile,
         as: 'PrestadorProfile',
-        where: { organizationId },
+        where: { dependenciaId },
         required: true,
         attributes: ['id', 'userId'],
         include: [
@@ -412,7 +381,7 @@ export const listPermisosByPrestador = async (
       {
         model: Actividad,
         as: 'Actividad',
-        where: { organizationId },
+        where: { areaId: organizationId },
         required: true,
         attributes: ['id', 'name'],
       },
@@ -449,21 +418,16 @@ export const updatePermiso = async (
   data: UpdatePermisoDTO,
   requestingUserId: UUID
 ): Promise<Permiso> => {
-  // Validar acceso a la organización
   await assertCanAccessOrganization(requestingUserId, organizationId);
+  const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
 
-  // Buscar permiso con filtro multi-tenant
   const permiso = await Permiso.findOne({
-    where: {
-      id: permisoId,
-    },
+    where: { id: permisoId },
     include: [
       {
         model: PrestadorProfile,
         as: 'PrestadorProfile',
-        where: {
-          organizationId,
-        },
+        where: { dependenciaId },
         required: true,
       },
       { model: Actividad, as: 'Actividad' },
@@ -474,8 +438,7 @@ export const updatePermiso = async (
     throw new NotFoundError('Permiso', { permisoId, organizationId });
   }
 
-  // Verificar que la actividad también pertenece a la organización
-  if (permiso.Actividad && permiso.Actividad.organizationId !== organizationId) {
+  if (permiso.Actividad && permiso.Actividad.areaId !== organizationId) {
     throw new NotFoundError('Permiso', { permisoId, organizationId });
   }
 

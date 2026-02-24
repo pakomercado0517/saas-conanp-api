@@ -2,11 +2,15 @@ import { Op, type Transaction } from 'sequelize';
 import type { UUID, SubscriptionStatus, BillingCycle } from '@/shared/database/types.js';
 import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
 import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
-import { Organization } from '@/modules/organizations/models/organization.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
 import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
 import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import {
+  assertCanAccessOrganization,
+  assertCanAccessDependencia,
+} from '@/modules/organizations/services/organization.service.js';
 import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
 import {
   getPlanById,
@@ -36,10 +40,10 @@ const CANCELABLE_STATUSES: SubscriptionStatus[] = ['active', 'trialing', 'past_d
  * Invalida el caché de suscripción de una organización.
  * Se llama después de CREATE/UPDATE/DELETE de suscripciones.
  */
-const invalidateSubscriptionCache = async (organizationId: UUID): Promise<void> => {
-  const cacheKey = CacheKeys.activeSubscription(organizationId);
+const invalidateSubscriptionCache = async (dependenciaId: UUID): Promise<void> => {
+  const cacheKey = CacheKeys.activeSubscription(dependenciaId);
   await cache.del(cacheKey);
-  logger.debug({ organizationId, cacheKey }, 'Caché de suscripción invalidado');
+  logger.debug({ dependenciaId, cacheKey }, 'Caché de suscripción invalidado');
 };
 
 /**
@@ -49,18 +53,18 @@ const invalidateSubscriptionCache = async (organizationId: UUID): Promise<void> 
  * @param organizationId - ID de la organización
  * @throws {ConflictError} Si ya existe una suscripción activa
  */
-export const assertNoActiveSubscription = async (organizationId: UUID): Promise<void> => {
+export const assertNoActiveSubscription = async (dependenciaId: UUID): Promise<void> => {
   const existing = await Subscription.findOne({
     where: {
-      organizationId,
+      dependenciaId,
       status: { [Op.in]: ACTIVE_SUBSCRIPTION_STATUSES },
     },
   });
 
   if (existing) {
     throw new ConflictError(
-      'La organización ya tiene una suscripción activa. Debe cancelarla antes de crear una nueva.',
-      { organizationId, subscriptionId: existing.id }
+      'La dependencia ya tiene una suscripción activa. Debe cancelarla antes de crear una nueva.',
+      { dependenciaId, subscriptionId: existing.id }
     );
   }
 };
@@ -72,17 +76,17 @@ export const assertNoActiveSubscription = async (organizationId: UUID): Promise<
  * @param organizationId - ID de la organización
  * @throws {ConflictError} Si ya existe una suscripción (cualquier estado)
  */
-export const assertNoExistingSubscription = async (organizationId: UUID): Promise<void> => {
+export const assertNoExistingSubscription = async (dependenciaId: UUID): Promise<void> => {
   const existing = await Subscription.findOne({
-    where: { organizationId },
+    where: { dependenciaId },
   });
 
   if (existing) {
     throw new ConflictError(
       existing.status === 'active' || existing.status === 'trialing'
-        ? 'La organización ya tiene una suscripción activa. Debe cancelarla antes de crear una nueva.'
-        : `La organización ya tiene una suscripción en estado '${existing.status}'. Para reactivar, cancele la actual primero o contacte soporte.`,
-      { organizationId, subscriptionId: existing.id, status: existing.status }
+        ? 'La dependencia ya tiene una suscripción activa. Debe cancelarla antes de crear una nueva.'
+        : `La dependencia ya tiene una suscripción en estado '${existing.status}'. Para reactivar, cancele la actual primero o contacte soporte.`,
+      { dependenciaId, subscriptionId: existing.id, status: existing.status }
     );
   }
 };
@@ -94,24 +98,31 @@ export const assertNoExistingSubscription = async (organizationId: UUID): Promis
  * @returns Conteos de usuarios, eventos y actividades
  */
 export const getOrganizationUsage = async (
-  organizationId: UUID
+  areaId: UUID
 ): Promise<{
   usersCount: number;
   eventosCount: number;
   actividadesCount: number;
 }> => {
+  const area = await Area.findByPk(areaId);
+  if (!area) {
+    return { usersCount: 0, eventosCount: 0, actividadesCount: 0 };
+  }
+  const areasOfDep = await Area.findAll({
+    where: { dependenciaId: area.dependenciaId },
+    attributes: ['id'],
+  });
+  const areaIds = areasOfDep.map((a) => a.id);
+
   const [usersCount, eventosCount, actividadesCount] = await Promise.all([
     Membership.count({
-      where: {
-        organizationId,
-        status: 'activo',
-      },
+      where: { areaId: { [Op.in]: areaIds }, status: 'activo' },
     }),
     EventoOperativo.count({
-      where: { organizationId },
+      where: { areaId: { [Op.in]: areaIds } },
     }),
     Actividad.count({
-      where: { organizationId, active: true },
+      where: { areaId: { [Op.in]: areaIds }, active: true },
     }),
   ]);
 
@@ -131,21 +142,27 @@ export const assertPlanLimits = async (planId: UUID, organizationId: UUID): Prom
 
   if (plan.maxUsers != null && usage.usersCount >= plan.maxUsers) {
     throw new ValidationError(
-      `Has alcanzado el límite de usuarios del plan (${plan.maxUsers}). Considera actualizar tu plan.`,
+      plan.name === 'free'
+        ? 'El plan gratuito permite solo 1 usuario. Actualiza tu plan para agregar más.'
+        : `Has alcanzado el límite de usuarios del plan (${plan.maxUsers}). Considera actualizar tu plan.`,
       'maxUsers'
     );
   }
 
   if (plan.maxEventos != null && usage.eventosCount >= plan.maxEventos) {
     throw new ValidationError(
-      `Has alcanzado el límite de eventos del plan (${plan.maxEventos}). Considera actualizar tu plan.`,
+      plan.name === 'free'
+        ? 'El plan gratuito permite solo 1 evento por periodo. Actualiza tu plan para agregar más.'
+        : `Has alcanzado el límite de eventos del plan (${plan.maxEventos}). Considera actualizar tu plan.`,
       'maxEventos'
     );
   }
 
   if (plan.maxActividades != null && usage.actividadesCount >= plan.maxActividades) {
     throw new ValidationError(
-      `Has alcanzado el límite de actividades del plan (${plan.maxActividades}). Considera actualizar tu plan.`,
+      plan.name === 'free'
+        ? 'El plan gratuito permite solo 1 actividad. Actualiza tu plan para agregar más.'
+        : `Has alcanzado el límite de actividades del plan (${plan.maxActividades}). Considera actualizar tu plan.`,
       'maxActividades'
     );
   }
@@ -160,8 +177,8 @@ export const assertPlanLimits = async (planId: UUID, organizationId: UUID): Prom
  * @returns stripeCustomerId
  */
 const getOrCreateStripeCustomer = async (
-  organizationId: UUID,
-  organizationName: string,
+  dependenciaId: UUID,
+  name: string,
   existingStripeCustomerId: string | null
 ): Promise<string> => {
   if (existingStripeCustomerId) {
@@ -169,9 +186,9 @@ const getOrCreateStripeCustomer = async (
   }
 
   const customer = await stripeClient.customers.create({
-    name: organizationName,
+    name,
     metadata: {
-      organizationId,
+      dependenciaId,
     },
   });
   return customer.id;
@@ -196,7 +213,7 @@ const toStripeTimestamp = (dt: DateTime | Date | undefined): number | undefined 
  */
 export const createSubscriptionInStripe = async (
   data: CreateSubscriptionDTO,
-  organizationId: UUID,
+  dependenciaId: UUID,
   stripeCustomerId: string
 ): Promise<{
   stripeSubscriptionId: string;
@@ -226,7 +243,7 @@ export const createSubscriptionInStripe = async (
       items: [{ price: stripePriceId }],
       payment_behavior: 'default_incomplete',
       metadata: {
-        organizationId,
+        dependenciaId,
         planId: data.planId,
       },
       ...(data.paymentMethodId && {
@@ -285,7 +302,7 @@ export const createSubscriptionInStripe = async (
  */
 export const createSubscriptionInDatabase = async (
   data: {
-    organizationId: UUID;
+    dependenciaId: UUID;
     planId: UUID;
     status: SubscriptionStatus;
     billingCycle: BillingCycle;
@@ -302,7 +319,7 @@ export const createSubscriptionInDatabase = async (
 ): Promise<Subscription> => {
   const subscription = await Subscription.create(
     {
-      organizationId: data.organizationId,
+      dependenciaId: data.dependenciaId,
       planId: data.planId,
       status: data.status,
       billingCycle: data.billingCycle,
@@ -321,7 +338,7 @@ export const createSubscriptionInDatabase = async (
   logger.info(
     {
       subscriptionId: subscription.id,
-      organizationId: data.organizationId,
+      dependenciaId: data.dependenciaId,
       planId: data.planId,
       status: data.status,
     },
@@ -343,10 +360,15 @@ export const createSubscriptionInDatabase = async (
  * @throws {ConflictError} Si la organización ya tiene suscripción
  */
 export const createFreeSubscriptionForOrganization = async (
-  organizationId: UUID,
+  areaId: UUID,
   transaction?: Transaction
 ): Promise<Subscription> => {
-  await assertNoExistingSubscription(organizationId);
+  const area = await Area.findByPk(areaId);
+  if (!area) {
+    throw new NotFoundError('Área', { areaId });
+  }
+  const dependenciaId = area.dependenciaId;
+  await assertNoExistingSubscription(dependenciaId);
 
   const plan = await getFreePlan(transaction);
 
@@ -356,7 +378,7 @@ export const createFreeSubscriptionForOrganization = async (
 
   const subscription = await createSubscriptionInDatabase(
     {
-      organizationId,
+      dependenciaId,
       planId: plan.id,
       status: 'active',
       billingCycle: 'monthly',
@@ -369,11 +391,11 @@ export const createFreeSubscriptionForOrganization = async (
     transaction
   );
 
-  await invalidateSubscriptionCache(organizationId);
+  await invalidateSubscriptionCache(dependenciaId);
 
   logger.info(
-    { subscriptionId: subscription.id, organizationId, planId: plan.id },
-    'Suscripción FREE creada para organización'
+    { subscriptionId: subscription.id, dependenciaId, planId: plan.id },
+    'Suscripción FREE creada para dependencia'
   );
 
   return subscription;
@@ -389,35 +411,37 @@ export const createFreeSubscriptionForOrganization = async (
  */
 export const createSubscription = async (
   data: CreateSubscriptionDTO,
-  organizationId: UUID,
+  areaId: UUID,
   userId: UUID
 ): Promise<Subscription> => {
-  await assertIsAdmin(userId, organizationId);
-  await assertNoExistingSubscription(organizationId);
-  await assertPlanExistsAndActive(data.planId);
-  await assertPlanLimits(data.planId, organizationId);
+  await assertIsAdmin(userId, areaId);
 
-  const org = await Organization.findByPk(organizationId);
-  if (!org) {
-    throw new NotFoundError('Organización', { organizationId });
+  const area = await Area.findByPk(areaId);
+  if (!area) {
+    throw new NotFoundError('Área', { areaId });
   }
+  const dependenciaId = area.dependenciaId;
+
+  await assertNoExistingSubscription(dependenciaId);
+  await assertPlanExistsAndActive(data.planId);
+  await assertPlanLimits(data.planId, areaId);
 
   const existingSubscription = await Subscription.findOne({
-    where: { organizationId },
+    where: { dependenciaId },
     order: [['createdAt', 'DESC']],
   });
   const existingStripeCustomerId = existingSubscription?.stripeCustomerId ?? null;
 
   const stripeCustomerId = await getOrCreateStripeCustomer(
-    organizationId,
-    org.name,
+    dependenciaId,
+    area.name,
     existingStripeCustomerId
   );
 
-  const stripeResult = await createSubscriptionInStripe(data, organizationId, stripeCustomerId);
+  const stripeResult = await createSubscriptionInStripe(data, dependenciaId, stripeCustomerId);
 
   const subscription = await createSubscriptionInDatabase({
-    organizationId,
+    dependenciaId,
     planId: data.planId,
     status: stripeResult.status,
     billingCycle: data.billingCycle,
@@ -429,12 +453,11 @@ export const createSubscription = async (
     trialEnd: stripeResult.trialEnd,
   });
 
-  // Invalidar caché después de crear suscripción
-  await invalidateSubscriptionCache(organizationId);
+  await invalidateSubscriptionCache(dependenciaId);
 
   return subscription.reload({
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -454,14 +477,17 @@ export const getSubscriptionByOrganization = async (
 ): Promise<Subscription | null> => {
   await assertIsAdmin(userId, organizationId);
 
+  const area = await Area.findByPk(organizationId);
+  if (!area) return null;
+
   const subscription = await Subscription.findOne({
     where: {
-      organizationId, // Multi-tenant obligatorio
+      dependenciaId: area.dependenciaId,
       status: { [Op.in]: [...ACTIVE_SUBSCRIPTION_STATUSES, 'canceled'] },
     },
     order: [['currentPeriodEnd', 'DESC']],
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -484,7 +510,7 @@ export const getSubscriptionById = async (
   const subscription = await Subscription.findOne({
     where: { id: subscriptionId },
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -493,7 +519,13 @@ export const getSubscriptionById = async (
     throw new NotFoundError('Suscripción', { subscriptionId });
   }
 
-  await assertIsAdmin(userId, subscription.organizationId);
+  const area = await Area.findOne({ where: { dependenciaId: subscription.dependenciaId } });
+  if (!area) {
+    throw new NotFoundError('Área de la dependencia', {
+      dependenciaId: subscription.dependenciaId,
+    });
+  }
+  await assertIsAdmin(userId, area.id);
   return subscription;
 };
 
@@ -579,34 +611,35 @@ export const getBillingHistory = async (
 
 /**
  * Cambia el plan de una suscripción (upgrade/downgrade).
+ * La suscripción está a nivel dependencia.
  *
  * @param subscriptionId - ID de la suscripción
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param dependenciaId - ID de la dependencia
  * @param userId - ID del usuario
  * @param data - Datos del cambio (planId, billingCycle, prorate)
  * @returns Suscripción actualizada
  */
 export const changePlan = async (
   subscriptionId: UUID,
-  organizationId: UUID,
+  dependenciaId: UUID,
   userId: UUID,
   data: UpdateSubscriptionDTO
 ): Promise<Subscription> => {
-  await assertIsAdmin(userId, organizationId);
+  await assertCanAccessDependencia(userId, dependenciaId);
 
   const subscription = await Subscription.findOne({
     where: {
       id: subscriptionId,
-      organizationId, // Multi-tenant obligatorio
+      dependenciaId,
     },
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
 
   if (!subscription) {
-    throw new NotFoundError('Suscripción', { subscriptionId, organizationId });
+    throw new NotFoundError('Suscripción', { subscriptionId, dependenciaId });
   }
 
   if (!ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status)) {
@@ -620,7 +653,10 @@ export const changePlan = async (
   const billingCycle = data.billingCycle ?? subscription.billingCycle;
 
   await assertPlanExistsAndActive(planId);
-  await assertPlanLimits(planId, organizationId);
+  const areaForLimits = await Area.findOne({ where: { dependenciaId }, attributes: ['id'] });
+  if (areaForLimits) {
+    await assertPlanLimits(planId, areaForLimits.id);
+  }
 
   const plan = await getPlanById(planId);
   const stripePriceId =
@@ -665,7 +701,7 @@ export const changePlan = async (
       ],
       proration_behavior: prorationBehavior,
       metadata: {
-        organizationId,
+        dependenciaId,
         planId,
       },
     });
@@ -680,17 +716,16 @@ export const changePlan = async (
     stripePriceId,
   });
 
-  // Invalidar caché después de cambiar plan
-  await invalidateSubscriptionCache(organizationId);
+  await invalidateSubscriptionCache(dependenciaId);
 
   logger.info(
-    { subscriptionId, organizationId, planId, billingCycle },
+    { subscriptionId, dependenciaId, planId, billingCycle },
     'Plan de suscripción actualizado'
   );
 
   return subscription.reload({
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -698,34 +733,35 @@ export const changePlan = async (
 
 /**
  * Cancela una suscripción.
+ * La suscripción está a nivel dependencia.
  *
  * @param subscriptionId - ID de la suscripción
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param dependenciaId - ID de la dependencia
  * @param userId - ID del usuario
  * @param data - Opciones de cancelación
  * @returns Suscripción actualizada
  */
 export const cancelSubscription = async (
   subscriptionId: UUID,
-  organizationId: UUID,
+  dependenciaId: UUID,
   userId: UUID,
   data: CancelSubscriptionDTO
 ): Promise<Subscription> => {
-  await assertIsAdmin(userId, organizationId);
+  await assertCanAccessDependencia(userId, dependenciaId);
 
   const subscription = await Subscription.findOne({
     where: {
       id: subscriptionId,
-      organizationId, // Multi-tenant obligatorio
+      dependenciaId,
     },
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
 
   if (!subscription) {
-    throw new NotFoundError('Suscripción', { subscriptionId, organizationId });
+    throw new NotFoundError('Suscripción', { subscriptionId, dependenciaId });
   }
 
   if (subscription.status === 'canceled') {
@@ -779,19 +815,18 @@ export const cancelSubscription = async (
   logger.info(
     {
       subscriptionId,
-      organizationId,
+      dependenciaId,
       cancelAtPeriodEnd: data.cancelAtPeriodEnd,
       reason: data.reason,
     },
     'Suscripción cancelada'
   );
 
-  // Invalidar caché después de cancelar suscripción
-  await invalidateSubscriptionCache(organizationId);
+  await invalidateSubscriptionCache(dependenciaId);
 
   return subscription.reload({
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -799,32 +834,33 @@ export const cancelSubscription = async (
 
 /**
  * Reactiva una suscripción cancelada (quita cancel_at_period_end).
+ * La suscripción está a nivel dependencia.
  *
  * @param subscriptionId - ID de la suscripción
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param dependenciaId - ID de la dependencia
  * @param userId - ID del usuario
  * @returns Suscripción actualizada
  */
 export const reactivateSubscription = async (
   subscriptionId: UUID,
-  organizationId: UUID,
+  dependenciaId: UUID,
   userId: UUID
 ): Promise<Subscription> => {
-  await assertIsAdmin(userId, organizationId);
+  await assertCanAccessDependencia(userId, dependenciaId);
 
   const subscription = await Subscription.findOne({
     where: {
       id: subscriptionId,
-      organizationId, // Multi-tenant obligatorio
+      dependenciaId,
     },
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
 
   if (!subscription) {
-    throw new NotFoundError('Suscripción', { subscriptionId, organizationId });
+    throw new NotFoundError('Suscripción', { subscriptionId, dependenciaId });
   }
 
   if (!subscription.cancelAtPeriodEnd) {
@@ -847,14 +883,13 @@ export const reactivateSubscription = async (
 
   await subscription.update({ cancelAtPeriodEnd: false });
 
-  // Invalidar caché después de reactivar suscripción
-  await invalidateSubscriptionCache(organizationId);
+  await invalidateSubscriptionCache(dependenciaId);
 
-  logger.info({ subscriptionId, organizationId }, 'Suscripción reactivada');
+  logger.info({ subscriptionId, dependenciaId }, 'Suscripción reactivada');
 
   return subscription.reload({
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -874,7 +909,7 @@ export const createSubscriptionFromWebhook = async (
   if (!stripeSubscriptionId) return null;
 
   const metadata = stripeSubscription['metadata'] as Record<string, string> | undefined;
-  const organizationId = metadata?.['organizationId'] as UUID | undefined;
+  const dependenciaId = metadata?.['dependenciaId'] as UUID | undefined;
   const metadataPlanId = metadata?.['planId'] as UUID | undefined;
 
   const items = stripeSubscription['items'] as
@@ -882,19 +917,19 @@ export const createSubscriptionFromWebhook = async (
     | undefined;
   const priceId = items?.data?.[0]?.price?.id as string | undefined;
 
-  if (!organizationId) {
+  if (!dependenciaId) {
     logger.warn(
       { stripeSubscriptionId, metadata },
-      'Webhook subscription.created: metadata.organizationId ausente'
+      'Webhook subscription.created: metadata.dependenciaId ausente'
     );
     return null;
   }
 
-  const org = await Organization.findByPk(organizationId);
-  if (!org) {
+  const dependencia = await Dependencia.findByPk(dependenciaId);
+  if (!dependencia) {
     logger.warn(
-      { organizationId, stripeSubscriptionId },
-      'Webhook subscription.created: organización no encontrada'
+      { dependenciaId, stripeSubscriptionId },
+      'Webhook subscription.created: dependencia no encontrada'
     );
     return null;
   }
@@ -987,7 +1022,7 @@ export const createSubscriptionFromWebhook = async (
   const existing = await Subscription.findOne({
     where: { stripeSubscriptionId },
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -1000,7 +1035,7 @@ export const createSubscriptionFromWebhook = async (
   try {
     const subscription = await createSubscriptionInDatabase(
       {
-        organizationId,
+        dependenciaId,
         planId,
         status,
         billingCycle,
@@ -1022,7 +1057,7 @@ export const createSubscriptionFromWebhook = async (
       {
         subscriptionId: subscription.id,
         stripeSubscriptionId,
-        organizationId,
+        dependenciaId,
         planId,
         status,
       },
@@ -1030,7 +1065,7 @@ export const createSubscriptionFromWebhook = async (
     );
     return subscription.reload({
       include: [
-        { model: Organization, as: 'Organization' },
+        { model: Dependencia, as: 'Dependencia' },
         { model: SubscriptionPlan, as: 'SubscriptionPlan' },
       ],
     });
@@ -1056,7 +1091,7 @@ export const updateSubscriptionFromWebhook = async (
   const subscription = await Subscription.findOne({
     where: { stripeSubscriptionId },
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -1107,7 +1142,7 @@ export const updateSubscriptionFromWebhook = async (
     await subscription.update(updateData);
 
     // Invalidar caché después de actualizar desde webhook
-    await invalidateSubscriptionCache(subscription.organizationId);
+    await invalidateSubscriptionCache(subscription.dependenciaId);
 
     logger.info(
       {
@@ -1121,7 +1156,7 @@ export const updateSubscriptionFromWebhook = async (
 
   return subscription.reload({
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -1150,7 +1185,7 @@ export const renewSubscriptionPeriodFromWebhook = async (
   const subscription = await Subscription.findOne({
     where: { stripeSubscriptionId },
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -1177,7 +1212,7 @@ export const renewSubscriptionPeriodFromWebhook = async (
   await subscription.update(updateData);
 
   // Invalidar caché después de actualizar desde invoice
-  await invalidateSubscriptionCache(subscription.organizationId);
+  await invalidateSubscriptionCache(subscription.dependenciaId);
 
   logger.info(
     {
@@ -1191,7 +1226,7 @@ export const renewSubscriptionPeriodFromWebhook = async (
 
   return subscription.reload({
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -1214,7 +1249,7 @@ export const markSubscriptionPastDueFromWebhook = async (
   const subscription = await Subscription.findOne({
     where: { stripeSubscriptionId },
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -1230,7 +1265,7 @@ export const markSubscriptionPastDueFromWebhook = async (
   await subscription.update({ status: 'past_due' });
 
   // Invalidar caché después de marcar como past_due
-  await invalidateSubscriptionCache(subscription.organizationId);
+  await invalidateSubscriptionCache(subscription.dependenciaId);
 
   logger.info(
     { subscriptionId: subscription.id, stripeSubscriptionId },
@@ -1239,7 +1274,7 @@ export const markSubscriptionPastDueFromWebhook = async (
 
   return subscription.reload({
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
@@ -1257,18 +1292,18 @@ export const handleTrialWillEndFromWebhook = async (
   const stripeSubscriptionId = stripeSubscription['id'] as string | undefined;
   const trialEndStripe = stripeSubscription['trial_end'] as number | null | undefined;
   const metadata = stripeSubscription['metadata'] as Record<string, string> | undefined;
-  const organizationId = metadata?.['organizationId'];
+  const dependenciaId = metadata?.['dependenciaId'];
 
-  let subscriptionOrganizationId: UUID | undefined;
+  let subscriptionDependenciaId: UUID | undefined;
   if (stripeSubscriptionId) {
     const sub = await Subscription.findOne({
       where: { stripeSubscriptionId },
-      attributes: ['organizationId'],
+      attributes: ['dependenciaId'],
     });
-    subscriptionOrganizationId = sub?.organizationId;
+    subscriptionDependenciaId = sub?.dependenciaId;
   }
 
-  const organizationIdResolved = organizationId ?? subscriptionOrganizationId;
+  const dependenciaIdResolved = dependenciaId ?? subscriptionDependenciaId;
   const trialEnd =
     trialEndStripe != null ? new Date(trialEndStripe * 1000).toISOString() : undefined;
 
@@ -1277,7 +1312,7 @@ export const handleTrialWillEndFromWebhook = async (
       stripeSubscriptionId,
       trialEnd: trialEndStripe,
       trialEndDate: trialEnd,
-      organizationId: organizationIdResolved,
+      dependenciaId: dependenciaIdResolved,
     },
     'Webhook subscription.trial_will_end: fin de prueba próximo. Integrar notificación (email/push) cuando exista el servicio.'
   );
@@ -1301,16 +1336,21 @@ export const listSubscriptions = async (
 
   if (organizationId) {
     await assertCanAccessOrganization(userId, organizationId);
-    where['organizationId'] = organizationId; // Multi-tenant obligatorio
+    const area = await Area.findByPk(organizationId);
+    if (area) where['dependenciaId'] = area.dependenciaId;
   } else if (filters.organizationId) {
     await assertCanAccessOrganization(userId, filters.organizationId);
-    where['organizationId'] = filters.organizationId;
+    const area = await Area.findByPk(filters.organizationId);
+    if (area) where['dependenciaId'] = area.dependenciaId;
   }
 
   if (filters.status) where['status'] = filters.status;
   if (filters.billingCycle) where['billingCycle'] = filters.billingCycle;
   if (filters.planId) where['planId'] = filters.planId;
-  if (filters.organizationId) where['organizationId'] = filters.organizationId;
+  if (filters.organizationId) {
+    const area = await Area.findByPk(filters.organizationId);
+    if (area) where['dependenciaId'] = area.dependenciaId;
+  }
 
   const limit = filters.limit;
   const sortBy = filters.sortBy ?? 'createdAt';
@@ -1323,7 +1363,7 @@ export const listSubscriptions = async (
     offset,
     order: [[sortBy, sortOrder]],
     include: [
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });

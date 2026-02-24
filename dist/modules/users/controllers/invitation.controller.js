@@ -1,6 +1,6 @@
 import * as invitationService from '../services/invitation.service.js';
 import * as invitationEmailProofService from '../services/invitation-email-proof.service.js';
-import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '@/shared/responses/helpers.js';
 const getOrganizationId = (req) => {
     const id = req.params['organizationId'];
     return typeof id === 'string' ? id : (id?.[0] ?? '');

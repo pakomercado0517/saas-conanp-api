@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getProfile, updateProfile, changePassword, deleteUser, } from '../controllers/user.controller.js';
 import { validateUpdateProfile, validateChangePassword, } from '../middleware/validation.middleware.js';
-import { authenticate } from '../../../shared/middleware/index.js';
+import { authenticate } from '@/shared/middleware/index.js';
 /**
  * Router de usuarios
  *

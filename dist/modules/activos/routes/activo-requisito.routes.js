@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createRequisito, listRequisitos, updateRequisito, deleteRequisito, } from '../controllers/activo-requisito.controller.js';
 import { validateCreateActivoRequisito, validateUpdateActivoRequisito, validateListActivoRequisitos, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, } from '@/shared/middleware/index.js';
 /**
  * Router de requisitos de activos
  *

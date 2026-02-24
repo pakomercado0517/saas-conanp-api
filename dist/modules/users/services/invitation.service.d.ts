@@ -1,7 +1,7 @@
-import type { UUID } from '../../../shared/database/types.js';
-import { Invitation } from '../../../modules/users/models/invitation.model.js';
-import type { CreateInvitationDTO, ListInvitationsDTO } from '../../../modules/users/validators/invitation.validator.js';
-import type { PaginationMeta } from '../../../shared/responses/types.js';
+import type { UUID } from '@/shared/database/types.js';
+import { Invitation } from '@/modules/users/models/invitation.model.js';
+import type { CreateInvitationDTO, ListInvitationsDTO } from '@/modules/users/validators/invitation.validator.js';
+import type { PaginationMeta } from '@/shared/responses/types.js';
 export interface CreateInvitationResult {
     id: UUID;
     email: string;
@@ -13,18 +13,18 @@ export interface CreateInvitationResult {
  * Crea una invitación y envía el email con enlace y token manual.
  * Solo admins. Valida límite de usuarios y evita duplicados (pending) por org+email.
  */
-export declare const createInvitation: (organizationId: UUID, data: CreateInvitationDTO, invitedByUserId: UUID) => Promise<CreateInvitationResult>;
+export declare const createInvitation: (areaId: UUID, data: CreateInvitationDTO, invitedByUserId: UUID) => Promise<CreateInvitationResult>;
 /**
  * Lista invitaciones de una organización con paginación y filtro por estado.
  */
-export declare const listInvitations: (organizationId: UUID, filters: ListInvitationsDTO, userId: UUID) => Promise<{
+export declare const listInvitations: (areaId: UUID, filters: ListInvitationsDTO, userId: UUID) => Promise<{
     data: Invitation[];
     pagination: PaginationMeta;
 }>;
 /**
  * Revoca una invitación (solo admins). Establece status revoked y revokedAt.
  */
-export declare const revokeInvitation: (organizationId: UUID, invitationId: UUID, userId: UUID) => Promise<void>;
+export declare const revokeInvitation: (areaId: UUID, invitationId: UUID, userId: UUID) => Promise<void>;
 export interface ValidateInvitationResult {
     valid: true;
     email: string;

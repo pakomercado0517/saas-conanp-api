@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
 import { RegisterSchema, LoginSchema, RefreshTokenSchema } from '../validators/auth.validator.js';
 /**
  * Schema de datos de usuario en respuestas

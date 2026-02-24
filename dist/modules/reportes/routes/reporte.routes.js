@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getReporteEventosPorActividad, getReporteEventosPorPrestador, getReporteEventosPorFecha, getReporteCapacidadUtilizada, getReportePrestadoresActivos, getReporteStockActual, getReporteSalidasStock, getReporteVentasPrestadores, getReporteVentasPorProducto, } from '../controllers/reporte.controller.js';
 import { validateReporteEventosPorActividad, validateReporteEventosPorPrestador, validateReporteEventosPorFecha, validateReporteCapacidadUtilizada, validateReportePrestadoresActivos, validateReporteStockActual, validateReporteSalidasStock, validateReporteVentasPrestadores, validateReporteVentasPorProducto, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, } from '@/shared/middleware/index.js';
 /**
  * Router de reportes
  *

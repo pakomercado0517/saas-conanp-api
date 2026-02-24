@@ -1,6 +1,6 @@
 import * as subscriptionService from '../services/subscription.service.js';
 import { sanitizeSubscriptionForResponse } from '../sanitizers/subscription-sanitizer.js';
-import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated } from '@/shared/responses/helpers.js';
 /**
  * Crea una suscripción para la organización.
  *

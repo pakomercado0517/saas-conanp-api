@@ -1,18 +1,18 @@
 import { Op } from 'sequelize';
-import { sequelize } from '../../../shared/database/index.js';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
-import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
-import { User } from '../../../modules/users/models/user.model.js';
-import { Capacidad } from '../../../modules/actividades/models/capacidad.model.js';
-import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
-import { Permiso } from '../../../modules/permisos/models/permiso.model.js';
-import { StockAcceso } from '../../../modules/productos-acceso/models/stock-acceso.model.js';
-import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
-import { MovimientoStockAcceso } from '../../../modules/productos-acceso/models/movimiento-stock-acceso.model.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { toDateOnlyDB, DateTime } from '../../../shared/dates/index.js';
-import { ValidationError } from '../../../shared/errors/index.js';
+import { sequelize } from '@/shared/database/index.js';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { Actividad } from '@/modules/actividades/models/actividad.model.js';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
+import { User } from '@/modules/users/models/user.model.js';
+import { Capacidad } from '@/modules/actividades/models/capacidad.model.js';
+import { Bloque } from '@/modules/actividades/models/bloque.model.js';
+import { Permiso } from '@/modules/permisos/models/permiso.model.js';
+import { StockAcceso } from '@/modules/productos-acceso/models/stock-acceso.model.js';
+import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
+import { MovimientoStockAcceso } from '@/modules/productos-acceso/models/movimiento-stock-acceso.model.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { toDateOnlyDB, DateTime } from '@/shared/dates/index.js';
+import { ValidationError } from '@/shared/errors/index.js';
 // Límites para evitar respuestas muy grandes
 const MAX_DATE_RANGE_DAYS = 365; // Máximo 1 año de rango
 const MAX_RESULTS_LIMIT = 1000; // Máximo 1000 registros por reporte

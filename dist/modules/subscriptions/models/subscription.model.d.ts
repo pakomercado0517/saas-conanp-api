@@ -1,10 +1,10 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, SubscriptionStatus, BillingCycle } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model';
+import type { UUID, SubscriptionStatus, BillingCycle } from '@/shared/database/types';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
 export interface SubscriptionAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     planId: UUID;
     status: SubscriptionStatus;
     billingCycle: BillingCycle;
@@ -27,7 +27,7 @@ export declare const SUBSCRIPTION_STATUSES: SubscriptionStatus[];
 export declare const BILLING_CYCLES: BillingCycle[];
 export declare class Subscription extends Model<SubscriptionAttributes, SubscriptionCreationAttributes> implements SubscriptionAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     planId: UUID;
     status: SubscriptionStatus;
     billingCycle: BillingCycle;
@@ -43,7 +43,7 @@ export declare class Subscription extends Model<SubscriptionAttributes, Subscrip
     readonly createdAt: Date;
     readonly updatedAt: Date;
     deletedAt: Date | null;
-    Organization?: Organization;
+    Dependencia?: Dependencia;
     SubscriptionPlan?: SubscriptionPlan;
 }
 //# sourceMappingURL=subscription.model.d.ts.map

@@ -1,13 +1,13 @@
 import { Op } from 'sequelize';
-import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
-import { checkActividadesLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
-import { cache } from '../../../shared/cache/index.js';
-import { CacheKeys } from '../../../shared/cache/keys.js';
-import { cacheConfig } from '../../../shared/cache/config.js';
+import { Actividad } from '@/modules/actividades/models/actividad.model.js';
+import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
+import { checkActividadesLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
+import { cache } from '@/shared/cache/index.js';
+import { CacheKeys } from '@/shared/cache/keys.js';
+import { cacheConfig } from '@/shared/cache/config.js';
 /**
  * Invalida el caché de actividades de una organización.
  * Se llama después de CREATE/UPDATE/DELETE de actividades.

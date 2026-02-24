@@ -1,5 +1,5 @@
 import * as evidenciaService from '../services/evidencia.service.js';
-import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '@/shared/responses/helpers.js';
 /**
  * Crea una nueva evidencia ambiental asociada a un evento.
  *

@@ -1,13 +1,13 @@
 import { Op } from 'sequelize';
-import { Capacidad } from '../../../modules/actividades/models/capacidad.model.js';
-import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
-import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
-import { NotFoundError, ValidationError, ConflictError } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
-import { toDateOnlyDB, DateTime } from '../../../shared/dates/index.js';
+import { Capacidad } from '@/modules/actividades/models/capacidad.model.js';
+import { Actividad } from '@/modules/actividades/models/actividad.model.js';
+import { Bloque } from '@/modules/actividades/models/bloque.model.js';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { NotFoundError, ValidationError, ConflictError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
+import { toDateOnlyDB, DateTime } from '@/shared/dates/index.js';
 /**
  * Helper interno: Calcula la capacidad usada para una actividad, fecha y bloque (opcional)
  *

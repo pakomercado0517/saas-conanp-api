@@ -3,13 +3,13 @@
 /**
  * Seed: plan de suscripción FREE.
  *
- * Crea el plan "free" con límites mínimos para que una organización pueda iniciar
- * (primer admin por invitación, pocos eventos y actividades). Precio 0, sin Stripe.
+ * Crea el plan "free" con límite 1 en todo (usuarios, eventos, actividades).
+ * Precio 0, sin Stripe. Enforcement en backend para mensajes de upgrade.
  *
- * Límites:
- *   - maxUsers: 2
- *   - maxEventos: 5 (por periodo)
- *   - maxActividades: 2
+ * Límites FREE = 1:
+ *   - maxUsers: 1
+ *   - maxEventos: 1 (por periodo)
+ *   - maxActividades: 1
  *
  * Si el plan "free" ya existe (mismo name), el seed no hace nada.
  */
@@ -45,9 +45,9 @@ module.exports = {
         stripeProductId: null,
         features: null,
         maxOrganizations: null,
-        maxUsers: 2,
-        maxEventos: 5,
-        maxActividades: 2,
+        maxUsers: 1,
+        maxEventos: 1,
+        maxActividades: 1,
         active: true,
         createdAt: now,
         updatedAt: now,
@@ -55,7 +55,7 @@ module.exports = {
       },
     ]);
 
-    console.log('Seed subscription-plan-free: plan "free" creado (maxUsers: 2, maxEventos: 5, maxActividades: 2).');
+    console.log('Seed subscription-plan-free: plan "free" creado (maxUsers: 1, maxEventos: 1, maxActividades: 1).');
   },
 
   async down(queryInterface) {

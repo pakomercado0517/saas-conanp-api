@@ -1,12 +1,12 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID, SubscriptionStatus, BillingCycle } from '@/shared/database/types';
-import { Organization } from '@/modules/organizations/models/organization.model';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
 
 export interface SubscriptionAttributes {
   id: UUID;
-  organizationId: UUID;
+  dependenciaId: UUID;
   planId: UUID;
   status: SubscriptionStatus;
   billingCycle: BillingCycle;
@@ -56,7 +56,7 @@ export class Subscription
   implements SubscriptionAttributes
 {
   declare id: UUID;
-  declare organizationId: UUID;
+  declare dependenciaId: UUID;
   declare planId: UUID;
   declare status: SubscriptionStatus;
   declare billingCycle: BillingCycle;
@@ -73,7 +73,7 @@ export class Subscription
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
 
-  declare Organization?: Organization;
+  declare Dependencia?: Dependencia;
   declare SubscriptionPlan?: SubscriptionPlan;
 }
 
@@ -85,17 +85,17 @@ Subscription.init(
       primaryKey: true,
       allowNull: false,
     },
-    organizationId: {
+    dependenciaId: {
       type: DataTypes.UUID,
       allowNull: false,
       unique: true,
       references: {
-        model: 'organizations',
+        model: 'dependencias',
         key: 'id',
       },
       validate: {
         notEmpty: {
-          msg: 'El ID de organización es requerido',
+          msg: 'El ID de dependencia es requerido',
         },
       },
     },
@@ -254,7 +254,7 @@ Subscription.init(
     paranoid: true,
     underscored: false,
     indexes: [
-      { name: 'idx_subscriptions_organization_id', fields: ['organizationId'] },
+      { name: 'idx_subscriptions_dependencia_id', fields: ['dependenciaId'] },
       { name: 'idx_subscriptions_status', fields: ['status'] },
       {
         name: 'idx_subscriptions_stripe_subscription_id',
@@ -269,9 +269,9 @@ Subscription.init(
   }
 );
 
-Subscription.belongsTo(Organization, {
-  foreignKey: 'organizationId',
-  as: 'Organization',
+Subscription.belongsTo(Dependencia, {
+  foreignKey: 'dependenciaId',
+  as: 'Dependencia',
 });
 
 Subscription.belongsTo(SubscriptionPlan, {
@@ -279,8 +279,8 @@ Subscription.belongsTo(SubscriptionPlan, {
   as: 'SubscriptionPlan',
 });
 
-Organization.hasOne(Subscription, {
-  foreignKey: 'organizationId',
+Dependencia.hasOne(Subscription, {
+  foreignKey: 'dependenciaId',
   as: 'Subscription',
 });
 

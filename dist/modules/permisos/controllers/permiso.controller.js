@@ -1,6 +1,6 @@
 import * as permisoService from '../services/permiso.service.js';
-import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
-import { ValidationError } from '../../../shared/errors/index.js';
+import { sendSuccess, sendCreated, sendPaginated } from '@/shared/responses/helpers.js';
+import { ValidationError } from '@/shared/errors/index.js';
 /**
  * Crea un nuevo permiso.
  *

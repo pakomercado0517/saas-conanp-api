@@ -1,10 +1,10 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, ActivoType } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model';
+import type { UUID, ActivoType } from '@/shared/database/types';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
 export interface ActivoAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     ownerId: UUID;
     type: ActivoType;
     status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido';
@@ -15,13 +15,13 @@ export interface ActivoCreationAttributes extends Optional<ActivoAttributes, 'id
 }
 export declare class Activo extends Model<ActivoAttributes, ActivoCreationAttributes> implements ActivoAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     ownerId: UUID;
     type: ActivoType;
     status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido';
     readonly createdAt: Date;
     readonly updatedAt: Date;
-    Organization?: Organization;
+    Dependencia?: Dependencia;
     Owner?: PrestadorProfile;
 }
 //# sourceMappingURL=activo.model.d.ts.map

@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
 import { CreatePrestadorProfileSchema, UpdatePrestadorProfileSchema, ListPrestadoresSchema, } from '../validators/prestador-profile.validator.js';
 // Schema de Prestador en respuestas
 const PrestadorProfileSchema = registry.register('PrestadorProfile', z.object({

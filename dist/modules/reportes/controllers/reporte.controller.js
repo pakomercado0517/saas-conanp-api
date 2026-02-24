@@ -1,6 +1,6 @@
 import * as reporteService from '../services/reporte.service.js';
-import { sendSuccess } from '../../../shared/responses/helpers.js';
-import { getBrazaletesConfig } from '../../../modules/organizations/services/organization.service.js';
+import { sendSuccess } from '@/shared/responses/helpers.js';
+import { getBrazaletesConfig } from '@/modules/organizations/services/organization.service.js';
 /**
  * Obtiene reporte de eventos agrupados por actividad.
  *

@@ -1,5 +1,5 @@
 import * as productoAccesoService from '../services/producto-acceso.service.js';
-import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '@/shared/responses/helpers.js';
 /**
  * POST /api/v1/organizations/:organizationId/productos-acceso
  * Crea un nuevo producto de acceso (y registro de stock con cantidad 0).

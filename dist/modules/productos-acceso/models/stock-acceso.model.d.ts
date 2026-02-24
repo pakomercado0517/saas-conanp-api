@@ -1,10 +1,10 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model';
+import type { UUID } from '@/shared/database/types';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
 export interface StockAccesoAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     productoAccesoId: UUID;
     cantidad: number;
     createdAt: Date;
@@ -14,12 +14,12 @@ export interface StockAccesoCreationAttributes extends Optional<StockAccesoAttri
 }
 export declare class StockAcceso extends Model<StockAccesoAttributes, StockAccesoCreationAttributes> implements StockAccesoAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     productoAccesoId: UUID;
     cantidad: number;
     readonly createdAt: Date;
     readonly updatedAt: Date;
-    Organization?: Organization;
+    Dependencia?: Dependencia;
     ProductoAcceso?: ProductoAcceso;
 }
 //# sourceMappingURL=stock-acceso.model.d.ts.map

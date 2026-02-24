@@ -1,8 +1,8 @@
 import { type Transaction } from 'sequelize';
-import type { UUID, SubscriptionStatus, BillingCycle } from '../../../shared/database/types.js';
-import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
-import type { PaginationMeta } from '../../../shared/responses/types.js';
-import type { CreateSubscriptionDTO, UpdateSubscriptionDTO, CancelSubscriptionDTO, ListSubscriptionsDTO } from '../../../modules/subscriptions/validators/subscription.validator.js';
+import type { UUID, SubscriptionStatus, BillingCycle } from '@/shared/database/types.js';
+import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
+import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { CreateSubscriptionDTO, UpdateSubscriptionDTO, CancelSubscriptionDTO, ListSubscriptionsDTO } from '@/modules/subscriptions/validators/subscription.validator.js';
 /**
  * Valida que la organización no tenga una suscripción activa.
  * Estados "activos" considerados: active, trialing.
@@ -10,7 +10,7 @@ import type { CreateSubscriptionDTO, UpdateSubscriptionDTO, CancelSubscriptionDT
  * @param organizationId - ID de la organización
  * @throws {ConflictError} Si ya existe una suscripción activa
  */
-export declare const assertNoActiveSubscription: (organizationId: UUID) => Promise<void>;
+export declare const assertNoActiveSubscription: (dependenciaId: UUID) => Promise<void>;
 /**
  * Valida que la organización no tenga ninguna suscripción existente (incluye cancelada, incompleta).
  * Evita suscripciones duplicadas por organización (una org = una suscripción).
@@ -18,14 +18,14 @@ export declare const assertNoActiveSubscription: (organizationId: UUID) => Promi
  * @param organizationId - ID de la organización
  * @throws {ConflictError} Si ya existe una suscripción (cualquier estado)
  */
-export declare const assertNoExistingSubscription: (organizationId: UUID) => Promise<void>;
+export declare const assertNoExistingSubscription: (dependenciaId: UUID) => Promise<void>;
 /**
  * Obtiene el uso actual de una organización (usuarios, eventos, actividades).
  *
  * @param organizationId - ID de la organización
  * @returns Conteos de usuarios, eventos y actividades
  */
-export declare const getOrganizationUsage: (organizationId: UUID) => Promise<{
+export declare const getOrganizationUsage: (areaId: UUID) => Promise<{
     usersCount: number;
     eventosCount: number;
     actividadesCount: number;
@@ -46,7 +46,7 @@ export declare const assertPlanLimits: (planId: UUID, organizationId: UUID) => P
  * @param stripeCustomerId - ID del cliente en Stripe
  * @returns Objeto con la suscripción de Stripe y datos mapeados
  */
-export declare const createSubscriptionInStripe: (data: CreateSubscriptionDTO, organizationId: UUID, stripeCustomerId: string) => Promise<{
+export declare const createSubscriptionInStripe: (data: CreateSubscriptionDTO, dependenciaId: UUID, stripeCustomerId: string) => Promise<{
     stripeSubscriptionId: string;
     stripeCustomerId: string;
     stripePriceId: string;
@@ -63,7 +63,7 @@ export declare const createSubscriptionInStripe: (data: CreateSubscriptionDTO, o
  * @returns Suscripción creada o actualizada
  */
 export declare const createSubscriptionInDatabase: (data: {
-    organizationId: UUID;
+    dependenciaId: UUID;
     planId: UUID;
     status: SubscriptionStatus;
     billingCycle: BillingCycle;
@@ -87,7 +87,7 @@ export declare const createSubscriptionInDatabase: (data: {
  * @throws {NotFoundError} Si no existe el plan "free"
  * @throws {ConflictError} Si la organización ya tiene suscripción
  */
-export declare const createFreeSubscriptionForOrganization: (organizationId: UUID, transaction?: Transaction) => Promise<Subscription>;
+export declare const createFreeSubscriptionForOrganization: (areaId: UUID, transaction?: Transaction) => Promise<Subscription>;
 /**
  * Crea una suscripción completa: Stripe + base de datos.
  *
@@ -96,7 +96,7 @@ export declare const createFreeSubscriptionForOrganization: (organizationId: UUI
  * @param userId - ID del usuario que crea (para validar acceso)
  * @returns Suscripción creada con relaciones
  */
-export declare const createSubscription: (data: CreateSubscriptionDTO, organizationId: UUID, userId: UUID) => Promise<Subscription>;
+export declare const createSubscription: (data: CreateSubscriptionDTO, areaId: UUID, userId: UUID) => Promise<Subscription>;
 /**
  * Obtiene la suscripción actual de una organización.
  * Filtro multi-tenant obligatorio.
@@ -147,7 +147,7 @@ export declare const getBillingHistory: (subscriptionId: UUID, userId: UUID, pag
  * @param data - Datos del cambio (planId, billingCycle, prorate)
  * @returns Suscripción actualizada
  */
-export declare const changePlan: (subscriptionId: UUID, organizationId: UUID, userId: UUID, data: UpdateSubscriptionDTO) => Promise<Subscription>;
+export declare const changePlan: (subscriptionId: UUID, areaId: UUID, userId: UUID, data: UpdateSubscriptionDTO) => Promise<Subscription>;
 /**
  * Cancela una suscripción.
  *
@@ -157,7 +157,7 @@ export declare const changePlan: (subscriptionId: UUID, organizationId: UUID, us
  * @param data - Opciones de cancelación
  * @returns Suscripción actualizada
  */
-export declare const cancelSubscription: (subscriptionId: UUID, organizationId: UUID, userId: UUID, data: CancelSubscriptionDTO) => Promise<Subscription>;
+export declare const cancelSubscription: (subscriptionId: UUID, areaId: UUID, userId: UUID, data: CancelSubscriptionDTO) => Promise<Subscription>;
 /**
  * Reactiva una suscripción cancelada (quita cancel_at_period_end).
  *
@@ -166,7 +166,7 @@ export declare const cancelSubscription: (subscriptionId: UUID, organizationId: 
  * @param userId - ID del usuario
  * @returns Suscripción actualizada
  */
-export declare const reactivateSubscription: (subscriptionId: UUID, organizationId: UUID, userId: UUID) => Promise<Subscription>;
+export declare const reactivateSubscription: (subscriptionId: UUID, areaId: UUID, userId: UUID) => Promise<Subscription>;
 /**
  * Crea o actualiza una suscripción en BD desde el webhook customer.subscription.created.
  * Idempotente: si ya existe por stripeSubscriptionId, actualiza y retorna.

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ForbiddenError, NotFoundError } from '../../../../shared/errors/index.js';
+import { ForbiddenError, NotFoundError } from '@/shared/errors/index.js';
 import * as organizationService from '../organization.service.js';
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';

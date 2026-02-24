@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createPermiso, getPermisoById, listPermisos, updatePermiso, } from '../controllers/permiso.controller.js';
 import { validateCreatePermiso, validateUpdatePermiso, validateListPermisos, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, } from '@/shared/middleware/index.js';
 /**
  * Router de permisos
  *

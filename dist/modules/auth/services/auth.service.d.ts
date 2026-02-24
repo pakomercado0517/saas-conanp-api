@@ -1,6 +1,6 @@
 import type { RegisterDTO, LoginDTO } from '../validators/auth.validator.js';
 import type { AuthResponse, RegisterResponse, RefreshTokenResponse, JWTPayload } from '../types/auth.types.js';
-import type { UUID } from '../../../shared/database/types.js';
+import type { UUID } from '@/shared/database/types.js';
 /**
  * Registra un nuevo usuario con invitación válida (o sin ella solo en test con bypass).
  * - Con invitación (link/token): consume invitación, crea usuario con emailVerified=true, no envía correo de verificación.

@@ -1,12 +1,12 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID, PaymentStatus } from '@/shared/database/types';
-import { Organization } from '@/modules/organizations/models/organization.model';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model';
+import { Area } from '@/modules/areas/models/area.model.js';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
 
 export interface PaymentAttributes {
   id: UUID;
-  organizationId: UUID;
+  areaId: UUID;
   eventoId: UUID;
   amount: number;
   currency: string;
@@ -55,7 +55,7 @@ export class Payment
   implements PaymentAttributes
 {
   declare id: UUID;
-  declare organizationId: UUID;
+  declare areaId: UUID;
   declare eventoId: UUID;
   declare amount: number;
   declare currency: string;
@@ -72,7 +72,7 @@ export class Payment
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
 
-  declare Organization?: Organization;
+  declare Area?: Area;
   declare EventoOperativo?: EventoOperativo;
 }
 
@@ -84,16 +84,16 @@ Payment.init(
       primaryKey: true,
       allowNull: false,
     },
-    organizationId: {
+    areaId: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'organizations',
+        model: 'areas',
         key: 'id',
       },
       validate: {
         notEmpty: {
-          msg: 'El ID de organización es requerido',
+          msg: 'El ID de área es requerido',
         },
       },
     },
@@ -250,7 +250,7 @@ Payment.init(
     paranoid: true,
     underscored: false,
     indexes: [
-      { name: 'idx_payments_organization', fields: ['organizationId'] },
+      { name: 'idx_payments_area', fields: ['areaId'] },
       { name: 'idx_payments_evento', fields: ['eventoId'] },
       {
         name: 'idx_payments_stripe_payment_intent',
@@ -262,17 +262,17 @@ Payment.init(
   }
 );
 
-Payment.belongsTo(Organization, {
-  foreignKey: 'organizationId',
-  as: 'Organization',
+Payment.belongsTo(Area, {
+  foreignKey: 'areaId',
+  as: 'Area',
 });
 Payment.belongsTo(EventoOperativo, {
   foreignKey: 'eventoId',
   as: 'EventoOperativo',
 });
 
-Organization.hasMany(Payment, {
-  foreignKey: 'organizationId',
+Area.hasMany(Payment, {
+  foreignKey: 'areaId',
   as: 'Payments',
 });
 EventoOperativo.hasMany(Payment, {

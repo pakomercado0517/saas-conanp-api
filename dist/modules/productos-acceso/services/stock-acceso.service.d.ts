@@ -1,7 +1,7 @@
-import type { UUID } from '../../../shared/database/types.js';
-import { MovimientoStockAcceso } from '../../../modules/productos-acceso/models/movimiento-stock-acceso.model.js';
-import type { EntradaStockDTO, SalidaStockDTO, ListMovimientosStockDTO } from '../../../modules/productos-acceso/validators/movimiento-stock-acceso.validator.js';
-import type { PaginationMeta } from '../../../shared/responses/types.js';
+import type { UUID } from '@/shared/database/types.js';
+import { MovimientoStockAcceso } from '@/modules/productos-acceso/models/movimiento-stock-acceso.model.js';
+import type { EntradaStockDTO, SalidaStockDTO, ListMovimientosStockDTO } from '@/modules/productos-acceso/validators/movimiento-stock-acceso.validator.js';
+import type { PaginationMeta } from '@/shared/responses/types.js';
 /**
  * Registra una entrada de stock.
  * Requiere rol admin o gestor.

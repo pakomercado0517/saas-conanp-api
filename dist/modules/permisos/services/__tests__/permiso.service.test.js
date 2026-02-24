@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DateTime } from 'luxon';
-import { ValidationError, NotFoundError } from '../../../../shared/errors/index.js';
+import { ValidationError, NotFoundError } from '@/shared/errors/index.js';
 import * as permisoService from '../permiso.service.js';
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
@@ -130,7 +130,7 @@ describe('permiso.service', () => {
             status: 'activo',
         };
         it('throws when assertCanAccessOrganization rejects', async () => {
-            const { ForbiddenError } = await import('../../../../shared/errors/index.js');
+            const { ForbiddenError } = await import('@/shared/errors/index.js');
             mockAssertCanAccessOrganization.mockRejectedValueOnce(new ForbiddenError('No tienes acceso'));
             await expect(permisoService.createPermiso(createData, ORG_ID, USER_ID)).rejects.toThrow();
         });

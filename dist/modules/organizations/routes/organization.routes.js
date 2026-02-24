@@ -1,22 +1,22 @@
 import { Router } from 'express';
 import { getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, getConfigAcceso, } from '../controllers/organization.controller.js';
 import { validateUpdateOrganization, validateListOrganizations, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
-import membershipRouter from '../../../modules/users/routes/membership.routes.js';
-import invitationRouter from '../../../modules/users/routes/invitation.routes.js';
-import actividadRouter from '../../../modules/actividades/routes/actividad.routes.js';
-import bloqueRouter, { bloqueActividadRouter } from '../../../modules/actividades/routes/bloque.routes.js';
-import capacidadActividadRouter from '../../../modules/actividades/routes/capacidad.routes.js';
-import prestadorRouter from '../../../modules/prestadores/routes/prestador-profile.routes.js';
-import permisoRouter from '../../../modules/permisos/routes/permiso.routes.js';
-import activoRouter from '../../../modules/activos/routes/activo.routes.js';
-import activoRequisitoRouter from '../../../modules/activos/routes/activo-requisito.routes.js';
-import eventoRouter from '../../../modules/eventos/routes/evento.routes.js';
-import reporteRouter from '../../../modules/reportes/routes/reporte.routes.js';
-import paymentRouter from '../../../modules/payments/routes/payment.routes.js';
-import { subscriptionOrgRouter } from '../../../modules/subscriptions/routes/subscription.routes.js';
-import productoAccesoRouter from '../../../modules/productos-acceso/routes/producto-acceso.routes.js';
-import movimientoStockAccesoRouter from '../../../modules/productos-acceso/routes/movimiento-stock-acceso.routes.js';
+import { authenticate, requireOrganizationAccess } from '@/shared/middleware/index.js';
+import membershipRouter from '@/modules/users/routes/membership.routes.js';
+import invitationRouter from '@/modules/users/routes/invitation.routes.js';
+import actividadRouter from '@/modules/actividades/routes/actividad.routes.js';
+import bloqueRouter, { bloqueActividadRouter } from '@/modules/actividades/routes/bloque.routes.js';
+import capacidadActividadRouter from '@/modules/actividades/routes/capacidad.routes.js';
+import prestadorRouter from '@/modules/prestadores/routes/prestador-profile.routes.js';
+import permisoRouter from '@/modules/permisos/routes/permiso.routes.js';
+import activoRouter from '@/modules/activos/routes/activo.routes.js';
+import activoRequisitoRouter from '@/modules/activos/routes/activo-requisito.routes.js';
+import eventoRouter from '@/modules/eventos/routes/evento.routes.js';
+import reporteRouter from '@/modules/reportes/routes/reporte.routes.js';
+import paymentRouter from '@/modules/payments/routes/payment.routes.js';
+import { subscriptionOrgRouter } from '@/modules/subscriptions/routes/subscription.routes.js';
+import productoAccesoRouter from '@/modules/productos-acceso/routes/producto-acceso.routes.js';
+import movimientoStockAccesoRouter from '@/modules/productos-acceso/routes/movimiento-stock-acceso.routes.js';
 /**
  * Router de organizaciones
  *

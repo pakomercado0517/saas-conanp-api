@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { logger } from '../../../shared/logger/index.js';
+import { logger } from '@/shared/logger/index.js';
 import { validateWebhookSignature, processWebhookEvent, } from '../services/stripe-webhook.service.js';
 /**
  * Router del webhook de Stripe

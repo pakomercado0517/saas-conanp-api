@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
 // Schema de respuesta para Evidencia Ambiental
 const EvidenciaAmbientalSchema = registry.register('EvidenciaAmbiental', z.object({
     id: z.string().uuid().describe('ID único de la evidencia ambiental'),

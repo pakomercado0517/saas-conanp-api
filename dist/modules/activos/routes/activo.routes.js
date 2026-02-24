@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createActivo, getActivoById, listActivos, updateActivo, deleteActivo, approveActivo, } from '../controllers/activo.controller.js';
 import { validateCreateActivo, validateUpdateActivo, validateListActivos, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, } from '@/shared/middleware/index.js';
 /**
  * Router de activos
  *

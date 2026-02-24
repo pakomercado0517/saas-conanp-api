@@ -2,8 +2,8 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, } fr
 import { getSignedUrl as getPresignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
 import { randomUUID } from 'crypto';
-import { ValidationError } from '../../shared/errors/index.js';
-import { logger } from '../../shared/logger/index.js';
+import { ValidationError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
 dotenv.config();
 /**
  * Validar que todas las variables de entorno requeridas estén configuradas

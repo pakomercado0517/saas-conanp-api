@@ -1,12 +1,12 @@
 import { Op } from 'sequelize';
-import { Permiso } from '../../../modules/permisos/models/permiso.model.js';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
-import { User } from '../../../modules/users/models/user.model.js';
-import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { now, isWithinValidityRange, DateTime, fromJSDate } from '../../../shared/dates/index.js';
+import { Permiso } from '@/modules/permisos/models/permiso.model.js';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
+import { User } from '@/modules/users/models/user.model.js';
+import { Actividad } from '@/modules/actividades/models/actividad.model.js';
+import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { now, isWithinValidityRange, DateTime, fromJSDate } from '@/shared/dates/index.js';
 /**
  * Valida que las fechas de vigencia sean correctas.
  *

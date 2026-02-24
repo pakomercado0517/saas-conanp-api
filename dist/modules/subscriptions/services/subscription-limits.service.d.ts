@@ -1,6 +1,6 @@
-import type { UUID } from '../../../shared/database/types.js';
-import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
-import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
+import type { UUID } from '@/shared/database/types.js';
+import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
 export interface OrganizationLimits {
     maxUsers: number | null;
     maxEventos: number | null;
@@ -19,13 +19,12 @@ export interface LimitsAndUsage {
     usage: OrganizationUsage;
 }
 /**
- * Obtiene la suscripción activa de una organización (uso interno).
- * No valida acceso del usuario; para uso desde otros services.
+ * Obtiene la suscripción activa para un área (vía dependencia). Uso interno.
  *
- * @param organizationId - ID de la organización
+ * @param areaId - ID del área (la suscripción está a nivel dependencia)
  * @returns Suscripción activa con plan, o null si no hay
  */
-export declare const getActiveSubscriptionByOrganization: (organizationId: UUID) => Promise<(Subscription & {
+export declare const getActiveSubscriptionByOrganization: (areaId: UUID) => Promise<(Subscription & {
     SubscriptionPlan?: SubscriptionPlan;
 }) | null>;
 /**
@@ -36,15 +35,12 @@ export declare const getActiveSubscriptionByOrganization: (organizationId: UUID)
  */
 export declare const getOrganizationLimits: (organizationId: UUID) => Promise<OrganizationLimits | null>;
 /**
- * Obtiene el uso actual de una organización (usuarios, eventos, actividades).
- * Los eventos se cuentan en el periodo actual de facturación (para límite "por mes/período").
+ * Obtiene el uso actual a nivel dependencia (usuarios, eventos, actividades en todas las áreas de la dependencia).
  *
- * @param organizationId - ID de la organización
- * @param periodStart - Inicio del periodo (opcional, para filtrar eventos)
- * @param periodEnd - Fin del periodo (opcional, para filtrar eventos)
- * @returns Conteos actuales
+ * @param areaId - ID del área (se resuelve dependencia y se cuentan todos los recursos de esa dependencia)
+ * @param periodBounds - Opcional, para filtrar eventos por periodo
  */
-export declare const getOrganizationUsage: (organizationId: UUID, periodBounds?: {
+export declare const getOrganizationUsage: (areaId: UUID, periodBounds?: {
     periodStart: Date;
     periodEnd: Date;
 }) => Promise<OrganizationUsage>;

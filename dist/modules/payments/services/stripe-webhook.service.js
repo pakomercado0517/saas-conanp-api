@@ -1,9 +1,9 @@
 import { setTimeout as sleep } from 'node:timers/promises';
-import { stripeClient, stripeConfig } from '../../../shared/stripe/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { AppError } from '../../../shared/errors/index.js';
+import { stripeClient, stripeConfig } from '@/shared/stripe/index.js';
+import { logger } from '@/shared/logger/index.js';
+import { AppError } from '@/shared/errors/index.js';
 import { ensureEventIdempotency, updatePaymentStatusFromWebhook, handleChargeRefundedFromWebhook, } from './payment.service.js';
-import { createSubscriptionFromWebhook, updateSubscriptionFromWebhook, renewSubscriptionPeriodFromWebhook, markSubscriptionPastDueFromWebhook, handleTrialWillEndFromWebhook, } from '../../../modules/subscriptions/services/subscription.service.js';
+import { createSubscriptionFromWebhook, updateSubscriptionFromWebhook, renewSubscriptionPeriodFromWebhook, markSubscriptionPastDueFromWebhook, handleTrialWillEndFromWebhook, } from '@/modules/subscriptions/services/subscription.service.js';
 const PAYMENT_INTENT_EVENTS = [
     'payment_intent.succeeded',
     'payment_intent.payment_failed',

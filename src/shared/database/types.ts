@@ -18,6 +18,9 @@ export type EventoStatus = 'programado' | 'en_curso' | 'completado' | 'cancelado
 
 export type Role = 'admin' | 'gestor' | 'prestador' | 'observador';
 
+/** Rol en una dependencia (owner = primer admin de la dependencia) */
+export type DependenciaRole = 'owner' | 'admin' | 'gestor' | 'prestador' | 'observador';
+
 export type PaymentStatus =
   | 'pending'
   | 'processing'

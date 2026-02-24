@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createProductoAcceso, getProductoAccesoById, listProductosAcceso, updateProductoAcceso, deleteProductoAcceso, } from '../controllers/producto-acceso.controller.js';
 import { registrarEntrada, registrarSalida, getStockDisponible, } from '../controllers/stock-acceso.controller.js';
 import { validateCreateProductoAcceso, validateUpdateProductoAcceso, validateListProductosAcceso, validateEntradaStock, validateSalidaStock, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, requireRole, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, requireRole, } from '@/shared/middleware/index.js';
 /**
  * Router de productos de acceso (brazaletes, pasaportes).
  * Montado bajo /api/v1/organizations/:organizationId/productos-acceso

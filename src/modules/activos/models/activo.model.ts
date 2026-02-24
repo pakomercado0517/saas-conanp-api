@@ -1,12 +1,12 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID, ActivoType } from '@/shared/database/types';
-import { Organization } from '@/modules/organizations/models/organization.model';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
 
 export interface ActivoAttributes {
   id: UUID;
-  organizationId: UUID;
+  dependenciaId: UUID;
   ownerId: UUID;
   type: ActivoType;
   status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido';
@@ -24,15 +24,14 @@ export class Activo
   implements ActivoAttributes
 {
   declare id: UUID;
-  declare organizationId: UUID;
+  declare dependenciaId: UUID;
   declare ownerId: UUID;
   declare type: ActivoType;
   declare status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido';
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 
-  // Relaciones
-  declare Organization?: Organization;
+  declare Dependencia?: Dependencia;
   declare Owner?: PrestadorProfile;
 }
 
@@ -44,16 +43,16 @@ Activo.init(
       primaryKey: true,
       allowNull: false,
     },
-    organizationId: {
+    dependenciaId: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'organizations',
+        model: 'dependencias',
         key: 'id',
       },
       validate: {
         notEmpty: {
-          msg: 'El ID de organización es requerido',
+          msg: 'El ID de dependencia es requerido',
         },
       },
     },
@@ -110,16 +109,16 @@ Activo.init(
     underscored: false,
     indexes: [
       {
-        name: 'idx_activos_organization',
-        fields: ['organizationId'],
+        name: 'idx_activos_dependencia',
+        fields: ['dependenciaId'],
       },
       {
         name: 'idx_activos_owner',
         fields: ['ownerId'],
       },
       {
-        name: 'idx_activos_org_owner',
-        fields: ['organizationId', 'ownerId'],
+        name: 'idx_activos_dep_owner',
+        fields: ['dependenciaId', 'ownerId'],
       },
       {
         name: 'idx_activos_type',
@@ -130,16 +129,16 @@ Activo.init(
         fields: ['status'],
       },
       {
-        name: 'idx_activos_org_status',
-        fields: ['organizationId', 'status'],
+        name: 'idx_activos_dep_status',
+        fields: ['dependenciaId', 'status'],
       },
     ],
   }
 );
 
 // Definir relaciones
-Activo.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+Activo.belongsTo(Dependencia, { foreignKey: 'dependenciaId', as: 'Dependencia' });
 Activo.belongsTo(PrestadorProfile, { foreignKey: 'ownerId', as: 'Owner' });
 
-Organization.hasMany(Activo, { foreignKey: 'organizationId', as: 'Activos' });
+Dependencia.hasMany(Activo, { foreignKey: 'dependenciaId', as: 'Activos' });
 PrestadorProfile.hasMany(Activo, { foreignKey: 'ownerId', as: 'Activos' });

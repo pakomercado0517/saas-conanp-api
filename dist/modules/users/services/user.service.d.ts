@@ -1,5 +1,5 @@
 import type { UpdateProfileDTO, ChangePasswordDTO } from '../validators/user.validator.js';
-import type { UUID } from '../../../shared/database/types.js';
+import type { UUID } from '@/shared/database/types.js';
 /**
  * Perfil de usuario sin información sensible
  */

@@ -1,10 +1,10 @@
 import { Op } from 'sequelize';
-import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
-import { StockAcceso } from '../../../modules/productos-acceso/models/stock-acceso.model.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
-import { NotFoundError } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
+import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
+import { StockAcceso } from '@/modules/productos-acceso/models/stock-acceso.model.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
+import { NotFoundError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
 /**
  * Crea un nuevo producto de acceso y su registro de stock inicial (cantidad 0).
  * Solo los administradores pueden crear productos.

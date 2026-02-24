@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { Role } from '../../shared/database/types.js';
+import type { Role } from '@/shared/database/types.js';
 /**
  * Middleware genérico para validar que el usuario tenga uno de los roles especificados
  * en la organización del contexto.
@@ -17,7 +17,7 @@ import type { Role } from '../../shared/database/types.js';
  *
  * @example
  * ```typescript
- * import { requireRole } from '../../shared/middleware';
+ * import { requireRole } from '@/shared/middleware';
  *
  * // Solo admins y gestores pueden acceder
  * router.post('/endpoint', authenticate, requireOrganizationAccess, requireRole(['admin', 'gestor']), controller);
@@ -37,7 +37,7 @@ export declare const requireRole: (allowedRoles: Role[]) => (req: Request, _res:
  *
  * @example
  * ```typescript
- * import { requireAdmin } from '../../shared/middleware';
+ * import { requireAdmin } from '@/shared/middleware';
  *
  * // Solo admins pueden acceder
  * router.post('/endpoint', authenticate, requireOrganizationAccess, requireAdmin, controller);

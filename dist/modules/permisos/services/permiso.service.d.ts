@@ -1,8 +1,8 @@
-import type { UUID } from '../../../shared/database/types.js';
-import { Permiso } from '../../../modules/permisos/models/permiso.model.js';
-import type { CreatePermisoDTO, UpdatePermisoDTO, ListPermisosDTO } from '../../../modules/permisos/validators/permiso.validator.js';
-import type { PaginationMeta } from '../../../shared/responses/types.js';
-import { DateTime } from '../../../shared/dates/index.js';
+import type { UUID } from '@/shared/database/types.js';
+import { Permiso } from '@/modules/permisos/models/permiso.model.js';
+import type { CreatePermisoDTO, UpdatePermisoDTO, ListPermisosDTO } from '@/modules/permisos/validators/permiso.validator.js';
+import type { PaginationMeta } from '@/shared/responses/types.js';
+import { DateTime } from '@/shared/dates/index.js';
 /**
  * Valida que las fechas de vigencia sean correctas.
  *

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createSubscription, getCurrentSubscription, changePlan, cancelSubscription, reactivateSubscription, getBillingHistory, } from '../controllers/subscription.controller.js';
 import { validateCreateSubscription, validateUpdateSubscription, validateCancelSubscription, validateReactivateSubscription, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccessOnly, requireAdmin, subscriptionCreateLimiter, subscriptionChangePlanLimiter, } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccessOnly, requireAdmin, subscriptionCreateLimiter, subscriptionChangePlanLimiter, } from '@/shared/middleware/index.js';
 /**
  * Router de suscripciones anidadas en organizaciones
  *

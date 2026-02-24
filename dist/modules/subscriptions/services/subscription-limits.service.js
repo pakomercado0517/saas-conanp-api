@@ -1,25 +1,28 @@
 import { Op } from 'sequelize';
-import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
-import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
-import { Membership } from '../../../modules/users/models/membership.model.js';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
-import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
-import { getPlanById } from '../../../modules/subscriptions/services/subscription-plan.service.js';
-import { ValidationError, NotFoundError } from '../../../shared/errors/index.js';
+import { Area } from '@/modules/areas/models/area.model.js';
+import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
+import { Membership } from '@/modules/users/models/membership.model.js';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { Actividad } from '@/modules/actividades/models/actividad.model.js';
+import { getPlanById } from '@/modules/subscriptions/services/subscription-plan.service.js';
+import { ValidationError, NotFoundError } from '@/shared/errors/index.js';
 const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
 /** Estados de evento que cuentan para el límite (excluye cancelados) */
 const EVENTO_STATUSES_COUNTED = ['programado', 'en_curso', 'completado'];
 /**
- * Obtiene la suscripción activa de una organización (uso interno).
- * No valida acceso del usuario; para uso desde otros services.
+ * Obtiene la suscripción activa para un área (vía dependencia). Uso interno.
  *
- * @param organizationId - ID de la organización
+ * @param areaId - ID del área (la suscripción está a nivel dependencia)
  * @returns Suscripción activa con plan, o null si no hay
  */
-export const getActiveSubscriptionByOrganization = async (organizationId) => {
+export const getActiveSubscriptionByOrganization = async (areaId) => {
+    const area = await Area.findByPk(areaId);
+    if (!area)
+        return null;
     const subscription = await Subscription.findOne({
         where: {
-            organizationId,
+            dependenciaId: area.dependenciaId,
             status: { [Op.in]: ACTIVE_SUBSCRIPTION_STATUSES },
         },
         order: [['currentPeriodEnd', 'DESC']],
@@ -49,17 +52,24 @@ export const getOrganizationLimits = async (organizationId) => {
     };
 };
 /**
- * Obtiene el uso actual de una organización (usuarios, eventos, actividades).
- * Los eventos se cuentan en el periodo actual de facturación (para límite "por mes/período").
+ * Obtiene el uso actual a nivel dependencia (usuarios, eventos, actividades en todas las áreas de la dependencia).
  *
- * @param organizationId - ID de la organización
- * @param periodStart - Inicio del periodo (opcional, para filtrar eventos)
- * @param periodEnd - Fin del periodo (opcional, para filtrar eventos)
- * @returns Conteos actuales
+ * @param areaId - ID del área (se resuelve dependencia y se cuentan todos los recursos de esa dependencia)
+ * @param periodBounds - Opcional, para filtrar eventos por periodo
  */
-export const getOrganizationUsage = async (organizationId, periodBounds) => {
+export const getOrganizationUsage = async (areaId, periodBounds) => {
+    const area = await Area.findByPk(areaId);
+    if (!area) {
+        return { usersCount: 0, eventosCount: 0, actividadesCount: 0 };
+    }
+    const dependenciaId = area.dependenciaId;
+    const areasOfDep = await Area.findAll({
+        where: { dependenciaId },
+        attributes: ['id'],
+    });
+    const areaIds = areasOfDep.map((a) => a.id);
     const whereEventos = {
-        organizationId,
+        areaId: { [Op.in]: areaIds },
         status: { [Op.in]: EVENTO_STATUSES_COUNTED },
     };
     if (periodBounds) {
@@ -75,7 +85,7 @@ export const getOrganizationUsage = async (organizationId, periodBounds) => {
     const [usersCount, eventosCount, actividadesCount] = await Promise.all([
         Membership.count({
             where: {
-                organizationId,
+                areaId: { [Op.in]: areaIds },
                 status: 'activo',
             },
         }),
@@ -83,7 +93,7 @@ export const getOrganizationUsage = async (organizationId, periodBounds) => {
             where: whereEventos,
         }),
         Actividad.count({
-            where: { organizationId, active: true },
+            where: { areaId: { [Op.in]: areaIds }, active: true },
         }),
     ]);
     return { usersCount, eventosCount, actividadesCount };

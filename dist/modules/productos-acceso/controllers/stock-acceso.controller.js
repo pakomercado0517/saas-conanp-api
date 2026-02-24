@@ -1,7 +1,7 @@
 import * as stockAccesoService from '../services/stock-acceso.service.js';
-import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
-import { Membership } from '../../../modules/users/models/membership.model.js';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { sendSuccess, sendCreated, sendPaginated } from '@/shared/responses/helpers.js';
+import { Membership } from '@/modules/users/models/membership.model.js';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
 /**
  * POST .../productos-acceso/:productoAccesoId/entrada
  * Registra una entrada de stock.

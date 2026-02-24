@@ -1,6 +1,6 @@
-import { BadRequestError } from '../../shared/errors/index.js';
-import { assertActiveSubscription } from '../../modules/organizations/services/organization.service.js';
-import { checkUsersLimit, checkEventosLimit, checkActividadesLimit, getLimitsAndUsage, } from '../../modules/subscriptions/services/subscription-limits.service.js';
+import { BadRequestError } from '@/shared/errors/index.js';
+import { assertActiveSubscription } from '@/modules/organizations/services/organization.service.js';
+import { checkUsersLimit, checkEventosLimit, checkActividadesLimit, getLimitsAndUsage, } from '@/modules/subscriptions/services/subscription-limits.service.js';
 /** Clave en res.locals para la información de límites */
 export const SUBSCRIPTION_LIMITS_LOCALS_KEY = 'subscriptionLimits';
 /**

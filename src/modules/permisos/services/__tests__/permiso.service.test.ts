@@ -5,12 +5,14 @@ import type { UUID } from '@/shared/database/types.js';
 import * as permisoService from '../permiso.service.js';
 
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' as UUID;
+const DEPENDENCIA_ID = '11111111-1111-1111-1111-111111111111' as UUID;
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' as UUID;
 const PRESTADOR_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc' as UUID;
 const ACTIVIDAD_ID = 'dddddddd-dddd-dddd-dddd-dddddddddddd' as UUID;
 const PERMISO_ID = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee' as UUID;
 
 const mockAssertCanAccessOrganization = vi.fn();
+const mockAreaFindByPk = vi.fn();
 const mockPermisoFindOne = vi.fn();
 const mockPermisoCreate = vi.fn();
 const mockPermisoFindAndCountAll = vi.fn();
@@ -20,6 +22,12 @@ const mockActividadFindOne = vi.fn();
 vi.mock('@/modules/organizations/services/organization.service.js', () => ({
   assertCanAccessOrganization: (...args: unknown[]): unknown =>
     mockAssertCanAccessOrganization(...args),
+}));
+
+vi.mock('@/modules/areas/models/area.model.js', () => ({
+  Area: {
+    findByPk: (...args: unknown[]): unknown => mockAreaFindByPk(...args),
+  },
 }));
 
 vi.mock('@/modules/permisos/models/permiso.model.js', () => ({
@@ -54,6 +62,7 @@ describe('permiso.service', () => {
   beforeEach((): void => {
     vi.clearAllMocks();
     mockAssertCanAccessOrganization.mockResolvedValue(undefined);
+    mockAreaFindByPk.mockResolvedValue({ id: ORG_ID, dependenciaId: DEPENDENCIA_ID });
   });
 
   describe('validateFechasVigencia', () => {
@@ -117,23 +126,33 @@ describe('permiso.service', () => {
         permisoService.validatePrestadorHasPermisoVigente(PRESTADOR_ID, ACTIVIDAD_ID, ORG_ID)
       ).rejects.toThrow(ValidationError);
 
+      expect(mockAreaFindByPk).toHaveBeenCalledWith(ORG_ID);
       expect(mockPrestadorFindOne).toHaveBeenCalledWith({
-        where: { id: PRESTADOR_ID, organizationId: ORG_ID },
+        where: { id: PRESTADOR_ID, dependenciaId: DEPENDENCIA_ID },
       });
     });
 
     it('throws ValidationError when actividad does not exist', async () => {
-      mockPrestadorFindOne.mockResolvedValueOnce({ id: PRESTADOR_ID, organizationId: ORG_ID });
+      mockPrestadorFindOne.mockResolvedValueOnce({
+        id: PRESTADOR_ID,
+        dependenciaId: DEPENDENCIA_ID,
+      });
       mockActividadFindOne.mockResolvedValueOnce(null);
 
       await expect(
         permisoService.validatePrestadorHasPermisoVigente(PRESTADOR_ID, ACTIVIDAD_ID, ORG_ID)
       ).rejects.toThrow(ValidationError);
+      expect(mockActividadFindOne).toHaveBeenCalledWith({
+        where: { id: ACTIVIDAD_ID, areaId: ORG_ID },
+      });
     });
 
     it('returns null when no vigent permiso found', async () => {
-      mockPrestadorFindOne.mockResolvedValueOnce({ id: PRESTADOR_ID, organizationId: ORG_ID });
-      mockActividadFindOne.mockResolvedValueOnce({ id: ACTIVIDAD_ID, organizationId: ORG_ID });
+      mockPrestadorFindOne.mockResolvedValueOnce({
+        id: PRESTADOR_ID,
+        dependenciaId: DEPENDENCIA_ID,
+      });
+      mockActividadFindOne.mockResolvedValueOnce({ id: ACTIVIDAD_ID, areaId: ORG_ID });
       mockPermisoFindOne.mockResolvedValueOnce(null);
 
       const result = await permisoService.validatePrestadorHasPermisoVigente(
@@ -154,8 +173,11 @@ describe('permiso.service', () => {
         validFrom: new Date('2025-02-01'),
         validTo: new Date('2025-02-28'),
       };
-      mockPrestadorFindOne.mockResolvedValueOnce({ id: PRESTADOR_ID, organizationId: ORG_ID });
-      mockActividadFindOne.mockResolvedValueOnce({ id: ACTIVIDAD_ID, organizationId: ORG_ID });
+      mockPrestadorFindOne.mockResolvedValueOnce({
+        id: PRESTADOR_ID,
+        dependenciaId: DEPENDENCIA_ID,
+      });
+      mockActividadFindOne.mockResolvedValueOnce({ id: ACTIVIDAD_ID, areaId: ORG_ID });
       mockPermisoFindOne.mockResolvedValueOnce(permisoRecord);
 
       const result = await permisoService.validatePrestadorHasPermisoVigente(
@@ -196,7 +218,7 @@ describe('permiso.service', () => {
     it('throws NotFoundError when actividad not found', async () => {
       mockPrestadorFindOne.mockResolvedValueOnce({
         id: PRESTADOR_ID,
-        organizationId: ORG_ID,
+        dependenciaId: DEPENDENCIA_ID,
       });
       mockActividadFindOne.mockResolvedValueOnce(null);
 
@@ -206,8 +228,8 @@ describe('permiso.service', () => {
     });
 
     it('throws ValidationError on unique constraint (duplicate permiso)', async () => {
-      const prestador = { id: PRESTADOR_ID, organizationId: ORG_ID };
-      const actividad = { id: ACTIVIDAD_ID, organizationId: ORG_ID };
+      const prestador = { id: PRESTADOR_ID, dependenciaId: DEPENDENCIA_ID };
+      const actividad = { id: ACTIVIDAD_ID, areaId: ORG_ID };
       mockPrestadorFindOne.mockResolvedValueOnce(prestador);
       mockActividadFindOne.mockResolvedValueOnce(actividad);
       const uniqueError = new Error('Unique constraint');
@@ -220,8 +242,8 @@ describe('permiso.service', () => {
     });
 
     it('creates permiso and returns it with relations on success', async () => {
-      const prestador = { id: PRESTADOR_ID, organizationId: ORG_ID };
-      const actividad = { id: ACTIVIDAD_ID, organizationId: ORG_ID };
+      const prestador = { id: PRESTADOR_ID, dependenciaId: DEPENDENCIA_ID };
+      const actividad = { id: ACTIVIDAD_ID, areaId: ORG_ID };
       mockPrestadorFindOne.mockResolvedValueOnce(prestador);
       mockActividadFindOne.mockResolvedValueOnce(actividad);
       const createdPermiso = {
@@ -281,7 +303,7 @@ describe('permiso.service', () => {
         id: PERMISO_ID,
         prestadorId: PRESTADOR_ID,
         actividadId: ACTIVIDAD_ID,
-        Actividad: { organizationId: ORG_ID },
+        Actividad: { areaId: ORG_ID },
       };
       mockPermisoFindOne.mockResolvedValueOnce(permisoRecord);
 
@@ -313,7 +335,10 @@ describe('permiso.service', () => {
     });
 
     it('returns paginated data when prestador exists', async () => {
-      mockPrestadorFindOne.mockResolvedValueOnce({ id: PRESTADOR_ID, organizationId: ORG_ID });
+      mockPrestadorFindOne.mockResolvedValueOnce({
+        id: PRESTADOR_ID,
+        dependenciaId: DEPENDENCIA_ID,
+      });
       mockPermisoFindAndCountAll.mockResolvedValueOnce({
         rows: [{ id: PERMISO_ID, prestadorId: PRESTADOR_ID }],
         count: 1,
@@ -360,7 +385,7 @@ describe('permiso.service', () => {
         validFrom: new Date('2025-02-01'),
         validTo: new Date('2025-02-28'),
         status: 'activo',
-        Actividad: { organizationId: ORG_ID },
+        Actividad: { areaId: ORG_ID },
         update: vi.fn().mockResolvedValue(undefined),
         reload: vi.fn().mockResolvedValue(undefined),
       };

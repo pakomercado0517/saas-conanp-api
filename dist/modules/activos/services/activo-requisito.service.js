@@ -1,9 +1,9 @@
-import { ActivoRequisito } from '../../../modules/activos/models/activo-requisito.model.js';
-import { Activo } from '../../../modules/activos/models/activo.model.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { getActivoById } from '../../../modules/activos/services/activo.service.js';
+import { ActivoRequisito } from '@/modules/activos/models/activo-requisito.model.js';
+import { Activo } from '@/modules/activos/models/activo.model.js';
+import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { getActivoById } from '@/modules/activos/services/activo.service.js';
 /**
  * Crea un requisito de activo.
  *

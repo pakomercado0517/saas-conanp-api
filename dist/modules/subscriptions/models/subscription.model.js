@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../../../shared/database';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model';
+import { sequelize } from '@/shared/database';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
 export const SUBSCRIPTION_STATUSES = [
     'active',
     'canceled',
@@ -21,17 +21,17 @@ Subscription.init({
         primaryKey: true,
         allowNull: false,
     },
-    organizationId: {
+    dependenciaId: {
         type: DataTypes.UUID,
         allowNull: false,
         unique: true,
         references: {
-            model: 'organizations',
+            model: 'dependencias',
             key: 'id',
         },
         validate: {
             notEmpty: {
-                msg: 'El ID de organización es requerido',
+                msg: 'El ID de dependencia es requerido',
             },
         },
     },
@@ -177,7 +177,7 @@ Subscription.init({
     paranoid: true,
     underscored: false,
     indexes: [
-        { name: 'idx_subscriptions_organization_id', fields: ['organizationId'] },
+        { name: 'idx_subscriptions_dependencia_id', fields: ['dependenciaId'] },
         { name: 'idx_subscriptions_status', fields: ['status'] },
         {
             name: 'idx_subscriptions_stripe_subscription_id',
@@ -190,16 +190,16 @@ Subscription.init({
         { name: 'idx_subscriptions_deleted_at', fields: ['deletedAt'] },
     ],
 });
-Subscription.belongsTo(Organization, {
-    foreignKey: 'organizationId',
-    as: 'Organization',
+Subscription.belongsTo(Dependencia, {
+    foreignKey: 'dependenciaId',
+    as: 'Dependencia',
 });
 Subscription.belongsTo(SubscriptionPlan, {
     foreignKey: 'planId',
     as: 'SubscriptionPlan',
 });
-Organization.hasOne(Subscription, {
-    foreignKey: 'organizationId',
+Dependencia.hasOne(Subscription, {
+    foreignKey: 'dependenciaId',
     as: 'Subscription',
 });
 SubscriptionPlan.hasMany(Subscription, {

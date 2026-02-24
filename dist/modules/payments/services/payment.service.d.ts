@@ -1,7 +1,7 @@
-import type { UUID } from '../../../shared/database/types.js';
-import { Payment } from '../../../modules/payments/models/payment.model.js';
-import type { PaginationMeta } from '../../../shared/responses/types.js';
-import type { CreatePaymentIntentDTO, ConfirmPaymentDTO, ListPaymentsDTO, ProcessRefundDTO } from '../../../modules/payments/validators/payment.validator.js';
+import type { UUID } from '@/shared/database/types.js';
+import { Payment } from '@/modules/payments/models/payment.model.js';
+import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { CreatePaymentIntentDTO, ConfirmPaymentDTO, ListPaymentsDTO, ProcessRefundDTO } from '@/modules/payments/validators/payment.validator.js';
 /**
  * Crea un Payment Intent en Stripe y guarda el pago en la base de datos.
  * El pago se crea con estado 'pending' y se actualiza cuando se confirma.

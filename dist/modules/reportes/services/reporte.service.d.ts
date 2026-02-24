@@ -1,6 +1,6 @@
-import type { UUID } from '../../../shared/database/types.js';
-import type { ReporteEventosPorActividadDTO, ReporteEventosPorPrestadorDTO, ReporteEventosPorFechaDTO, ReporteCapacidadUtilizadaDTO, ReportePrestadoresActivosDTO, ReporteStockActualDTO, ReporteSalidasStockDTO, ReporteVentasPrestadoresDTO, ReporteVentasPorProductoDTO } from '../../../modules/reportes/validators/reporte.validator.js';
-import type { ReporteEventosPorActividadItem, ReporteEventosPorPrestadorItem, ReporteEventosPorFechaItem, ReporteCapacidadUtilizadaItem, ReportePrestadoresActivosItem, ReporteStockActualItem, ReporteSalidasStockItem, ReporteVentasPrestadoresItem, ReporteVentasPorProductoItem } from '../../../modules/reportes/types/reporte.types.js';
+import type { UUID } from '@/shared/database/types.js';
+import type { ReporteEventosPorActividadDTO, ReporteEventosPorPrestadorDTO, ReporteEventosPorFechaDTO, ReporteCapacidadUtilizadaDTO, ReportePrestadoresActivosDTO, ReporteStockActualDTO, ReporteSalidasStockDTO, ReporteVentasPrestadoresDTO, ReporteVentasPorProductoDTO } from '@/modules/reportes/validators/reporte.validator.js';
+import type { ReporteEventosPorActividadItem, ReporteEventosPorPrestadorItem, ReporteEventosPorFechaItem, ReporteCapacidadUtilizadaItem, ReportePrestadoresActivosItem, ReporteStockActualItem, ReporteSalidasStockItem, ReporteVentasPrestadoresItem, ReporteVentasPorProductoItem } from '@/modules/reportes/types/reporte.types.js';
 /**
  * Obtiene reporte de eventos agrupados por actividad
  *

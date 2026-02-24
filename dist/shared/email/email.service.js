@@ -1,6 +1,6 @@
 import { sendEmail } from './client.js';
 import { getVerificationEmailContent, getPasswordResetEmailContent, getPasswordChangedEmailContent, getInvitationEmailContent, getInvitationOtpEmailContent, } from './templates/index.js';
-import { logger } from '../../shared/logger/index.js';
+import { logger } from '@/shared/logger/index.js';
 /** URL base del frontend para construir enlaces (ej: http://localhost:3000) */
 const FRONTEND_URL = process.env['FRONTEND_URL'] ?? 'http://localhost:3000';
 /** Días de validez de una invitación (solo para texto en email) */

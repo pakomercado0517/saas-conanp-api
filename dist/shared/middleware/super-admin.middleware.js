@@ -1,4 +1,4 @@
-import { UnauthorizedError, ForbiddenError } from '../../shared/errors/index.js';
+import { UnauthorizedError, ForbiddenError } from '@/shared/errors/index.js';
 /**
  * Lista de emails de super administradores.
  * Se lee de la variable de entorno SUPER_ADMIN_EMAILS (emails separados por coma).
@@ -24,7 +24,7 @@ const getSuperAdminEmails = () => {
  *
  * @example
  * ```typescript
- * import { requireSuperAdmin } from '../../shared/middleware';
+ * import { requireSuperAdmin } from '@/shared/middleware';
  *
  * router.post('/admin-only', authenticate, requireSuperAdmin, controller);
  * ```

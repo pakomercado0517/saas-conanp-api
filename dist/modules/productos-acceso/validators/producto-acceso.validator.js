@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry } from '../../../shared/swagger/index.js';
+import { registry } from '@/shared/swagger/index.js';
 extendZodWithOpenApi(z);
 const TIPO_VALUES = ['brazalete', 'pasaporte'];
 const tipoEnum = z.enum(TIPO_VALUES, {

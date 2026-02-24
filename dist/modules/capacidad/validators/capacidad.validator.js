@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry } from '../../../shared/swagger/index.js';
-import { dateOnlySchema, optionalDateOnlySchema } from '../../../shared/dates/zod-schemas.js';
+import { registry } from '@/shared/swagger/index.js';
+import { dateOnlySchema, optionalDateOnlySchema } from '@/shared/dates/zod-schemas.js';
 // Extender Zod con funcionalidad OpenAPI
 extendZodWithOpenApi(z);
 /**

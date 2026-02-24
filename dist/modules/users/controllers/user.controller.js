@@ -1,5 +1,5 @@
 import * as userService from '../services/user.service.js';
-import { sendSuccess, sendNoContent } from '../../../shared/responses/helpers.js';
+import { sendSuccess, sendNoContent } from '@/shared/responses/helpers.js';
 /**
  * Obtiene el perfil del usuario autenticado
  *

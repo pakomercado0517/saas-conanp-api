@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { TransactionalEmailsApi, TransactionalEmailsApiApiKeys } from '@getbrevo/brevo';
-import { logger } from '../../shared/logger/index.js';
+import { logger } from '@/shared/logger/index.js';
 dotenv.config();
 /**
  * Valida y obtiene la configuración de Brevo desde variables de entorno

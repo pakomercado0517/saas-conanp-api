@@ -1,11 +1,11 @@
 import request from 'supertest';
 import bcrypt from 'bcrypt';
-import { User } from '../../modules/users/models/user.model.js';
-import { Membership } from '../../modules/users/models/membership.model.js';
-import { Invitation } from '../../modules/users/models/invitation.model.js';
-import { Organization } from '../../modules/organizations/models/organization.model.js';
-import { SubscriptionPlan } from '../../modules/subscriptions/models/subscription-plan.model.js';
-import { Subscription } from '../../modules/subscriptions/models/subscription.model.js';
+import { User } from '@/modules/users/models/user.model.js';
+import { Membership } from '@/modules/users/models/membership.model.js';
+import { Invitation } from '@/modules/users/models/invitation.model.js';
+import { Organization } from '@/modules/organizations/models/organization.model.js';
+import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
+import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
 const API_PREFIX = '/api/v1';
 const BCRYPT_ROUNDS = 10;
 /**

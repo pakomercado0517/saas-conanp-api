@@ -1,13 +1,13 @@
 import { Op } from 'sequelize';
-import { sequelize } from '../../../shared/database/index.js';
-import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
-import { StockAcceso } from '../../../modules/productos-acceso/models/stock-acceso.model.js';
-import { MovimientoStockAcceso } from '../../../modules/productos-acceso/models/movimiento-stock-acceso.model.js';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
+import { sequelize } from '@/shared/database/index.js';
+import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
+import { StockAcceso } from '@/modules/productos-acceso/models/stock-acceso.model.js';
+import { MovimientoStockAcceso } from '@/modules/productos-acceso/models/movimiento-stock-acceso.model.js';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
 /**
  * Verifica que el producto exista y pertenezca a la organización.
  */

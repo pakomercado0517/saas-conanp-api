@@ -1,5 +1,5 @@
 import * as eventoService from '../services/evento.service.js';
-import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '@/shared/responses/helpers.js';
 /**
  * Crea un nuevo evento operativo.
  * Requiere validaciones estrictas de negocio (permiso vigente, capacidad disponible, etc.).

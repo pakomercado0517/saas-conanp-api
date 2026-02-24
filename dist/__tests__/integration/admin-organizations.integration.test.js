@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
-import app from '../../server.js';
+import app from '@/server.js';
 import { createTestUserAndToken } from './helpers.js';
-import { Membership } from '../../modules/users/models/membership.model.js';
-import { Invitation } from '../../modules/users/models/invitation.model.js';
-import { User } from '../../modules/users/models/user.model.js';
-import { SubscriptionPlan } from '../../modules/subscriptions/models/subscription-plan.model.js';
+import { Membership } from '@/modules/users/models/membership.model.js';
+import { Invitation } from '@/modules/users/models/invitation.model.js';
+import { User } from '@/modules/users/models/user.model.js';
+import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
 const API = '/api/v1/admin/organizations';
 describe('Admin Organizations endpoints (integration)', () => {
     let superAdmin;

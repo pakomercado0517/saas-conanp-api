@@ -1,7 +1,7 @@
 import { RedisClient } from './redisClient.js';
 import { MemoryClient } from './memoryClient.js';
 import { cacheConfig } from './config.js';
-import { logger } from '../../shared/logger/index.js';
+import { logger } from '@/shared/logger/index.js';
 /**
  * Cliente de caché singleton - usa Redis en producción, memoria en dev/tests
  */

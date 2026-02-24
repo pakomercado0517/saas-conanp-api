@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../../../shared/database';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model';
+import { sequelize } from '@/shared/database';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model';
 export class EvidenciaAmbiental extends Model {
 }
 EvidenciaAmbiental.init({

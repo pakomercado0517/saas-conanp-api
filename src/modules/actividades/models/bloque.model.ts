@@ -1,16 +1,16 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database/index.js';
 import type { UUID } from '@/shared/database/types.js';
-import { Organization } from '@/modules/organizations/models/organization.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import { Actividad } from './actividad.model.js';
 
 export interface BloqueAttributes {
   id: UUID;
-  organizationId: UUID;
+  areaId: UUID;
   actividadId: UUID;
-  date: string | null; // DATEONLY se representa como string en formato YYYY-MM-DD
-  startTime: string; // TIME se representa como string en formato HH:mm:ss
-  endTime: string; // TIME se representa como string en formato HH:mm:ss
+  date: string | null;
+  startTime: string;
+  endTime: string;
   capacity: number;
   isTemplate: boolean;
   createdAt: Date;
@@ -27,7 +27,7 @@ export class Bloque
   implements BloqueAttributes
 {
   declare id: UUID;
-  declare organizationId: UUID;
+  declare areaId: UUID;
   declare actividadId: UUID;
   declare date: string | null;
   declare startTime: string;
@@ -37,8 +37,7 @@ export class Bloque
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 
-  // Relaciones
-  declare Organization?: Organization;
+  declare Area?: Area;
   declare Actividad?: Actividad;
 }
 
@@ -50,16 +49,16 @@ Bloque.init(
       primaryKey: true,
       allowNull: false,
     },
-    organizationId: {
+    areaId: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'organizations',
+        model: 'areas',
         key: 'id',
       },
       validate: {
         notEmpty: {
-          msg: 'El ID de organización es requerido',
+          msg: 'El ID de área es requerido',
         },
       },
     },
@@ -144,8 +143,8 @@ Bloque.init(
     underscored: false,
     indexes: [
       {
-        name: 'idx_bloques_organization',
-        fields: ['organizationId'],
+        name: 'idx_bloques_area',
+        fields: ['areaId'],
       },
       {
         name: 'idx_bloques_actividad',
@@ -167,9 +166,8 @@ Bloque.init(
   }
 );
 
-// Definir relaciones
-Bloque.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+Bloque.belongsTo(Area, { foreignKey: 'areaId', as: 'Area' });
 Bloque.belongsTo(Actividad, { foreignKey: 'actividadId', as: 'Actividad' });
 
-Organization.hasMany(Bloque, { foreignKey: 'organizationId', as: 'Bloques' });
+Area.hasMany(Bloque, { foreignKey: 'areaId', as: 'Bloques' });
 Actividad.hasMany(Bloque, { foreignKey: 'actividadId', as: 'Bloques' });

@@ -1,7 +1,7 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '../../../shared/database/types';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model';
-import { Actividad } from '../../../modules/actividades/models/actividad.model';
+import type { UUID } from '@/shared/database/types';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model';
+import { Actividad } from '@/modules/actividades/models/actividad.model';
 export interface PermisoAttributes {
     id: UUID;
     prestadorId: UUID;

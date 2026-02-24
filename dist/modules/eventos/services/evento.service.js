@@ -1,19 +1,19 @@
 import { Op } from 'sequelize';
-import { sequelize } from '../../../shared/database/index.js';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
-import { Payment } from '../../../modules/payments/models/payment.model.js';
-import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
-import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
-import { User } from '../../../modules/users/models/user.model.js';
-import { Membership } from '../../../modules/users/models/membership.model.js';
-import { NotFoundError, ValidationError, ForbiddenError } from '../../../shared/errors/index.js';
-import { logger } from '../../../shared/logger/index.js';
-import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
-import { validatePrestadorHasPermisoVigente } from '../../../modules/permisos/services/permiso.service.js';
-import { verificarDisponibilidadPorBloque, verificarDisponibilidadPorDia, } from '../../../modules/actividades/services/capacidad.service.js';
-import { checkEventosLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
-import { toDateOnlyDB, toTimeOnly, DateTime } from '../../../shared/dates/index.js';
+import { sequelize } from '@/shared/database/index.js';
+import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { Payment } from '@/modules/payments/models/payment.model.js';
+import { Actividad } from '@/modules/actividades/models/actividad.model.js';
+import { Bloque } from '@/modules/actividades/models/bloque.model.js';
+import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
+import { User } from '@/modules/users/models/user.model.js';
+import { Membership } from '@/modules/users/models/membership.model.js';
+import { NotFoundError, ValidationError, ForbiddenError } from '@/shared/errors/index.js';
+import { logger } from '@/shared/logger/index.js';
+import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { validatePrestadorHasPermisoVigente } from '@/modules/permisos/services/permiso.service.js';
+import { verificarDisponibilidadPorBloque, verificarDisponibilidadPorDia, } from '@/modules/actividades/services/capacidad.service.js';
+import { checkEventosLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
+import { toDateOnlyDB, toTimeOnly, DateTime } from '@/shared/dates/index.js';
 /**
  * Helper interno: Valida permisos granulares para acceder a un evento.
  * - Los administradores pueden ver/editar cualquier evento

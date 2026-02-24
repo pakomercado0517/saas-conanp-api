@@ -1,5 +1,5 @@
 import * as membershipService from '../services/membership.service.js';
-import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '@/shared/responses/helpers.js';
 /**
  * Invita un usuario a una organización creando una nueva membership.
  * Solo los administradores pueden invitar usuarios.

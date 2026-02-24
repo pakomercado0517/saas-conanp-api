@@ -1,5 +1,5 @@
-import { UnauthorizedError, BadRequestError } from '../../shared/errors/index.js';
-import { assertCanAccessOrganization, assertActiveSubscription, } from '../../modules/organizations/services/organization.service.js';
+import { UnauthorizedError, BadRequestError } from '@/shared/errors/index.js';
+import { assertCanAccessOrganization, assertActiveSubscription, } from '@/modules/organizations/services/organization.service.js';
 /**
  * Middleware multi-tenant: valida que el usuario pertenezca a la organización
  * y que la organización tenga suscripción activa (active o trialing).

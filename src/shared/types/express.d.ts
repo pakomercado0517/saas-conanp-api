@@ -1,7 +1,7 @@
 import type { JWTPayload } from '@/modules/auth/types/auth.types.js';
 
 /**
- * Extensión del tipo Request de Express para incluir propiedades de autenticación
+ * Extensión del tipo Request de Express para incluir propiedades de autenticación y multi-tenant
  */
 declare global {
   namespace Express {
@@ -11,9 +11,18 @@ declare global {
        */
       user?: JWTPayload;
       /**
-       * ID de la organización del contexto multi-tenant
+       * ID del área del contexto multi-tenant (requireOrganizationAccess / requireAreaAccess).
+       * Compatible con rutas que aún usan organizationId en path.
+       */
+      areaId?: string;
+      /**
+       * @deprecated Usar areaId. Se mantiene por compatibilidad con rutas organizations/:organizationId.
        */
       organizationId?: string;
+      /**
+       * ID de la dependencia cuando el middleware requireDependenciaAccess ha corrido.
+       */
+      dependenciaId?: string;
       /**
        * Query params validados por middleware (ej. listar organizaciones)
        */

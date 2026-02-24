@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
 // Schema de respuesta para reporte de eventos por actividad
 const ReporteEventosPorActividadItemSchema = registry.register('ReporteEventosPorActividadItem', z.object({
     actividadId: z.string().uuid().describe('ID único de la actividad'),
