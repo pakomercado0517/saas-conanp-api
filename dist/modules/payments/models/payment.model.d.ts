@@ -1,10 +1,10 @@
 import { Model, type Optional } from 'sequelize';
 import type { UUID, PaymentStatus } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
 export interface PaymentAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     eventoId: UUID;
     amount: number;
     currency: string;
@@ -25,7 +25,7 @@ export interface PaymentCreationAttributes extends Optional<PaymentAttributes, '
 }
 export declare class Payment extends Model<PaymentAttributes, PaymentCreationAttributes> implements PaymentAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     eventoId: UUID;
     amount: number;
     currency: string;
@@ -41,7 +41,7 @@ export declare class Payment extends Model<PaymentAttributes, PaymentCreationAtt
     readonly createdAt: Date;
     readonly updatedAt: Date;
     deletedAt: Date | null;
-    Organization?: Organization;
+    Area?: Area;
     EventoOperativo?: EventoOperativo;
 }
 //# sourceMappingURL=payment.model.d.ts.map

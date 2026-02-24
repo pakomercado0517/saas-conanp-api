@@ -65,7 +65,7 @@ export const createOrUpdateCapacidad = async (req, res) => {
                 where: {
                     actividadId,
                     date: dateStr,
-                    organizationId,
+                    areaId: organizationId,
                 },
             });
             if (!existingCapacidad) {
@@ -140,7 +140,7 @@ export const verificarDisponibilidad = async (req, res) => {
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (!actividad) {

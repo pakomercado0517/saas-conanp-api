@@ -55,7 +55,7 @@ export declare function bootstrapOrganizationWithSubscription(userId: UUID, orga
 export interface MembershipData {
     id: string;
     userId: string;
-    organizationId: string;
+    areaId: string;
     role: string;
     status: string;
     createdAt: string;

@@ -1,14 +1,14 @@
 import { Model, type Optional } from 'sequelize';
 import type { UUID } from '../../../shared/database/types';
 import type { MovimientoStockTipo, MovimientoStockMotivo } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model';
-import { User } from '../../../modules/users/models/user.model';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 export interface MovimientoStockAccesoAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     productoAccesoId: UUID;
     tipo: MovimientoStockTipo;
     cantidad: number;
@@ -28,7 +28,7 @@ export interface MovimientoStockAccesoCreationAttributes extends Optional<Movimi
 }
 export declare class MovimientoStockAcceso extends Model<MovimientoStockAccesoAttributes, MovimientoStockAccesoCreationAttributes> implements MovimientoStockAccesoAttributes {
     id: UUID;
-    organizationId: UUID;
+    dependenciaId: UUID;
     productoAccesoId: UUID;
     tipo: MovimientoStockTipo;
     cantidad: number;
@@ -43,7 +43,7 @@ export declare class MovimientoStockAcceso extends Model<MovimientoStockAccesoAt
     notas: string | null;
     readonly createdAt: Date;
     readonly updatedAt: Date;
-    Organization?: Organization;
+    Dependencia?: Dependencia;
     ProductoAcceso?: ProductoAcceso;
     PrestadorProfile?: PrestadorProfile | null;
     EventoOperativo?: EventoOperativo | null;

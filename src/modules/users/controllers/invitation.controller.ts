@@ -15,8 +15,11 @@ import type {
 } from '../validators/invitation.validator.js';
 
 const getOrganizationId = (req: Request): string => {
-  const id = req.params['organizationId'];
-  return typeof id === 'string' ? id : (id?.[0] ?? '');
+  const id =
+    req.areaId ?? req.organizationId ?? req.params['areaId'] ?? req.params['organizationId'];
+  const str =
+    typeof id === 'string' ? id : Array.isArray(id) ? id[0] : id != null ? String(id) : '';
+  return str ?? '';
 };
 
 const getInvitationId = (req: Request): string => {

@@ -1,10 +1,10 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../../../shared/database';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model';
-import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model';
-import { User } from '../../../modules/users/models/user.model';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 export class MovimientoStockAcceso extends Model {
 }
 MovimientoStockAcceso.init({
@@ -14,15 +14,15 @@ MovimientoStockAcceso.init({
         primaryKey: true,
         allowNull: false,
     },
-    organizationId: {
+    dependenciaId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'organizations',
+            model: 'dependencias',
             key: 'id',
         },
         validate: {
-            notEmpty: { msg: 'El ID de organización es requerido' },
+            notEmpty: { msg: 'El ID de dependencia es requerido' },
         },
     },
     productoAccesoId: {
@@ -132,7 +132,7 @@ MovimientoStockAcceso.init({
     paranoid: false,
     underscored: false,
     indexes: [
-        { name: 'idx_movimientos_stock_acceso_organization', fields: ['organizationId'] },
+        { name: 'idx_movimientos_stock_acceso_dependencia', fields: ['dependenciaId'] },
         { name: 'idx_movimientos_stock_acceso_producto', fields: ['productoAccesoId'] },
         { name: 'idx_movimientos_stock_acceso_fecha', fields: ['fecha'] },
         { name: 'idx_movimientos_stock_acceso_tipo', fields: ['tipo'] },
@@ -140,9 +140,9 @@ MovimientoStockAcceso.init({
         { name: 'idx_movimientos_stock_acceso_evento', fields: ['eventoId'] },
     ],
 });
-MovimientoStockAcceso.belongsTo(Organization, {
-    foreignKey: 'organizationId',
-    as: 'Organization',
+MovimientoStockAcceso.belongsTo(Dependencia, {
+    foreignKey: 'dependenciaId',
+    as: 'Dependencia',
 });
 MovimientoStockAcceso.belongsTo(ProductoAcceso, {
     foreignKey: 'productoAccesoId',
@@ -160,8 +160,8 @@ MovimientoStockAcceso.belongsTo(User, {
     foreignKey: 'createdBy',
     as: 'CreatedByUser',
 });
-Organization.hasMany(MovimientoStockAcceso, {
-    foreignKey: 'organizationId',
+Dependencia.hasMany(MovimientoStockAcceso, {
+    foreignKey: 'dependenciaId',
     as: 'MovimientosStockAcceso',
 });
 ProductoAcceso.hasMany(MovimientoStockAcceso, {

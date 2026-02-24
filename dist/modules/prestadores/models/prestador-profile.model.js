@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../../../shared/database';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { User } from '../../../modules/users/models/user.model';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 export class PrestadorProfile extends Model {
 }
 PrestadorProfile.init({
@@ -24,16 +24,16 @@ PrestadorProfile.init({
             },
         },
     },
-    organizationId: {
+    dependenciaId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'organizations',
+            model: 'dependencias',
             key: 'id',
         },
         validate: {
             notEmpty: {
-                msg: 'El ID de organización es requerido',
+                msg: 'El ID de dependencia es requerido',
             },
         },
     },
@@ -73,13 +73,13 @@ PrestadorProfile.init({
     underscored: false,
     indexes: [
         {
-            name: 'idx_prestador_profiles_user_org',
+            name: 'idx_prestador_profiles_user_dep',
             unique: true,
-            fields: ['userId', 'organizationId'],
+            fields: ['userId', 'dependenciaId'],
         },
         {
-            name: 'idx_prestador_profiles_organization',
-            fields: ['organizationId'],
+            name: 'idx_prestador_profiles_dependencia',
+            fields: ['dependenciaId'],
         },
         {
             name: 'idx_prestador_profiles_user',
@@ -95,9 +95,8 @@ PrestadorProfile.init({
         },
     ],
 });
-// Definir relaciones
 PrestadorProfile.belongsTo(User, { foreignKey: 'userId', as: 'User' });
-PrestadorProfile.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+PrestadorProfile.belongsTo(Dependencia, { foreignKey: 'dependenciaId', as: 'Dependencia' });
 User.hasMany(PrestadorProfile, { foreignKey: 'userId', as: 'PrestadorProfiles' });
-Organization.hasMany(PrestadorProfile, { foreignKey: 'organizationId', as: 'PrestadorProfiles' });
+Dependencia.hasMany(PrestadorProfile, { foreignKey: 'dependenciaId', as: 'PrestadorProfiles' });
 //# sourceMappingURL=prestador-profile.model.js.map

@@ -1,14 +1,14 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database/index.js';
 import type { UUID } from '@/shared/database/types.js';
-import { Organization } from '@/modules/organizations/models/organization.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import { Actividad } from './actividad.model.js';
 
 export interface CapacidadAttributes {
   id: UUID;
-  organizationId: UUID;
+  areaId: UUID;
   actividadId: UUID;
-  date: string; // DATEONLY se representa como string en formato YYYY-MM-DD
+  date: string;
   limit: number;
   createdAt: Date;
   updatedAt: Date;
@@ -24,15 +24,14 @@ export class Capacidad
   implements CapacidadAttributes
 {
   declare id: UUID;
-  declare organizationId: UUID;
+  declare areaId: UUID;
   declare actividadId: UUID;
   declare date: string;
   declare limit: number;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 
-  // Relaciones
-  declare Organization?: Organization;
+  declare Area?: Area;
   declare Actividad?: Actividad;
 }
 
@@ -44,16 +43,16 @@ Capacidad.init(
       primaryKey: true,
       allowNull: false,
     },
-    organizationId: {
+    areaId: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'organizations',
+        model: 'areas',
         key: 'id',
       },
       validate: {
         notEmpty: {
-          msg: 'El ID de organización es requerido',
+          msg: 'El ID de área es requerido',
         },
       },
     },
@@ -110,8 +109,8 @@ Capacidad.init(
     underscored: false,
     indexes: [
       {
-        name: 'idx_capacidades_organization',
-        fields: ['organizationId'],
+        name: 'idx_capacidades_area',
+        fields: ['areaId'],
       },
       {
         name: 'idx_capacidades_actividad',
@@ -130,9 +129,8 @@ Capacidad.init(
   }
 );
 
-// Definir relaciones
-Capacidad.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+Capacidad.belongsTo(Area, { foreignKey: 'areaId', as: 'Area' });
 Capacidad.belongsTo(Actividad, { foreignKey: 'actividadId', as: 'Actividad' });
 
-Organization.hasMany(Capacidad, { foreignKey: 'organizationId', as: 'Capacidades' });
+Area.hasMany(Capacidad, { foreignKey: 'areaId', as: 'Capacidades' });
 Actividad.hasMany(Capacidad, { foreignKey: 'actividadId', as: 'Capacidades' });

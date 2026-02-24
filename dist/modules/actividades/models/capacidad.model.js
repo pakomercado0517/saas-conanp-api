@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../../../shared/database/index.js';
-import { Organization } from '../../../modules/organizations/models/organization.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
 import { Actividad } from './actividad.model.js';
 export class Capacidad extends Model {
 }
@@ -11,16 +11,16 @@ Capacidad.init({
         primaryKey: true,
         allowNull: false,
     },
-    organizationId: {
+    areaId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'organizations',
+            model: 'areas',
             key: 'id',
         },
         validate: {
             notEmpty: {
-                msg: 'El ID de organización es requerido',
+                msg: 'El ID de área es requerido',
             },
         },
     },
@@ -76,8 +76,8 @@ Capacidad.init({
     underscored: false,
     indexes: [
         {
-            name: 'idx_capacidades_organization',
-            fields: ['organizationId'],
+            name: 'idx_capacidades_area',
+            fields: ['areaId'],
         },
         {
             name: 'idx_capacidades_actividad',
@@ -94,9 +94,8 @@ Capacidad.init({
         },
     ],
 });
-// Definir relaciones
-Capacidad.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+Capacidad.belongsTo(Area, { foreignKey: 'areaId', as: 'Area' });
 Capacidad.belongsTo(Actividad, { foreignKey: 'actividadId', as: 'Actividad' });
-Organization.hasMany(Capacidad, { foreignKey: 'organizationId', as: 'Capacidades' });
+Area.hasMany(Capacidad, { foreignKey: 'areaId', as: 'Capacidades' });
 Actividad.hasMany(Capacidad, { foreignKey: 'actividadId', as: 'Capacidades' });
 //# sourceMappingURL=capacidad.model.js.map

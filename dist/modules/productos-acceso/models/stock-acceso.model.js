@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../../../shared/database';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
 export class StockAcceso extends Model {
 }
 StockAcceso.init({
@@ -11,15 +11,15 @@ StockAcceso.init({
         primaryKey: true,
         allowNull: false,
     },
-    organizationId: {
+    dependenciaId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'organizations',
+            model: 'dependencias',
             key: 'id',
         },
         validate: {
-            notEmpty: { msg: 'El ID de organización es requerido' },
+            notEmpty: { msg: 'El ID de dependencia es requerido' },
         },
     },
     productoAccesoId: {
@@ -60,17 +60,17 @@ StockAcceso.init({
     paranoid: false,
     underscored: false,
     indexes: [
-        { name: 'idx_stocks_acceso_organization', fields: ['organizationId'] },
+        { name: 'idx_stocks_acceso_dependencia', fields: ['dependenciaId'] },
         { name: 'idx_stocks_acceso_producto', fields: ['productoAccesoId'] },
         {
-            name: 'uq_stocks_acceso_org_producto',
+            name: 'uq_stocks_acceso_dep_producto',
             unique: true,
-            fields: ['organizationId', 'productoAccesoId'],
+            fields: ['dependenciaId', 'productoAccesoId'],
         },
     ],
 });
-StockAcceso.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+StockAcceso.belongsTo(Dependencia, { foreignKey: 'dependenciaId', as: 'Dependencia' });
 StockAcceso.belongsTo(ProductoAcceso, { foreignKey: 'productoAccesoId', as: 'ProductoAcceso' });
-Organization.hasMany(StockAcceso, { foreignKey: 'organizationId', as: 'StocksAcceso' });
+Dependencia.hasMany(StockAcceso, { foreignKey: 'dependenciaId', as: 'StocksAcceso' });
 ProductoAcceso.hasMany(StockAcceso, { foreignKey: 'productoAccesoId', as: 'StocksAcceso' });
 //# sourceMappingURL=stock-acceso.model.js.map

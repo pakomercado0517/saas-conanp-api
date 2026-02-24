@@ -27,29 +27,27 @@ export const requireRole = (allowedRoles) => async (req, _res, next) => {
     if (!req.user) {
         throw new UnauthorizedError('Token de autenticación requerido');
     }
-    const organizationId = req.organizationId;
-    if (!organizationId) {
-        throw new BadRequestError('organizationId es requerido. Asegúrate de usar requireOrganizationAccess antes de este middleware');
+    const areaId = req.areaId ?? req.organizationId;
+    if (!areaId) {
+        throw new BadRequestError('areaId/organizationId es requerido. Asegúrate de usar requireOrganizationAccess antes de este middleware');
     }
-    // Buscar la membership del usuario en la organización
     const membership = await Membership.findOne({
         where: {
             userId: req.user.userId,
-            organizationId,
+            areaId,
             status: 'activo',
         },
     });
     if (!membership) {
-        throw new ForbiddenError('No tienes acceso a esta organización', {
-            organizationId,
+        throw new ForbiddenError('No tienes acceso a esta área', {
+            areaId,
             userId: req.user.userId,
         });
     }
-    // Validar que el rol del usuario esté en la lista de roles permitidos
     if (!allowedRoles.includes(membership.role)) {
         const rolesStr = allowedRoles.join(', ');
         throw new ForbiddenError(`No tienes permisos para realizar esta acción. Se requiere uno de los siguientes roles: ${rolesStr}`, {
-            organizationId,
+            areaId,
             userId: req.user.userId,
             currentRole: membership.role,
             requiredRoles: allowedRoles,
@@ -80,27 +78,26 @@ export const requireAdmin = async (req, _res, next) => {
     if (!req.user) {
         throw new UnauthorizedError('Token de autenticación requerido');
     }
-    const organizationId = req.organizationId;
-    if (!organizationId) {
-        throw new BadRequestError('organizationId es requerido. Asegúrate de usar requireOrganizationAccess antes de este middleware');
+    const areaId = req.areaId ?? req.organizationId;
+    if (!areaId) {
+        throw new BadRequestError('areaId/organizationId es requerido. Asegúrate de usar requireOrganizationAccess antes de este middleware');
     }
-    // Buscar la membership del usuario en la organización
     const membership = await Membership.findOne({
         where: {
             userId: req.user.userId,
-            organizationId,
+            areaId,
             status: 'activo',
         },
     });
     if (!membership) {
-        throw new ForbiddenError('No tienes acceso a esta organización', {
-            organizationId,
+        throw new ForbiddenError('No tienes acceso a esta área', {
+            areaId,
             userId: req.user.userId,
         });
     }
     if (membership.role !== 'admin') {
         throw new ForbiddenError('Solo los administradores pueden realizar esta acción', {
-            organizationId,
+            areaId,
             userId: req.user.userId,
             currentRole: membership.role,
         });

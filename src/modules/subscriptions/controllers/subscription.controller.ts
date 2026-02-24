@@ -89,7 +89,7 @@ export const changePlan = async (req: Request, res: Response): Promise<Response>
 
   const result = await subscriptionService.changePlan(
     subscriptionId,
-    subscription.organizationId,
+    subscription.dependenciaId,
     userId,
     data
   );
@@ -121,7 +121,7 @@ export const cancelSubscription = async (req: Request, res: Response): Promise<R
 
   const result = await subscriptionService.cancelSubscription(
     subscriptionId,
-    subscription.organizationId,
+    subscription.dependenciaId,
     userId,
     data
   );
@@ -152,7 +152,7 @@ export const reactivateSubscription = async (req: Request, res: Response): Promi
 
   const result = await subscriptionService.reactivateSubscription(
     subscriptionId,
-    subscription.organizationId,
+    subscription.dependenciaId,
     userId
   );
   const sanitized = sanitizeSubscriptionForResponse(result);

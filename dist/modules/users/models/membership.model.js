@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../../../shared/database';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { User } from './user.model';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { User } from './user.model.js';
 export class Membership extends Model {
 }
 Membership.init({
@@ -14,28 +14,16 @@ Membership.init({
     userId: {
         type: DataTypes.UUID,
         allowNull: false,
-        references: {
-            model: 'users',
-            key: 'id',
-        },
-        validate: {
-            notEmpty: {
-                msg: 'El ID de usuario es requerido',
-            },
-        },
+        references: { model: 'users', key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
     },
-    organizationId: {
+    areaId: {
         type: DataTypes.UUID,
         allowNull: false,
-        references: {
-            model: 'organizations',
-            key: 'id',
-        },
-        validate: {
-            notEmpty: {
-                msg: 'El ID de organización es requerido',
-            },
-        },
+        references: { model: 'areas', key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
     },
     role: {
         type: DataTypes.ENUM('admin', 'gestor', 'prestador', 'observador'),
@@ -75,32 +63,15 @@ Membership.init({
     timestamps: true,
     underscored: false,
     indexes: [
-        {
-            name: 'idx_memberships_user_org',
-            unique: true,
-            fields: ['userId', 'organizationId'],
-        },
-        {
-            name: 'idx_memberships_organization',
-            fields: ['organizationId'],
-        },
-        {
-            name: 'idx_memberships_user',
-            fields: ['userId'],
-        },
-        {
-            name: 'idx_memberships_role',
-            fields: ['role'],
-        },
-        {
-            name: 'idx_memberships_status',
-            fields: ['status'],
-        },
+        { name: 'idx_memberships_user_area', unique: true, fields: ['userId', 'areaId'] },
+        { name: 'idx_memberships_area', fields: ['areaId'] },
+        { name: 'idx_memberships_user', fields: ['userId'] },
+        { name: 'idx_memberships_role', fields: ['role'] },
+        { name: 'idx_memberships_status', fields: ['status'] },
     ],
 });
-// Definir relaciones
 Membership.belongsTo(User, { foreignKey: 'userId', as: 'User' });
-Membership.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+Membership.belongsTo(Area, { foreignKey: 'areaId', as: 'Area' });
 User.hasMany(Membership, { foreignKey: 'userId', as: 'Memberships' });
-Organization.hasMany(Membership, { foreignKey: 'organizationId', as: 'Memberships' });
+Area.hasMany(Membership, { foreignKey: 'areaId', as: 'Memberships' });
 //# sourceMappingURL=membership.model.js.map

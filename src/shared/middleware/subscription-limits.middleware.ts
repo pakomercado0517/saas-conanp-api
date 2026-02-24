@@ -16,11 +16,16 @@ export const SUBSCRIPTION_LIMITS_LOCALS_KEY = 'subscriptionLimits' as const;
 export type SubscriptionLimitsLocals = LimitsAndUsage;
 
 /**
- * Obtiene organizationId del request.
+ * Obtiene areaId/organizationId del request.
  * Debe ejecutarse después de requireOrganizationAccess.
  */
 const getOrganizationId = (req: Request): string | undefined => {
-  return req.organizationId ?? (req.params['organizationId'] as string | undefined);
+  return (
+    req.areaId ??
+    req.organizationId ??
+    (req.params['areaId'] as string | undefined) ??
+    (req.params['organizationId'] as string | undefined)
+  );
 };
 
 /**

@@ -169,7 +169,7 @@ export const register = async (data) => {
     if (invitationData) {
         await Membership.create({
             userId: user.id,
-            organizationId: invitationData.organizationId,
+            areaId: invitationData.organizationId, // API usa "organizationId" pero el valor es areaId
             role: invitationData.role,
             status: 'activo',
         });

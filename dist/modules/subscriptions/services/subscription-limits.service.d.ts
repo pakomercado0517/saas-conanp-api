@@ -19,13 +19,12 @@ export interface LimitsAndUsage {
     usage: OrganizationUsage;
 }
 /**
- * Obtiene la suscripción activa de una organización (uso interno).
- * No valida acceso del usuario; para uso desde otros services.
+ * Obtiene la suscripción activa para un área (vía dependencia). Uso interno.
  *
- * @param organizationId - ID de la organización
+ * @param areaId - ID del área (la suscripción está a nivel dependencia)
  * @returns Suscripción activa con plan, o null si no hay
  */
-export declare const getActiveSubscriptionByOrganization: (organizationId: UUID) => Promise<(Subscription & {
+export declare const getActiveSubscriptionByOrganization: (areaId: UUID) => Promise<(Subscription & {
     SubscriptionPlan?: SubscriptionPlan;
 }) | null>;
 /**
@@ -36,15 +35,12 @@ export declare const getActiveSubscriptionByOrganization: (organizationId: UUID)
  */
 export declare const getOrganizationLimits: (organizationId: UUID) => Promise<OrganizationLimits | null>;
 /**
- * Obtiene el uso actual de una organización (usuarios, eventos, actividades).
- * Los eventos se cuentan en el periodo actual de facturación (para límite "por mes/período").
+ * Obtiene el uso actual a nivel dependencia (usuarios, eventos, actividades en todas las áreas de la dependencia).
  *
- * @param organizationId - ID de la organización
- * @param periodStart - Inicio del periodo (opcional, para filtrar eventos)
- * @param periodEnd - Fin del periodo (opcional, para filtrar eventos)
- * @returns Conteos actuales
+ * @param areaId - ID del área (se resuelve dependencia y se cuentan todos los recursos de esa dependencia)
+ * @param periodBounds - Opcional, para filtrar eventos por periodo
  */
-export declare const getOrganizationUsage: (organizationId: UUID, periodBounds?: {
+export declare const getOrganizationUsage: (areaId: UUID, periodBounds?: {
     periodStart: Date;
     periodEnd: Date;
 }) => Promise<OrganizationUsage>;
@@ -82,6 +78,24 @@ export declare const checkEventosLimit: (organizationId: UUID, currentCount?: nu
  * @throws {ValidationError} Si se excede el límite
  */
 export declare const checkActividadesLimit: (organizationId: UUID, currentCount?: number) => Promise<void>;
+/**
+ * Verifica el límite de prestadores (plan FREE = 1).
+ * Solo aplica cuando el plan es "free".
+ *
+ * @param areaId - ID del área (organizationId en API)
+ * @throws {NotFoundError} Si no tiene suscripción activa
+ * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ */
+export declare const checkPrestadoresLimit: (areaId: UUID) => Promise<void>;
+/**
+ * Verifica el límite de activos (plan FREE = 1).
+ * Solo aplica cuando el plan es "free".
+ *
+ * @param areaId - ID del área (organizationId en API)
+ * @throws {NotFoundError} Si no tiene suscripción activa
+ * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ */
+export declare const checkActivosLimit: (areaId: UUID) => Promise<void>;
 /**
  * Verifica el límite de organizaciones para un plan.
  * Aplica cuando el plan tiene maxOrganizations (ej. capacidad del plan).

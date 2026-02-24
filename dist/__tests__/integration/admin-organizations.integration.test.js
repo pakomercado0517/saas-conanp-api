@@ -56,7 +56,7 @@ describe('Admin Organizations endpoints (integration)', () => {
         });
         const membership = await Membership.findOne({
             where: {
-                organizationId: res.body.data.id,
+                areaId: res.body.data.id,
                 userId: existingAdmin.user.id,
             },
         });
@@ -83,7 +83,7 @@ describe('Admin Organizations endpoints (integration)', () => {
         expect(res.body.data).toHaveProperty('invitationId');
         const invitation = await Invitation.findByPk(res.body.data.invitationId);
         expect(invitation).toBeTruthy();
-        expect(invitation?.organizationId).toBe(res.body.data.id);
+        expect(invitation?.areaId).toBe(res.body.data.id);
         expect(invitation?.email).toBe(adminEmail);
         expect(invitation?.role).toBe('admin');
         expect(invitation?.status).toBe('pending');

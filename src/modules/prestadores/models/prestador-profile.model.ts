@@ -1,13 +1,13 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
-import { Organization } from '@/modules/organizations/models/organization.model';
-import { User } from '@/modules/users/models/user.model';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { User } from '@/modules/users/models/user.model.js';
 
 export interface PrestadorProfileAttributes {
   id: UUID;
   userId: UUID;
-  organizationId: UUID;
+  dependenciaId: UUID;
   status: 'activo' | 'inactivo' | 'suspendido';
   permitExpiresAt: Date | null;
   createdAt: Date;
@@ -25,15 +25,14 @@ export class PrestadorProfile
 {
   declare id: UUID;
   declare userId: UUID;
-  declare organizationId: UUID;
+  declare dependenciaId: UUID;
   declare status: 'activo' | 'inactivo' | 'suspendido';
   declare permitExpiresAt: Date | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 
-  // Relaciones
   declare User?: User;
-  declare Organization?: Organization;
+  declare Dependencia?: Dependencia;
 }
 
 PrestadorProfile.init(
@@ -57,16 +56,16 @@ PrestadorProfile.init(
         },
       },
     },
-    organizationId: {
+    dependenciaId: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'organizations',
+        model: 'dependencias',
         key: 'id',
       },
       validate: {
         notEmpty: {
-          msg: 'El ID de organización es requerido',
+          msg: 'El ID de dependencia es requerido',
         },
       },
     },
@@ -107,13 +106,13 @@ PrestadorProfile.init(
     underscored: false,
     indexes: [
       {
-        name: 'idx_prestador_profiles_user_org',
+        name: 'idx_prestador_profiles_user_dep',
         unique: true,
-        fields: ['userId', 'organizationId'],
+        fields: ['userId', 'dependenciaId'],
       },
       {
-        name: 'idx_prestador_profiles_organization',
-        fields: ['organizationId'],
+        name: 'idx_prestador_profiles_dependencia',
+        fields: ['dependenciaId'],
       },
       {
         name: 'idx_prestador_profiles_user',
@@ -131,9 +130,8 @@ PrestadorProfile.init(
   }
 );
 
-// Definir relaciones
 PrestadorProfile.belongsTo(User, { foreignKey: 'userId', as: 'User' });
-PrestadorProfile.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+PrestadorProfile.belongsTo(Dependencia, { foreignKey: 'dependenciaId', as: 'Dependencia' });
 
 User.hasMany(PrestadorProfile, { foreignKey: 'userId', as: 'PrestadorProfiles' });
-Organization.hasMany(PrestadorProfile, { foreignKey: 'organizationId', as: 'PrestadorProfiles' });
+Dependencia.hasMany(PrestadorProfile, { foreignKey: 'dependenciaId', as: 'PrestadorProfiles' });

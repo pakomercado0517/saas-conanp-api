@@ -3,7 +3,9 @@
  * Importar desde aquí para evitar importaciones circulares
  */
 import './index.js';
-export { Organization } from '../../modules/organizations/models/organization.model.js';
+export { Dependencia } from '../../modules/dependencias/models/dependencia.model.js';
+export { DependenciaMembership } from '../../modules/dependencias/models/dependencia-membership.model.js';
+export { Area } from '../../modules/areas/models/area.model.js';
 export { User } from '../../modules/users/models/user.model.js';
 export { Membership } from '../../modules/users/models/membership.model.js';
 export { Invitation } from '../../modules/users/models/invitation.model.js';

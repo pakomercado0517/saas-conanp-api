@@ -5,7 +5,8 @@ import type { UUID } from '@/shared/database/types.js';
 import { User } from '@/modules/users/models/user.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
 import { Invitation } from '@/modules/users/models/invitation.model.js';
-import { Organization } from '@/modules/organizations/models/organization.model.js';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
 import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
 
@@ -83,8 +84,13 @@ async function getRegisterPayloadWithInvitation(
     });
   }
 
-  const org = await Organization.create({
+  const dependencia = await Dependencia.create({
     name: `Org Invitation ${Date.now()}`,
+    settings: {},
+  });
+  const area = await Area.create({
+    dependenciaId: dependencia.id,
+    name: dependencia.name,
     ecosystem_type: 'terrestre',
     settings: {},
   });
@@ -92,7 +98,7 @@ async function getRegisterPayloadWithInvitation(
   const periodEnd = new Date();
   periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   await Subscription.create({
-    organizationId: org.id,
+    dependenciaId: dependencia.id,
     planId: plan.id,
     status: 'active',
     billingCycle: 'monthly',
@@ -112,10 +118,10 @@ async function getRegisterPayloadWithInvitation(
   });
 
   const [_adminMembership] = await Membership.findOrCreate({
-    where: { userId: adminUser.id, organizationId: org.id },
+    where: { userId: adminUser.id, areaId: area.id },
     defaults: {
       userId: adminUser.id,
-      organizationId: org.id,
+      areaId: area.id,
       role: 'admin',
       status: 'activo',
     },
@@ -125,7 +131,7 @@ async function getRegisterPayloadWithInvitation(
   expiresAt.setDate(expiresAt.getDate() + 7);
 
   const invitation = await Invitation.create({
-    organizationId: org.id,
+    areaId: area.id,
     email: email.trim().toLowerCase(),
     role: 'prestador',
     tokenHash,
@@ -180,12 +186,14 @@ export async function createTestOrganization(
   const ecosystem_type = body?.ecosystem_type ?? 'terrestre';
 
   if (process.env['NODE_ENV'] === 'test') {
-    const org = await Organization.create({
+    const dependencia = await Dependencia.create({ name, settings: {} });
+    const area = await Area.create({
+      dependenciaId: dependencia.id,
       name,
       ecosystem_type,
       settings: {},
     });
-    return org.toJSON() as unknown as OrganizationData;
+    return area.toJSON() as unknown as OrganizationData;
   }
 
   const res = await request(app)
@@ -207,7 +215,7 @@ export async function bootstrapOrganizationMembershipOnly(
 ): Promise<void> {
   await Membership.create({
     userId,
-    organizationId,
+    areaId: organizationId,
     role: 'admin',
     status: 'activo',
   });
@@ -243,8 +251,10 @@ export async function bootstrapOrganizationWithSubscription(
   const periodEnd = new Date(now);
   periodEnd.setFullYear(periodEnd.getFullYear() + 1);
 
+  const area = await Area.findByPk(organizationId);
+  if (!area) throw new Error('Area not found for organizationId (areaId): ' + organizationId);
   await Subscription.create({
-    organizationId,
+    dependenciaId: area.dependenciaId,
     planId: plan.id,
     status: 'active',
     billingCycle: 'monthly',
@@ -257,7 +267,7 @@ export async function bootstrapOrganizationWithSubscription(
 export interface MembershipData {
   id: string;
   userId: string;
-  organizationId: string;
+  areaId: string;
   role: string;
   status: string;
   createdAt: string;

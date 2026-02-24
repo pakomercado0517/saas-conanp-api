@@ -1,9 +1,9 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../../../shared/database';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model';
-import { Actividad } from '../../../modules/actividades/models/actividad.model';
-import { Bloque } from '../../../modules/actividades/models/bloque.model';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
 export class EventoOperativo extends Model {
 }
 EventoOperativo.init({
@@ -13,16 +13,16 @@ EventoOperativo.init({
         primaryKey: true,
         allowNull: false,
     },
-    organizationId: {
+    areaId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'organizations',
+            model: 'areas',
             key: 'id',
         },
         validate: {
             notEmpty: {
-                msg: 'El ID de organización es requerido',
+                msg: 'El ID de área es requerido',
             },
         },
     },
@@ -134,8 +134,8 @@ EventoOperativo.init({
     underscored: false,
     indexes: [
         {
-            name: 'idx_eventos_operativos_organization',
-            fields: ['organizationId'],
+            name: 'idx_eventos_operativos_area',
+            fields: ['areaId'],
         },
         {
             name: 'idx_eventos_operativos_prestador',
@@ -146,8 +146,8 @@ EventoOperativo.init({
             fields: ['actividadId'],
         },
         {
-            name: 'idx_eventos_operativos_org_date',
-            fields: ['organizationId', 'date'],
+            name: 'idx_eventos_operativos_area_date',
+            fields: ['areaId', 'date'],
         },
         {
             name: 'idx_eventos_operativos_date',
@@ -167,12 +167,11 @@ EventoOperativo.init({
         },
     ],
 });
-// Definir relaciones
-EventoOperativo.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+EventoOperativo.belongsTo(Area, { foreignKey: 'areaId', as: 'Area' });
 EventoOperativo.belongsTo(PrestadorProfile, { foreignKey: 'prestadorId', as: 'PrestadorProfile' });
 EventoOperativo.belongsTo(Actividad, { foreignKey: 'actividadId', as: 'Actividad' });
 EventoOperativo.belongsTo(Bloque, { foreignKey: 'bloqueId', as: 'Bloque' });
-Organization.hasMany(EventoOperativo, { foreignKey: 'organizationId', as: 'EventosOperativos' });
+Area.hasMany(EventoOperativo, { foreignKey: 'areaId', as: 'EventosOperativos' });
 PrestadorProfile.hasMany(EventoOperativo, { foreignKey: 'prestadorId', as: 'EventosOperativos' });
 Actividad.hasMany(EventoOperativo, { foreignKey: 'actividadId', as: 'EventosOperativos' });
 Bloque.hasMany(EventoOperativo, { foreignKey: 'bloqueId', as: 'EventosOperativos' });

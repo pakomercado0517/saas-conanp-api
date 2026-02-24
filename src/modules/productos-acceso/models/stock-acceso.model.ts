@@ -1,12 +1,12 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
 import { sequelize } from '@/shared/database';
 import type { UUID } from '@/shared/database/types';
-import { Organization } from '@/modules/organizations/models/organization.model';
-import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
 
 export interface StockAccesoAttributes {
   id: UUID;
-  organizationId: UUID;
+  dependenciaId: UUID;
   productoAccesoId: UUID;
   cantidad: number;
   createdAt: Date;
@@ -23,13 +23,13 @@ export class StockAcceso
   implements StockAccesoAttributes
 {
   declare id: UUID;
-  declare organizationId: UUID;
+  declare dependenciaId: UUID;
   declare productoAccesoId: UUID;
   declare cantidad: number;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 
-  declare Organization?: Organization;
+  declare Dependencia?: Dependencia;
   declare ProductoAcceso?: ProductoAcceso;
 }
 
@@ -41,15 +41,15 @@ StockAcceso.init(
       primaryKey: true,
       allowNull: false,
     },
-    organizationId: {
+    dependenciaId: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'organizations',
+        model: 'dependencias',
         key: 'id',
       },
       validate: {
-        notEmpty: { msg: 'El ID de organización es requerido' },
+        notEmpty: { msg: 'El ID de dependencia es requerido' },
       },
     },
     productoAccesoId: {
@@ -91,18 +91,18 @@ StockAcceso.init(
     paranoid: false,
     underscored: false,
     indexes: [
-      { name: 'idx_stocks_acceso_organization', fields: ['organizationId'] },
+      { name: 'idx_stocks_acceso_dependencia', fields: ['dependenciaId'] },
       { name: 'idx_stocks_acceso_producto', fields: ['productoAccesoId'] },
       {
-        name: 'uq_stocks_acceso_org_producto',
+        name: 'uq_stocks_acceso_dep_producto',
         unique: true,
-        fields: ['organizationId', 'productoAccesoId'],
+        fields: ['dependenciaId', 'productoAccesoId'],
       },
     ],
   }
 );
 
-StockAcceso.belongsTo(Organization, { foreignKey: 'organizationId', as: 'Organization' });
+StockAcceso.belongsTo(Dependencia, { foreignKey: 'dependenciaId', as: 'Dependencia' });
 StockAcceso.belongsTo(ProductoAcceso, { foreignKey: 'productoAccesoId', as: 'ProductoAcceso' });
-Organization.hasMany(StockAcceso, { foreignKey: 'organizationId', as: 'StocksAcceso' });
+Dependencia.hasMany(StockAcceso, { foreignKey: 'dependenciaId', as: 'StocksAcceso' });
 ProductoAcceso.hasMany(StockAcceso, { foreignKey: 'productoAccesoId', as: 'StocksAcceso' });

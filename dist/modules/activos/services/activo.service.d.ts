@@ -30,7 +30,7 @@ export declare const validateEstadoTransition: (currentStatus: ActivoStatus, new
  * @throws {NotFoundError} Si el activo no existe o no pertenece a la organización
  * @throws {ValidationError} Si el activo no está aprobado
  */
-export declare const validateActivoAprobado: (activoId: UUID, organizationId: UUID) => Promise<Activo>;
+export declare const validateActivoAprobado: (activoId: UUID, areaId: UUID) => Promise<Activo>;
 /**
  * Crea un nuevo activo.
  *

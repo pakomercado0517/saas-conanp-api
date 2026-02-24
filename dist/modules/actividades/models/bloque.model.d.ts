@@ -1,10 +1,10 @@
 import { Model, type Optional } from 'sequelize';
 import type { UUID } from '../../../shared/database/types.js';
-import { Organization } from '../../../modules/organizations/models/organization.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
 import { Actividad } from './actividad.model.js';
 export interface BloqueAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     actividadId: UUID;
     date: string | null;
     startTime: string;
@@ -18,7 +18,7 @@ export interface BloqueCreationAttributes extends Optional<BloqueAttributes, 'id
 }
 export declare class Bloque extends Model<BloqueAttributes, BloqueCreationAttributes> implements BloqueAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     actividadId: UUID;
     date: string | null;
     startTime: string;
@@ -27,7 +27,7 @@ export declare class Bloque extends Model<BloqueAttributes, BloqueCreationAttrib
     isTemplate: boolean;
     readonly createdAt: Date;
     readonly updatedAt: Date;
-    Organization?: Organization;
+    Area?: Area;
     Actividad?: Actividad;
 }
 //# sourceMappingURL=bloque.model.d.ts.map

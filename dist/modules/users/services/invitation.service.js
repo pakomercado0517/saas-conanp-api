@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import { Invitation } from '../../../modules/users/models/invitation.model.js';
 import { InvitationEmailProof } from '../../../modules/users/models/invitation-email-proof.model.js';
 import { User } from '../../../modules/users/models/user.model.js';
-import { Organization } from '../../../modules/organizations/models/organization.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
 import { NotFoundError, ConflictError, ForbiddenError, BadRequestError, } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
 import { checkUsersLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
@@ -22,16 +22,16 @@ const generateInvitationToken = async () => {
  * Crea una invitación y envía el email con enlace y token manual.
  * Solo admins. Valida límite de usuarios y evita duplicados (pending) por org+email.
  */
-export const createInvitation = async (organizationId, data, invitedByUserId) => {
-    await assertIsAdmin(invitedByUserId, organizationId);
-    const organization = await Organization.findByPk(organizationId);
-    if (!organization) {
-        throw new NotFoundError('Organización', { organizationId });
+export const createInvitation = async (areaId, data, invitedByUserId) => {
+    await assertIsAdmin(invitedByUserId, areaId);
+    const area = await Area.findByPk(areaId);
+    if (!area) {
+        throw new NotFoundError('?rea', { areaId });
     }
     const emailNormalized = data.email.trim().toLowerCase();
     const existingPending = await Invitation.findOne({
         where: {
-            organizationId,
+            areaId,
             email: emailNormalized,
             status: 'pending',
             revokedAt: { [Op.eq]: null },
@@ -39,16 +39,16 @@ export const createInvitation = async (organizationId, data, invitedByUserId) =>
         },
     });
     if (existingPending) {
-        throw new ConflictError('Ya existe una invitación pendiente para este email en la organización', {
+        throw new ConflictError('Ya existe una invitaci?n pendiente para este email en el ?rea', {
             email: emailNormalized,
-            organizationId,
+            areaId,
         });
     }
-    await checkUsersLimit(organizationId);
+    await checkUsersLimit(areaId);
     const { token, tokenHash } = await generateInvitationToken();
     const expiresAt = DateTime.now().plus({ days: INVITATION_EXPIRES_DAYS }).toJSDate();
     const invitation = await Invitation.create({
-        organizationId,
+        areaId,
         email: emailNormalized,
         role: data.role,
         tokenHash,
@@ -61,7 +61,7 @@ export const createInvitation = async (organizationId, data, invitedByUserId) =>
     try {
         await sendInvitationEmail({
             to: emailNormalized,
-            organizationName: organization.name,
+            organizationName: area.name,
             role: data.role,
             invitationId: invitation.id,
             token,
@@ -72,7 +72,7 @@ export const createInvitation = async (organizationId, data, invitedByUserId) =>
         logger.error({ err, invitationId: invitation.id, to: emailNormalized }, 'Error enviando email de invitación');
         throw new BadRequestError('La invitación se creó pero no se pudo enviar el correo. El administrador puede compartir el enlace o el código manualmente.');
     }
-    logger.info({ invitationId: invitation.id, organizationId, email: emailNormalized, role: data.role }, 'Invitación creada y email enviado');
+    logger.info({ invitationId: invitation.id, areaId, email: emailNormalized, role: data.role }, 'Invitaci?n creada y email enviado');
     return {
         id: invitation.id,
         email: invitation.email,
@@ -84,9 +84,9 @@ export const createInvitation = async (organizationId, data, invitedByUserId) =>
 /**
  * Lista invitaciones de una organización con paginación y filtro por estado.
  */
-export const listInvitations = async (organizationId, filters, userId) => {
-    await assertIsAdmin(userId, organizationId);
-    const where = { organizationId };
+export const listInvitations = async (areaId, filters, userId) => {
+    await assertIsAdmin(userId, areaId);
+    const where = { areaId };
     if (filters.status) {
         where['status'] = filters.status;
     }
@@ -99,7 +99,7 @@ export const listInvitations = async (organizationId, filters, userId) => {
         offset,
         order,
         include: [
-            { association: 'Organization', attributes: ['id', 'name'] },
+            { association: 'Area', attributes: ['id', 'name'] },
             { association: 'InvitedByUser', attributes: ['id', 'name', 'email'] },
         ],
     });
@@ -118,13 +118,13 @@ export const listInvitations = async (organizationId, filters, userId) => {
 /**
  * Revoca una invitación (solo admins). Establece status revoked y revokedAt.
  */
-export const revokeInvitation = async (organizationId, invitationId, userId) => {
-    await assertIsAdmin(userId, organizationId);
+export const revokeInvitation = async (areaId, invitationId, userId) => {
+    await assertIsAdmin(userId, areaId);
     const invitation = await Invitation.findOne({
-        where: { id: invitationId, organizationId },
+        where: { id: invitationId, areaId },
     });
     if (!invitation) {
-        throw new NotFoundError('Invitación', { invitationId, organizationId });
+        throw new NotFoundError('Invitaci?n', { invitationId, areaId });
     }
     if (invitation.status !== 'pending') {
         throw new ForbiddenError('Solo se pueden revocar invitaciones pendientes', {
@@ -137,7 +137,7 @@ export const revokeInvitation = async (organizationId, invitationId, userId) => 
         status: 'revoked',
         revokedAt: now,
     });
-    logger.info({ invitationId, organizationId, userId }, 'Invitación revocada');
+    logger.info({ invitationId, areaId, userId }, 'Invitaci?n revocada');
 };
 /**
  * Valida un token de invitación (para pre-registro en frontend).
@@ -145,37 +145,37 @@ export const revokeInvitation = async (organizationId, invitationId, userId) => 
  */
 export const validateInvitationToken = async (invitationId, token) => {
     const invitation = await Invitation.findByPk(invitationId, {
-        include: [{ association: 'Organization', attributes: ['id', 'name'] }],
+        include: [{ association: 'Area', attributes: ['id', 'name'] }],
     });
     if (!invitation) {
-        throw new NotFoundError('Invitación', { invitationId });
+        throw new NotFoundError('Invitaci?n', { invitationId });
     }
     if (invitation.status !== 'pending') {
-        throw new ForbiddenError('Esta invitación ya no está disponible', {
+        throw new ForbiddenError('Esta invitaci?n ya no est? disponible', {
             invitationId,
             status: invitation.status,
         });
     }
     if (invitation.revokedAt) {
-        throw new ForbiddenError('Esta invitación ha sido revocada', { invitationId });
+        throw new ForbiddenError('Esta invitaci?n ha sido revocada', { invitationId });
     }
     if (new Date() > invitation.expiresAt) {
         await invitation.update({ status: 'expired' }).catch(() => { });
-        throw new ForbiddenError('Esta invitación ha expirado', { invitationId });
+        throw new ForbiddenError('Esta invitaci?n ha expirado', { invitationId });
     }
     const tokenMatches = await bcrypt.compare(token, invitation.tokenHash);
     if (!tokenMatches) {
-        throw new ForbiddenError('Token de invitación inválido', { invitationId });
+        throw new ForbiddenError('Token de invitaci?n inv?lido', { invitationId });
     }
-    const org = invitation.Organization;
-    if (!org) {
-        throw new NotFoundError('Organización', { organizationId: invitation.organizationId });
+    const area = invitation.Area;
+    if (!area) {
+        throw new NotFoundError('?rea', { areaId: invitation.areaId });
     }
     return {
         valid: true,
         email: invitation.email,
-        organizationId: invitation.organizationId,
-        organizationName: org.name,
+        organizationId: invitation.areaId,
+        organizationName: area.name,
         role: invitation.role,
         expiresAt: invitation.expiresAt,
     };
@@ -212,15 +212,15 @@ export const consumeInvitationForRegistration = async (invitationId, token, emai
     if (!tokenMatches) {
         throw new ForbiddenError('Token de invitación inválido', { invitationId });
     }
-    await checkUsersLimit(invitation.organizationId);
+    await checkUsersLimit(invitation.areaId);
     const now = new Date();
     await invitation.update({
         status: 'accepted',
         usedAt: now,
     });
-    logger.info({ invitationId, organizationId: invitation.organizationId, email: emailNormalized }, 'Invitación consumida para registro');
+    logger.info({ invitationId, areaId: invitation.areaId, email: emailNormalized }, 'Invitaci?n consumida para registro');
     return {
-        organizationId: invitation.organizationId,
+        organizationId: invitation.areaId,
         role: invitation.role,
     };
 };
@@ -262,15 +262,15 @@ export const consumeInvitationAfterProof = async (invitationId, email) => {
     if (!proofUsed) {
         throw new ForbiddenError('Debes verificar tu email con el c?digo enviado antes de completar el registro', { invitationId });
     }
-    await checkUsersLimit(invitation.organizationId);
+    await checkUsersLimit(invitation.areaId);
     const now = new Date();
     await invitation.update({
         status: 'accepted',
         usedAt: now,
     });
-    logger.info({ invitationId, organizationId: invitation.organizationId, email: emailNormalized }, 'Invitaci?n consumida para registro (tras proof de email)');
+    logger.info({ invitationId, organizationId: invitation.areaId, email: emailNormalized }, 'Invitaci?n consumida para registro (tras proof de email)');
     return {
-        organizationId: invitation.organizationId,
+        organizationId: invitation.areaId,
         role: invitation.role,
     };
 };

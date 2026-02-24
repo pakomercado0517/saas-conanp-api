@@ -43,7 +43,7 @@ const calcularCapacidadUsada = async (
   const whereClause: Record<string, unknown> = {
     actividadId,
     date,
-    organizationId,
+    areaId: organizationId,
     status: { [Op.in]: ['programado', 'en_curso'] },
   };
 
@@ -92,7 +92,7 @@ export const createCapacidad = async (
   const actividad = await Actividad.findOne({
     where: {
       id: data.actividadId,
-      organizationId,
+      areaId: organizationId,
     },
   });
 
@@ -111,7 +111,7 @@ export const createCapacidad = async (
     where: {
       actividadId: data.actividadId,
       date: dateStr,
-      organizationId,
+      areaId: organizationId,
     },
   });
 
@@ -125,7 +125,7 @@ export const createCapacidad = async (
 
   // Crear la capacidad
   const capacidad = await Capacidad.create({
-    organizationId,
+    areaId: organizationId,
     actividadId: data.actividadId,
     date: dateStr,
     limit: data.limit,
@@ -175,7 +175,7 @@ export const updateCapacidad = async (
   const capacidad = await Capacidad.findOne({
     where: {
       id: capacidadId,
-      organizationId,
+      areaId: organizationId,
     },
     include: [
       {
@@ -209,7 +209,7 @@ export const updateCapacidad = async (
         where: {
           actividadId: capacidad.actividadId,
           date: dateStr,
-          organizationId,
+          areaId: organizationId,
           id: { [Op.ne]: capacidadId },
         },
       });
@@ -272,7 +272,7 @@ export const verificarDisponibilidadPorBloque = async (
   const actividad = await Actividad.findOne({
     where: {
       id: actividadId,
-      organizationId,
+      areaId: organizationId,
     },
   });
 
@@ -293,7 +293,7 @@ export const verificarDisponibilidadPorBloque = async (
     where: {
       id: bloqueId,
       actividadId,
-      organizationId,
+      areaId: organizationId,
     },
   });
 
@@ -312,7 +312,7 @@ export const verificarDisponibilidadPorBloque = async (
     where: {
       actividadId,
       date: dateStr,
-      organizationId,
+      areaId: organizationId,
     },
   });
 
@@ -363,7 +363,7 @@ export const verificarDisponibilidadPorDia = async (
   const actividad = await Actividad.findOne({
     where: {
       id: actividadId,
-      organizationId,
+      areaId: organizationId,
     },
   });
 
@@ -390,7 +390,7 @@ export const verificarDisponibilidadPorDia = async (
     where: {
       actividadId,
       date: dateStr,
-      organizationId,
+      areaId: organizationId,
     },
   });
 

@@ -4,11 +4,14 @@ import { checkUsersLimit, checkEventosLimit, checkActividadesLimit, getLimitsAnd
 /** Clave en res.locals para la información de límites */
 export const SUBSCRIPTION_LIMITS_LOCALS_KEY = 'subscriptionLimits';
 /**
- * Obtiene organizationId del request.
+ * Obtiene areaId/organizationId del request.
  * Debe ejecutarse después de requireOrganizationAccess.
  */
 const getOrganizationId = (req) => {
-    return req.organizationId ?? req.params['organizationId'];
+    return (req.areaId ??
+        req.organizationId ??
+        req.params['areaId'] ??
+        req.params['organizationId']);
 };
 /**
  * Middleware que exige suscripción activa (active o trialing) para continuar.

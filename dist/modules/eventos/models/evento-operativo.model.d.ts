@@ -1,12 +1,12 @@
 import { Model, type Optional } from 'sequelize';
 import type { UUID } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model';
-import { Actividad } from '../../../modules/actividades/models/actividad.model';
-import { Bloque } from '../../../modules/actividades/models/bloque.model';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
 export interface EventoOperativoAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     prestadorId: UUID;
     actividadId: UUID;
     date: string;
@@ -24,7 +24,7 @@ export interface EventoOperativoCreationAttributes extends Optional<EventoOperat
 }
 export declare class EventoOperativo extends Model<EventoOperativoAttributes, EventoOperativoCreationAttributes> implements EventoOperativoAttributes {
     id: UUID;
-    organizationId: UUID;
+    areaId: UUID;
     prestadorId: UUID;
     actividadId: UUID;
     date: string;
@@ -37,7 +37,7 @@ export declare class EventoOperativo extends Model<EventoOperativoAttributes, Ev
     paidAt: Date | null;
     readonly createdAt: Date;
     readonly updatedAt: Date;
-    Organization?: Organization;
+    Area?: Area;
     PrestadorProfile?: PrestadorProfile;
     Actividad?: Actividad;
     Bloque?: Bloque | null;

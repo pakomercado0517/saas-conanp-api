@@ -5,7 +5,7 @@ import type { UUID } from '@/shared/database/types.js';
 import { Invitation } from '@/modules/users/models/invitation.model.js';
 import { InvitationEmailProof } from '@/modules/users/models/invitation-email-proof.model.js';
 import { User } from '@/modules/users/models/user.model.js';
-import { Organization } from '@/modules/organizations/models/organization.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import type {
   CreateInvitationDTO,
   ListInvitationsDTO,
@@ -45,22 +45,22 @@ export interface CreateInvitationResult {
  * Solo admins. Valida límite de usuarios y evita duplicados (pending) por org+email.
  */
 export const createInvitation = async (
-  organizationId: UUID,
+  areaId: UUID,
   data: CreateInvitationDTO,
   invitedByUserId: UUID
 ): Promise<CreateInvitationResult> => {
-  await assertIsAdmin(invitedByUserId, organizationId);
+  await assertIsAdmin(invitedByUserId, areaId);
 
-  const organization = await Organization.findByPk(organizationId);
-  if (!organization) {
-    throw new NotFoundError('Organización', { organizationId });
+  const area = await Area.findByPk(areaId);
+  if (!area) {
+    throw new NotFoundError('?rea', { areaId });
   }
 
   const emailNormalized = data.email.trim().toLowerCase();
 
   const existingPending = await Invitation.findOne({
     where: {
-      organizationId,
+      areaId,
       email: emailNormalized,
       status: 'pending',
       revokedAt: { [Op.eq]: null },
@@ -68,22 +68,19 @@ export const createInvitation = async (
     },
   });
   if (existingPending) {
-    throw new ConflictError(
-      'Ya existe una invitación pendiente para este email en la organización',
-      {
-        email: emailNormalized,
-        organizationId,
-      }
-    );
+    throw new ConflictError('Ya existe una invitaci?n pendiente para este email en el ?rea', {
+      email: emailNormalized,
+      areaId,
+    });
   }
 
-  await checkUsersLimit(organizationId);
+  await checkUsersLimit(areaId);
 
   const { token, tokenHash } = await generateInvitationToken();
   const expiresAt = DateTime.now().plus({ days: INVITATION_EXPIRES_DAYS }).toJSDate();
 
   const invitation = await Invitation.create({
-    organizationId,
+    areaId,
     email: emailNormalized,
     role: data.role,
     tokenHash,
@@ -98,7 +95,7 @@ export const createInvitation = async (
   try {
     await sendInvitationEmail({
       to: emailNormalized,
-      organizationName: organization.name,
+      organizationName: area.name,
       role: data.role,
       invitationId: invitation.id,
       token,
@@ -115,8 +112,8 @@ export const createInvitation = async (
   }
 
   logger.info(
-    { invitationId: invitation.id, organizationId, email: emailNormalized, role: data.role },
-    'Invitación creada y email enviado'
+    { invitationId: invitation.id, areaId, email: emailNormalized, role: data.role },
+    'Invitaci?n creada y email enviado'
   );
 
   return {
@@ -132,13 +129,13 @@ export const createInvitation = async (
  * Lista invitaciones de una organización con paginación y filtro por estado.
  */
 export const listInvitations = async (
-  organizationId: UUID,
+  areaId: UUID,
   filters: ListInvitationsDTO,
   userId: UUID
 ): Promise<{ data: Invitation[]; pagination: PaginationMeta }> => {
-  await assertIsAdmin(userId, organizationId);
+  await assertIsAdmin(userId, areaId);
 
-  const where: Record<string, unknown> = { organizationId };
+  const where: Record<string, unknown> = { areaId };
   if (filters.status) {
     where['status'] = filters.status;
   }
@@ -153,7 +150,7 @@ export const listInvitations = async (
     offset,
     order,
     include: [
-      { association: 'Organization', attributes: ['id', 'name'] },
+      { association: 'Area', attributes: ['id', 'name'] },
       { association: 'InvitedByUser', attributes: ['id', 'name', 'email'] },
     ],
   });
@@ -176,18 +173,18 @@ export const listInvitations = async (
  * Revoca una invitación (solo admins). Establece status revoked y revokedAt.
  */
 export const revokeInvitation = async (
-  organizationId: UUID,
+  areaId: UUID,
   invitationId: UUID,
   userId: UUID
 ): Promise<void> => {
-  await assertIsAdmin(userId, organizationId);
+  await assertIsAdmin(userId, areaId);
 
   const invitation = await Invitation.findOne({
-    where: { id: invitationId, organizationId },
+    where: { id: invitationId, areaId },
   });
 
   if (!invitation) {
-    throw new NotFoundError('Invitación', { invitationId, organizationId });
+    throw new NotFoundError('Invitaci?n', { invitationId, areaId });
   }
 
   if (invitation.status !== 'pending') {
@@ -203,7 +200,7 @@ export const revokeInvitation = async (
     revokedAt: now,
   });
 
-  logger.info({ invitationId, organizationId, userId }, 'Invitación revocada');
+  logger.info({ invitationId, areaId, userId }, 'Invitaci?n revocada');
 };
 
 export interface ValidateInvitationResult {
@@ -224,44 +221,44 @@ export const validateInvitationToken = async (
   token: string
 ): Promise<ValidateInvitationResult> => {
   const invitation = await Invitation.findByPk(invitationId, {
-    include: [{ association: 'Organization', attributes: ['id', 'name'] }],
+    include: [{ association: 'Area', attributes: ['id', 'name'] }],
   });
 
   if (!invitation) {
-    throw new NotFoundError('Invitación', { invitationId });
+    throw new NotFoundError('Invitaci?n', { invitationId });
   }
 
   if (invitation.status !== 'pending') {
-    throw new ForbiddenError('Esta invitación ya no está disponible', {
+    throw new ForbiddenError('Esta invitaci?n ya no est? disponible', {
       invitationId,
       status: invitation.status,
     });
   }
 
   if (invitation.revokedAt) {
-    throw new ForbiddenError('Esta invitación ha sido revocada', { invitationId });
+    throw new ForbiddenError('Esta invitaci?n ha sido revocada', { invitationId });
   }
 
   if (new Date() > invitation.expiresAt) {
     await invitation.update({ status: 'expired' }).catch(() => {});
-    throw new ForbiddenError('Esta invitación ha expirado', { invitationId });
+    throw new ForbiddenError('Esta invitaci?n ha expirado', { invitationId });
   }
 
   const tokenMatches = await bcrypt.compare(token, invitation.tokenHash);
   if (!tokenMatches) {
-    throw new ForbiddenError('Token de invitación inválido', { invitationId });
+    throw new ForbiddenError('Token de invitaci?n inv?lido', { invitationId });
   }
 
-  const org = invitation.Organization;
-  if (!org) {
-    throw new NotFoundError('Organización', { organizationId: invitation.organizationId });
+  const area = invitation.Area;
+  if (!area) {
+    throw new NotFoundError('?rea', { areaId: invitation.areaId });
   }
 
   return {
     valid: true,
     email: invitation.email,
-    organizationId: invitation.organizationId,
-    organizationName: org.name,
+    organizationId: invitation.areaId,
+    organizationName: area.name,
     role: invitation.role,
     expiresAt: invitation.expiresAt,
   };
@@ -315,7 +312,7 @@ export const consumeInvitationForRegistration = async (
     throw new ForbiddenError('Token de invitación inválido', { invitationId });
   }
 
-  await checkUsersLimit(invitation.organizationId);
+  await checkUsersLimit(invitation.areaId);
 
   const now = new Date();
   await invitation.update({
@@ -324,12 +321,12 @@ export const consumeInvitationForRegistration = async (
   });
 
   logger.info(
-    { invitationId, organizationId: invitation.organizationId, email: emailNormalized },
-    'Invitación consumida para registro'
+    { invitationId, areaId: invitation.areaId, email: emailNormalized },
+    'Invitaci?n consumida para registro'
   );
 
   return {
-    organizationId: invitation.organizationId,
+    organizationId: invitation.areaId,
     role: invitation.role,
   };
 };
@@ -386,7 +383,7 @@ export const consumeInvitationAfterProof = async (
     );
   }
 
-  await checkUsersLimit(invitation.organizationId);
+  await checkUsersLimit(invitation.areaId);
 
   const now = new Date();
   await invitation.update({
@@ -395,12 +392,12 @@ export const consumeInvitationAfterProof = async (
   });
 
   logger.info(
-    { invitationId, organizationId: invitation.organizationId, email: emailNormalized },
+    { invitationId, organizationId: invitation.areaId, email: emailNormalized },
     'Invitaci?n consumida para registro (tras proof de email)'
   );
 
   return {
-    organizationId: invitation.organizationId,
+    organizationId: invitation.areaId,
     role: invitation.role,
   };
 };

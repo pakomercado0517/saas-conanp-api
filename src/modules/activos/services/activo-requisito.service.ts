@@ -1,4 +1,5 @@
 import type { UUID } from '@/shared/database/types.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import { ActivoRequisito } from '@/modules/activos/models/activo-requisito.model.js';
 import { Activo } from '@/modules/activos/models/activo.model.js';
 import type {
@@ -11,6 +12,13 @@ import type { PaginationMeta } from '@/shared/responses/types.js';
 import { logger } from '@/shared/logger/index.js';
 import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
 import { getActivoById } from '@/modules/activos/services/activo.service.js';
+
+/** Resuelve areaId (organizationId en API) a dependenciaId. Activos son por dependencia. */
+const getDependenciaIdFromAreaId = async (areaId: UUID): Promise<UUID> => {
+  const area = await Area.findByPk(areaId);
+  if (!area) throw new NotFoundError('Área', { areaId });
+  return area.dependenciaId;
+};
 
 /**
  * Crea un requisito de activo.
@@ -149,7 +157,8 @@ export const updateRequisito = async (
     include: [{ model: Activo, as: 'Activo' }],
   });
 
-  if (!requisito || !requisito.Activo || requisito.Activo.organizationId !== organizationId) {
+  const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
+  if (!requisito || !requisito.Activo || requisito.Activo.dependenciaId !== dependenciaId) {
     throw new NotFoundError('Requisito de activo', { requisitoId, organizationId });
   }
 
@@ -201,7 +210,8 @@ export const deleteRequisito = async (
     include: [{ model: Activo, as: 'Activo' }],
   });
 
-  if (!requisito || !requisito.Activo || requisito.Activo.organizationId !== organizationId) {
+  const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
+  if (!requisito || !requisito.Activo || requisito.Activo.dependenciaId !== dependenciaId) {
     throw new NotFoundError('Requisito de activo', { requisitoId, organizationId });
   }
 

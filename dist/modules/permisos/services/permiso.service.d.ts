@@ -21,15 +21,16 @@ export declare const validateFechasVigencia: (validFrom: DateTime | Date, validT
 export declare const isPermisoVigente: (permiso: Permiso, date?: DateTime) => boolean;
 /**
  * Valida que un prestador tenga un permiso vigente para una actividad específica.
+ * Prestador por dependencia, actividad por área; el área debe ser de la misma dependencia.
  *
  * @param prestadorId - ID del prestador
  * @param actividadId - ID de la actividad
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param areaId - ID del área (organizationId en API)
  * @param date - Fecha a verificar (opcional, default: fecha actual)
  * @returns Permiso vigente o null si no existe
- * @throws {ValidationError} Si el prestador o actividad no pertenecen a la organización
+ * @throws {ValidationError} Si el prestador o actividad no pertenecen al contexto
  */
-export declare const validatePrestadorHasPermisoVigente: (prestadorId: UUID, actividadId: UUID, organizationId: UUID, date?: DateTime) => Promise<Permiso | null>;
+export declare const validatePrestadorHasPermisoVigente: (prestadorId: UUID, actividadId: UUID, areaId: UUID, date?: DateTime) => Promise<Permiso | null>;
 /**
  * Crea un nuevo permiso para un prestador y actividad.
  *

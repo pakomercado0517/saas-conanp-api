@@ -1,5 +1,5 @@
 import type { UUID } from '../../../shared/database/types';
-import { Organization } from '../../../modules/organizations/models/organization.model';
+import { Area } from '../../../modules/areas/models/area.model.js';
 import type { CreateOrganizationDTO, UpdateOrganizationDTO, ListOrganizationsDTO } from '../../../modules/organizations/validators/organization.validator';
 import type { PaginationMeta } from '../../../shared/responses/types';
 type AdminAssignment = 'membership_created' | 'invitation_created';
@@ -17,26 +17,24 @@ export declare const createOrganization: (data: CreateOrganizationDTO, actor: {
     email: string;
 }) => Promise<CreateOrganizationAdminResult>;
 /**
- * Lista todas las organizaciones con paginación y filtros.
- * Sin filtro de membresía — el super admin ve todas.
- * Incluye estado de suscripción y conteo de miembros.
+ * Lista todas las áreas con paginación y filtros (super admin).
+ * Incluye suscripción vía dependencia.
  */
 export declare const listAllOrganizations: (filters: ListOrganizationsDTO) => Promise<{
-    data: Organization[];
+    data: Area[];
     pagination: PaginationMeta;
 }>;
 /**
- * Obtiene una organización por ID con info de suscripción y miembros.
- * Sin validación de membresía — acceso directo para super admin.
+ * Obtiene un área por ID con info de suscripción (vía dependencia) y miembros.
  */
-export declare const getOrganizationById: (organizationId: UUID) => Promise<Organization>;
+export declare const getOrganizationById: (areaId: UUID) => Promise<Area>;
 /**
- * Actualiza una organización sin validar membresía ni suscripción.
+ * Actualiza un área sin validar membresía ni suscripción (super admin).
  */
-export declare const updateOrganization: (organizationId: UUID, data: UpdateOrganizationDTO) => Promise<Organization>;
+export declare const updateOrganization: (areaId: UUID, data: UpdateOrganizationDTO) => Promise<Area>;
 /**
- * Elimina una organización (soft delete) sin validar membresía ni suscripción.
+ * Elimina un área (soft delete) sin validar membresía ni suscripción (super admin).
  */
-export declare const deleteOrganization: (organizationId: UUID) => Promise<void>;
+export declare const deleteOrganization: (areaId: UUID) => Promise<void>;
 export {};
 //# sourceMappingURL=organization-admin.service.d.ts.map

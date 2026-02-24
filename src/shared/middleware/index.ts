@@ -17,6 +17,7 @@ export { authenticate, optionalAuthenticate } from './auth.middleware.js';
 export {
   requireOrganizationAccess,
   requireOrganizationAccessOnly,
+  requireDependenciaAccess,
 } from './organization-access.middleware.js';
 export { requireRole, requireAdmin } from './role-authorization.middleware.js';
 export { requireSuperAdmin } from './super-admin.middleware.js';

@@ -86,7 +86,7 @@ const getEventoWithOrganization = async (eventoId, organizationId) => {
     const evento = await EventoOperativo.findOne({
         where: {
             id: eventoId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
         },
     });
     if (!evento) {
@@ -184,7 +184,7 @@ export const getEvidenciaById = async (evidenciaId, organizationId, userId) => {
             {
                 model: EventoOperativo,
                 as: 'EventoOperativo',
-                where: { organizationId }, // Multi-tenant obligatorio
+                where: { areaId: organizationId }, // Multi-tenant obligatorio
                 required: true,
             },
         ],
@@ -236,9 +236,9 @@ export const listEvidencias = async (organizationId, filters, userId) => {
             {
                 model: EventoOperativo,
                 as: 'EventoOperativo',
-                where: { organizationId },
+                where: { areaId: organizationId },
                 required: true,
-                attributes: ['id', 'organizationId'],
+                attributes: ['id', 'areaId'],
             },
         ],
     });

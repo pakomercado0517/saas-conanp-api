@@ -2,8 +2,9 @@ import * as invitationService from '../services/invitation.service.js';
 import * as invitationEmailProofService from '../services/invitation-email-proof.service.js';
 import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
 const getOrganizationId = (req) => {
-    const id = req.params['organizationId'];
-    return typeof id === 'string' ? id : (id?.[0] ?? '');
+    const id = req.areaId ?? req.organizationId ?? req.params['areaId'] ?? req.params['organizationId'];
+    const str = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : id != null ? String(id) : '';
+    return str ?? '';
 };
 const getInvitationId = (req) => {
     const id = req.params['invitationId'];

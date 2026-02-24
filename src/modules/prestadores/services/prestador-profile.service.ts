@@ -2,7 +2,8 @@ import type { UUID } from '@/shared/database/types.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
 import { User } from '@/modules/users/models/user.model.js';
-import { Organization } from '@/modules/organizations/models/organization.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
 import type {
   CreatePrestadorProfileDTO,
   UpdatePrestadorProfileDTO,
@@ -12,6 +13,7 @@ import { ForbiddenError, NotFoundError, ConflictError } from '@/shared/errors/in
 import type { PaginationMeta } from '@/shared/responses/types.js';
 import { logger } from '@/shared/logger/index.js';
 import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { checkPrestadoresLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
 import type { DateTime } from 'luxon';
 
 /**
@@ -29,7 +31,7 @@ export const validateUserMembership = async (
   const membership = await Membership.findOne({
     where: {
       userId,
-      organizationId,
+      areaId: organizationId,
       status: 'activo',
     },
   });
@@ -111,14 +113,15 @@ export const createPrestadorProfile = async (
     });
   }
 
-  // Validar que el usuario a convertir en prestador tenga membership activa
+  await checkPrestadoresLimit(data.organizationId);
+
   await validateUserMembership(data.userId, data.organizationId);
 
-  // Validar que la organización existe
-  const organization = await Organization.findByPk(data.organizationId);
-  if (!organization) {
-    throw new NotFoundError('Organización', { organizationId: data.organizationId });
+  const area = await Area.findByPk(data.organizationId);
+  if (!area) {
+    throw new NotFoundError('Área', { organizationId: data.organizationId });
   }
+  const dependenciaId = area.dependenciaId;
 
   // Validar que el usuario existe
   const user = await User.findByPk(data.userId);
@@ -126,16 +129,12 @@ export const createPrestadorProfile = async (
     throw new NotFoundError('Usuario', { userId: data.userId });
   }
 
-  // Verificar si ya existe un perfil para ese usuario en esa organización
   const existingProfile = await PrestadorProfile.findOne({
-    where: {
-      userId: data.userId,
-      organizationId: data.organizationId,
-    },
+    where: { userId: data.userId, dependenciaId },
   });
 
   if (existingProfile) {
-    throw new ConflictError('El usuario ya tiene un perfil de prestador en esta organización', {
+    throw new ConflictError('El usuario ya tiene un perfil de prestador en esta dependencia', {
       userId: data.userId,
       organizationId: data.organizationId,
       existingProfileId: existingProfile.id,
@@ -156,17 +155,16 @@ export const createPrestadorProfile = async (
     }
   }
 
-  // Crear el perfil
   let profile: PrestadorProfile;
   try {
     const createData: {
       userId: string;
-      organizationId: string;
+      dependenciaId: string;
       status: 'activo' | 'inactivo' | 'suspendido';
       permitExpiresAt?: Date | null;
     } = {
       userId: data.userId,
-      organizationId: data.organizationId,
+      dependenciaId,
       status: data.status ?? 'activo',
     };
     if (permitExpiresAtDate !== undefined) {
@@ -174,13 +172,12 @@ export const createPrestadorProfile = async (
     }
     profile = await PrestadorProfile.create(createData);
   } catch (error) {
-    // Capturar error de constraint único
     if (
       error instanceof Error &&
       'name' in error &&
       error.name === 'SequelizeUniqueConstraintError'
     ) {
-      throw new ConflictError('El usuario ya tiene un perfil de prestador en esta organización', {
+      throw new ConflictError('El usuario ya tiene un perfil de prestador en esta dependencia', {
         userId: data.userId,
         organizationId: data.organizationId,
       });
@@ -192,14 +189,14 @@ export const createPrestadorProfile = async (
   await profile.reload({
     include: [
       { model: User, as: 'User' },
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
     ],
   });
 
   logger.info(
     {
       profileId: profile.id,
-      organizationId: profile.organizationId,
+      dependenciaId: profile.dependenciaId,
       userId: profile.userId,
       status: profile.status,
       creatorUserId,
@@ -227,18 +224,19 @@ export const getPrestadorProfileById = async (
   organizationId: UUID,
   requestingUserId: UUID
 ): Promise<PrestadorProfile> => {
-  // Validar acceso a la organización
   await assertCanAccessOrganization(requestingUserId, organizationId);
 
-  // Buscar perfil con filtro multi-tenant
+  const area = await Area.findByPk(organizationId);
+  if (!area) {
+    throw new NotFoundError('Área', { organizationId });
+  }
+  const dependenciaId = area.dependenciaId;
+
   const profile = await PrestadorProfile.findOne({
-    where: {
-      id: profileId,
-      organizationId, // Multi-tenant obligatorio
-    },
+    where: { id: profileId, dependenciaId },
     include: [
       { model: User, as: 'User' },
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
     ],
   });
 
@@ -246,7 +244,6 @@ export const getPrestadorProfileById = async (
     throw new NotFoundError('Perfil de prestador', { profileId, organizationId });
   }
 
-  // Validar permisos: prestador solo puede ver su propio perfil
   await validatePrestadorPermissions(requestingUserId, profile.userId, organizationId);
 
   return profile;
@@ -271,12 +268,16 @@ export const listPrestadores = async (
   // Validar acceso a la organización
   await assertCanAccessOrganization(requestingUserId, organizationId);
 
-  // Obtener membership del usuario para determinar permisos
   const membership = await validateUserMembership(requestingUserId, organizationId);
 
-  // Construir query con filtros multi-tenant obligatorio
+  const area = await Area.findByPk(organizationId);
+  if (!area) {
+    throw new NotFoundError('Área', { organizationId });
+  }
+  const dependenciaId = area.dependenciaId;
+
   const where: Record<string, unknown> = {
-    organizationId, // Multi-tenant obligatorio
+    dependenciaId,
   };
 
   // Si el usuario es prestador, solo puede ver su propio perfil
@@ -316,7 +317,7 @@ export const listPrestadores = async (
     order: [[sortBy, sortOrder]],
     include: [
       { model: User, as: 'User', attributes: ['id', 'name', 'email'] },
-      { model: Organization, as: 'Organization', attributes: ['id', 'name'] },
+      { model: Dependencia, as: 'Dependencia', attributes: ['id', 'name'] },
     ],
   });
 
@@ -352,22 +353,22 @@ export const updatePrestadorProfile = async (
   data: UpdatePrestadorProfileDTO,
   requestingUserId: UUID
 ): Promise<PrestadorProfile> => {
-  // Validar acceso a la organización
   await assertCanAccessOrganization(requestingUserId, organizationId);
 
-  // Buscar perfil con filtro multi-tenant
+  const area = await Area.findByPk(organizationId);
+  if (!area) {
+    throw new NotFoundError('Área', { organizationId });
+  }
+  const dependenciaId = area.dependenciaId;
+
   const profile = await PrestadorProfile.findOne({
-    where: {
-      id: profileId,
-      organizationId, // Multi-tenant obligatorio
-    },
+    where: { id: profileId, dependenciaId },
   });
 
   if (!profile) {
     throw new NotFoundError('Perfil de prestador', { profileId, organizationId });
   }
 
-  // Validar permisos: prestador solo puede editar su propio perfil
   await validatePrestadorPermissions(requestingUserId, profile.userId, organizationId);
 
   // Preparar datos de actualización
@@ -399,7 +400,7 @@ export const updatePrestadorProfile = async (
   await profile.reload({
     include: [
       { model: User, as: 'User' },
-      { model: Organization, as: 'Organization' },
+      { model: Dependencia, as: 'Dependencia' },
     ],
   });
 

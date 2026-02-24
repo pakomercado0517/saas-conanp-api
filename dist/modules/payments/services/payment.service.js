@@ -4,7 +4,7 @@ import { Payment, } from '../../../modules/payments/models/payment.model.js';
 import { StripeWebhookEvent } from '../../../modules/payments/models/stripe-webhook-event.model.js';
 import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
 import { markEventoPaid, unmarkEventoPaid } from '../../../modules/eventos/services/evento.service.js';
-import { Organization } from '../../../modules/organizations/models/organization.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { Membership } from '../../../modules/users/models/membership.model.js';
 import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
@@ -20,15 +20,12 @@ import { DateTime } from 'luxon';
  * @returns Evento encontrado
  * @throws {NotFoundError} Si el evento no existe o no pertenece a la organización
  */
-const getEventoWithOrganization = async (eventoId, organizationId) => {
+const getEventoWithArea = async (eventoId, areaId) => {
     const evento = await EventoOperativo.findOne({
-        where: {
-            id: eventoId,
-            organizationId, // Multi-tenant obligatorio
-        },
+        where: { id: eventoId, areaId },
     });
     if (!evento) {
-        throw new NotFoundError('Evento', { eventoId, organizationId });
+        throw new NotFoundError('Evento', { eventoId, areaId });
     }
     return evento;
 };
@@ -51,10 +48,10 @@ const assertPaymentAmountMatchesStripe = (paymentAmount, stripeAmount) => {
  * @param stripeMetadataOrganizationId - organizationId en metadata del PaymentIntent (opcional)
  * @throws {ValidationError} Si no coinciden cuando Stripe envía metadata
  */
-const assertPaymentOrganizationConsistency = (paymentOrganizationId, stripeMetadataOrganizationId) => {
-    if (stripeMetadataOrganizationId != null && stripeMetadataOrganizationId !== '') {
-        if (paymentOrganizationId !== stripeMetadataOrganizationId) {
-            throw new ValidationError('El organizationId del pago no coincide con el registrado en Stripe', 'organizationId');
+const assertPaymentAreaConsistency = (paymentAreaId, stripeMetadataAreaId) => {
+    if (stripeMetadataAreaId != null && stripeMetadataAreaId !== '') {
+        if (paymentAreaId !== stripeMetadataAreaId) {
+            throw new ValidationError('El areaId del pago no coincide con el registrado en Stripe', 'areaId');
         }
     }
 };
@@ -65,9 +62,9 @@ const assertPaymentOrganizationConsistency = (paymentOrganizationId, stripeMetad
  * @param payment - Pago con EventoOperativo incluido
  * @throws {ValidationError} Si el evento no pertenece a la organización del pago
  */
-const assertPaymentEventBelongsToOrganization = (payment) => {
+const assertPaymentEventBelongsToArea = (payment) => {
     const evento = payment.EventoOperativo;
-    if (evento && evento.organizationId !== payment.organizationId) {
+    if (evento && evento.areaId !== payment.areaId) {
         throw new ValidationError('El evento asociado al pago no pertenece a la organización del pago', 'eventoId');
     }
 };
@@ -85,13 +82,13 @@ const assertCanCreatePaymentForEvent = async (userId, organizationId, evento) =>
     const membership = await Membership.findOne({
         where: {
             userId,
-            organizationId,
+            areaId: organizationId,
             status: 'activo',
         },
     });
     if (!membership) {
         throw new ForbiddenError('No tienes acceso a esta organización', {
-            organizationId,
+            areaId: organizationId,
             userId,
         });
     }
@@ -99,10 +96,13 @@ const assertCanCreatePaymentForEvent = async (userId, organizationId, evento) =>
         return;
     }
     if (membership.role === 'prestador') {
+        const area = await Area.findByPk(organizationId);
+        if (!area)
+            throw new ForbiddenError('Área no encontrada', { organizationId });
         const prestadorProfile = await PrestadorProfile.findOne({
             where: {
                 userId,
-                organizationId,
+                dependenciaId: area.dependenciaId,
             },
         });
         if (!prestadorProfile || evento.prestadorId !== prestadorProfile.id) {
@@ -115,7 +115,7 @@ const assertCanCreatePaymentForEvent = async (userId, organizationId, evento) =>
         return;
     }
     throw new ForbiddenError('Solo administradores y prestadores pueden crear o confirmar pagos para eventos', {
-        organizationId,
+        areaId: organizationId,
         userId,
         currentRole: membership.role,
     });
@@ -151,7 +151,7 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
     // 1. Validar acceso a la organización
     await assertCanAccessOrganization(userId, organizationId);
     // 2. Validar que el evento existe y pertenece a la organización
-    const evento = await getEventoWithOrganization(data.eventoId, organizationId);
+    const evento = await getEventoWithArea(data.eventoId, organizationId);
     // 3. Validar que solo prestadores/admins pueden crear pagos; prestadores solo para sus eventos
     await assertCanCreatePaymentForEvent(userId, organizationId, evento);
     // 4. Validar que el monto es válido (ya validado por Zod, pero verificar)
@@ -166,7 +166,7 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
     try {
         // 6. Guardar pago en BD primero (para tener el ID)
         const payment = await savePayment({
-            organizationId,
+            areaId: organizationId,
             eventoId: data.eventoId,
             amount: data.amount,
             currency: data.currency,
@@ -181,7 +181,7 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
                 amount: data.amount, // ya en centavos
                 currency: data.currency.toLowerCase(), // Stripe espera minúsculas
                 metadata: {
-                    organizationId,
+                    areaId: organizationId,
                     eventoId: data.eventoId,
                     paymentId: payment.id,
                     ...(data.metadata || {}),
@@ -200,7 +200,7 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
             : (paymentIntent.amount ?? 0);
         assertPaymentAmountMatchesStripe(data.amount, piAmount);
         const piMetadata = paymentIntent.metadata;
-        assertPaymentOrganizationConsistency(organizationId, piMetadata?.['organizationId'] ?? undefined);
+        assertPaymentAreaConsistency(organizationId, piMetadata?.['areaId'] ?? undefined);
         // 8. Actualizar pago con stripePaymentIntentId
         await payment.update({
             stripePaymentIntentId: paymentIntent.id,
@@ -211,12 +211,12 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
         await payment.reload({
             include: [
                 { model: EventoOperativo, as: 'EventoOperativo' },
-                { model: Organization, as: 'Organization' },
+                { model: Area, as: 'Area' },
             ],
         });
         logger.info({
             paymentId: payment.id,
-            organizationId,
+            areaId: organizationId,
             eventoId: data.eventoId,
             amount: data.amount,
             currency: data.currency,
@@ -253,18 +253,18 @@ export const confirmPayment = async (data, organizationId, userId) => {
     const payment = await Payment.findOne({
         where: {
             id: data.paymentId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId,
         },
         include: [
             { model: EventoOperativo, as: 'EventoOperativo' },
-            { model: Organization, as: 'Organization' },
+            { model: Area, as: 'Area' },
         ],
     });
     if (!payment) {
         throw new NotFoundError('Pago', { paymentId: data.paymentId, organizationId });
     }
     // 3. Validar que solo prestadores/admins pueden confirmar; prestadores solo para sus eventos
-    const eventoConfirm = await getEventoWithOrganization(payment.eventoId, organizationId);
+    const eventoConfirm = await getEventoWithArea(payment.eventoId, organizationId);
     await assertCanCreatePaymentForEvent(userId, organizationId, eventoConfirm);
     // 4. Validar que el stripePaymentIntentId coincide
     if (payment.stripePaymentIntentId !== data.stripePaymentIntentId) {
@@ -275,7 +275,7 @@ export const confirmPayment = async (data, organizationId, userId) => {
         throw new ValidationError(`No se puede confirmar un pago en estado '${payment.status}'. Solo se pueden confirmar pagos en estado 'pending' o 'processing'`, 'status');
     }
     // 5b. Integridad: evento del pago pertenece a la organización del pago
-    assertPaymentEventBelongsToOrganization(payment);
+    assertPaymentEventBelongsToArea(payment);
     // 6. Iniciar transacción
     const transaction = await sequelize.transaction();
     try {
@@ -297,7 +297,7 @@ export const confirmPayment = async (data, organizationId, userId) => {
             : (confirmedPaymentIntent.amount ?? 0);
         assertPaymentAmountMatchesStripe(payment.amount, stripeAmount);
         const stripeMetadata = confirmedPaymentIntent.metadata;
-        assertPaymentOrganizationConsistency(payment.organizationId, stripeMetadata?.['organizationId']);
+        assertPaymentAreaConsistency(payment.areaId, stripeMetadata?.['areaId']);
         // 7b. Actualizar pago en BD
         const updateData = {
             status: confirmedPaymentIntent.status === 'succeeded' ? 'succeeded' : 'processing',
@@ -331,18 +331,18 @@ export const confirmPayment = async (data, organizationId, userId) => {
         await payment.reload({
             include: [
                 { model: EventoOperativo, as: 'EventoOperativo' },
-                { model: Organization, as: 'Organization' },
+                { model: Area, as: 'Area' },
             ],
         });
         logger.info({
             paymentId: payment.id,
-            organizationId,
+            areaId: organizationId,
             stripePaymentIntentId: data.stripePaymentIntentId,
             status: payment.status,
             userId,
         }, 'Pago confirmado exitosamente');
         if (confirmedPaymentIntent.status === 'succeeded') {
-            await markEventoPaid(payment.eventoId, payment.organizationId);
+            await markEventoPaid(payment.eventoId, payment.areaId);
         }
         return payment;
     }
@@ -370,17 +370,17 @@ export const getPaymentById = async (paymentId, organizationId, userId) => {
     const payment = await Payment.findOne({
         where: {
             id: paymentId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId,
         },
         include: [
             { model: EventoOperativo, as: 'EventoOperativo' },
-            { model: Organization, as: 'Organization' },
+            { model: Area, as: 'Area' },
         ],
     });
     if (!payment) {
         throw new NotFoundError('Pago', { paymentId, organizationId });
     }
-    assertPaymentEventBelongsToOrganization(payment);
+    assertPaymentEventBelongsToArea(payment);
     return payment;
 };
 /**
@@ -398,7 +398,7 @@ export const listPayments = async (organizationId, filters, userId) => {
     await assertCanAccessOrganization(userId, organizationId);
     // Construir query con filtro multi-tenant obligatorio
     const where = {
-        organizationId, // Multi-tenant obligatorio
+        areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
     };
     // Aplicar filtros opcionales
     if (filters.eventoId) {
@@ -447,13 +447,13 @@ export const listPayments = async (organizationId, filters, userId) => {
         order: [[sortBy, sortOrder]],
         include: [
             { model: EventoOperativo, as: 'EventoOperativo' },
-            { model: Organization, as: 'Organization' },
+            { model: Area, as: 'Area' },
         ],
     });
     const total = result.count;
     const totalPages = Math.ceil(total / limit);
     for (const payment of result.rows) {
-        assertPaymentEventBelongsToOrganization(payment);
+        assertPaymentEventBelongsToArea(payment);
     }
     const pagination = {
         page: filters.page,
@@ -482,11 +482,11 @@ export const processRefund = async (data, organizationId, userId) => {
     const payment = await Payment.findOne({
         where: {
             id: data.paymentId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId,
         },
         include: [
             { model: EventoOperativo, as: 'EventoOperativo' },
-            { model: Organization, as: 'Organization' },
+            { model: Area, as: 'Area' },
         ],
     });
     if (!payment) {
@@ -515,7 +515,7 @@ export const processRefund = async (data, organizationId, userId) => {
         throw new ValidationError('No se puede procesar el reembolso: el pago no tiene un PaymentIntent de Stripe asociado', 'stripePaymentIntentId');
     }
     // 7b. Integridad: evento del pago pertenece a la organización
-    assertPaymentEventBelongsToOrganization(payment);
+    assertPaymentEventBelongsToArea(payment);
     // 7c. Integridad: verificar con Stripe que monto y organizationId coinciden antes de reembolsar
     let stripePaymentIntent;
     try {
@@ -530,7 +530,7 @@ export const processRefund = async (data, organizationId, userId) => {
         : (stripePaymentIntent.amount ?? 0);
     assertPaymentAmountMatchesStripe(payment.amount, piAmount);
     const piMetadata = stripePaymentIntent.metadata;
-    assertPaymentOrganizationConsistency(payment.organizationId, piMetadata?.['organizationId']);
+    assertPaymentAreaConsistency(payment.areaId, piMetadata?.['areaId']);
     // 8. Iniciar transacción
     const transaction = await sequelize.transaction();
     try {
@@ -542,7 +542,7 @@ export const processRefund = async (data, organizationId, userId) => {
                 reason: data.reason ? 'requested_by_customer' : 'requested_by_customer',
                 metadata: {
                     paymentId: payment.id,
-                    organizationId,
+                    areaId: organizationId,
                     reason: data.reason || '',
                 },
             });
@@ -566,19 +566,19 @@ export const processRefund = async (data, organizationId, userId) => {
         await payment.reload({
             include: [
                 { model: EventoOperativo, as: 'EventoOperativo' },
-                { model: Organization, as: 'Organization' },
+                { model: Area, as: 'Area' },
             ],
         });
         logger.info({
             paymentId: payment.id,
-            organizationId,
+            areaId: organizationId,
             refundAmount,
             refundedAmount: payment.refundedAmount,
             isFullRefund,
             userId,
         }, 'Reembolso procesado exitosamente');
         if (isFullRefund) {
-            await unmarkEventoPaid(payment.eventoId, payment.organizationId);
+            await unmarkEventoPaid(payment.eventoId, payment.areaId);
         }
         return payment;
     }
@@ -634,7 +634,7 @@ export const handleChargeRefundedFromWebhook = async (charge) => {
         where: { stripePaymentIntentId: paymentIntent },
         include: [
             { model: EventoOperativo, as: 'EventoOperativo' },
-            { model: Organization, as: 'Organization' },
+            { model: Area, as: 'Area' },
         ],
     });
     if (!payment) {
@@ -642,7 +642,7 @@ export const handleChargeRefundedFromWebhook = async (charge) => {
         return null;
     }
     // Integridad: evento del pago pertenece a la organización; monto reembolsado no excede pago
-    assertPaymentEventBelongsToOrganization(payment);
+    assertPaymentEventBelongsToArea(payment);
     if (amountRefunded > payment.amount) {
         logger.error({
             paymentId: payment.id,
@@ -664,7 +664,7 @@ export const handleChargeRefundedFromWebhook = async (charge) => {
         await payment.reload({
             include: [
                 { model: EventoOperativo, as: 'EventoOperativo' },
-                { model: Organization, as: 'Organization' },
+                { model: Area, as: 'Area' },
             ],
         });
         logger.info({
@@ -672,10 +672,10 @@ export const handleChargeRefundedFromWebhook = async (charge) => {
             stripePaymentIntentId: paymentIntent,
             amountRefunded,
             isFullRefund,
-            organizationId: payment.organizationId,
+            organizationId: payment.areaId,
         }, 'Estado de pago actualizado desde webhook charge.refunded');
         if (isFullRefund) {
-            await unmarkEventoPaid(payment.eventoId, payment.organizationId);
+            await unmarkEventoPaid(payment.eventoId, payment.areaId);
         }
         return payment;
     }
@@ -703,7 +703,7 @@ export const updatePaymentStatusFromWebhook = async (stripePaymentIntentId, even
         },
         include: [
             { model: EventoOperativo, as: 'EventoOperativo' },
-            { model: Organization, as: 'Organization' },
+            { model: Area, as: 'Area' },
         ],
     });
     if (!payment) {
@@ -715,8 +715,8 @@ export const updatePaymentStatusFromWebhook = async (stripePaymentIntentId, even
         : (eventData['amount'] ?? 0);
     assertPaymentAmountMatchesStripe(payment.amount, stripeAmount);
     const eventMetadata = eventData['metadata'];
-    assertPaymentOrganizationConsistency(payment.organizationId, eventMetadata?.['organizationId']);
-    assertPaymentEventBelongsToOrganization(payment);
+    assertPaymentAreaConsistency(payment.areaId, eventMetadata?.['areaId']);
+    assertPaymentEventBelongsToArea(payment);
     // 3. Mapear eventos de Stripe a estados
     let newStatus = null;
     let failureReason = null;
@@ -783,7 +783,7 @@ export const updatePaymentStatusFromWebhook = async (stripePaymentIntentId, even
         await payment.reload({
             include: [
                 { model: EventoOperativo, as: 'EventoOperativo' },
-                { model: Organization, as: 'Organization' },
+                { model: Area, as: 'Area' },
             ],
         });
         logger.info({
@@ -791,10 +791,10 @@ export const updatePaymentStatusFromWebhook = async (stripePaymentIntentId, even
             stripePaymentIntentId,
             eventType,
             newStatus,
-            organizationId: payment.organizationId,
+            organizationId: payment.areaId,
         }, 'Estado de pago actualizado desde webhook de Stripe');
         if (eventType === 'payment_intent.succeeded' && payment.status === 'succeeded') {
-            await markEventoPaid(payment.eventoId, payment.organizationId);
+            await markEventoPaid(payment.eventoId, payment.areaId);
         }
         return payment;
     }

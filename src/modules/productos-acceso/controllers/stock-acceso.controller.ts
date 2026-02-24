@@ -6,6 +6,7 @@ import type {
   SalidaStockDTO,
   ListMovimientosStockDTO,
 } from '../validators/movimiento-stock-acceso.validator.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
 
@@ -105,7 +106,7 @@ export const listMovimientos = async (req: Request, res: Response): Promise<Resp
     });
   }
 
-  const organizationId = req.organizationId!;
+  const areaId = req.areaId ?? req.organizationId!;
   const userId = req.user.userId;
   const filters: ListMovimientosStockDTO = {
     ...((req.validatedQuery as ListMovimientosStockDTO | undefined) ??
@@ -113,18 +114,21 @@ export const listMovimientos = async (req: Request, res: Response): Promise<Resp
   };
 
   const membership = await Membership.findOne({
-    where: { userId, organizationId, status: 'activo' },
+    where: { userId, areaId, status: 'activo' },
   });
   if (membership?.role === 'prestador') {
-    const myProfile = await PrestadorProfile.findOne({
-      where: { userId, organizationId },
-    });
-    if (myProfile) {
-      filters.prestadorId = myProfile.id;
+    const area = await Area.findByPk(areaId);
+    if (area) {
+      const myProfile = await PrestadorProfile.findOne({
+        where: { userId, dependenciaId: area.dependenciaId },
+      });
+      if (myProfile) {
+        filters.prestadorId = myProfile.id;
+      }
     }
   }
 
-  const result = await stockAccesoService.listMovimientos(organizationId, filters, userId);
+  const result = await stockAccesoService.listMovimientos(areaId, filters, userId);
 
   return sendPaginated(res, result.data, result.pagination, 'Movimientos obtenidos exitosamente');
 };

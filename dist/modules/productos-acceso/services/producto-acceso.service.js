@@ -1,19 +1,29 @@
 import { Op } from 'sequelize';
+import { Area } from '../../../modules/areas/models/area.model.js';
 import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
 import { StockAcceso } from '../../../modules/productos-acceso/models/stock-acceso.model.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
+/** Resuelve areaId (organizationId en API) a dependenciaId. Productos/stock son por dependencia. */
+const getDependenciaIdFromAreaId = async (areaId) => {
+    const area = await Area.findByPk(areaId);
+    if (!area)
+        throw new NotFoundError('Área', { areaId });
+    return area.dependenciaId;
+};
 /**
  * Crea un nuevo producto de acceso y su registro de stock inicial (cantidad 0).
  * Solo los administradores pueden crear productos.
+ * @param areaId - ID del área (organizationId en API); se resuelve a dependencia para persistencia.
  */
-export const createProductoAcceso = async (organizationId, data, userId) => {
-    await assertIsAdmin(userId, organizationId);
-    await assertCanAccessOrganization(userId, organizationId);
+export const createProductoAcceso = async (areaId, data, userId) => {
+    await assertIsAdmin(userId, areaId);
+    await assertCanAccessOrganization(userId, areaId);
+    const dependenciaId = await getDependenciaIdFromAreaId(areaId);
     const producto = await ProductoAcceso.create({
-        organizationId,
+        dependenciaId,
         name: data.name,
         tipo: data.tipo,
         vigenciaDias: data.vigenciaDias,
@@ -21,38 +31,40 @@ export const createProductoAcceso = async (organizationId, data, userId) => {
         active: data.active ?? true,
     });
     await StockAcceso.create({
-        organizationId,
+        dependenciaId,
         productoAccesoId: producto.id,
         cantidad: 0,
     });
-    logger.info({ productoAccesoId: producto.id, organizationId, name: producto.name, userId }, 'Producto de acceso creado con stock inicial 0');
+    logger.info({ productoAccesoId: producto.id, dependenciaId, name: producto.name, userId }, 'Producto de acceso creado con stock inicial 0');
     return producto;
 };
 /**
  * Obtiene un producto de acceso por ID.
- * Cualquier usuario con acceso a la organización puede leer.
+ * Cualquier usuario con acceso al área puede leer.
  */
-export const getProductoAccesoById = async (productoAccesoId, organizationId, userId) => {
-    await assertCanAccessOrganization(userId, organizationId);
+export const getProductoAccesoById = async (productoAccesoId, areaId, userId) => {
+    await assertCanAccessOrganization(userId, areaId);
+    const dependenciaId = await getDependenciaIdFromAreaId(areaId);
     const producto = await ProductoAcceso.findOne({
         where: {
             id: productoAccesoId,
-            organizationId,
+            dependenciaId,
         },
     });
     if (!producto) {
-        throw new NotFoundError('Producto de acceso', { productoAccesoId, organizationId });
+        throw new NotFoundError('Producto de acceso', { productoAccesoId, dependenciaId });
     }
     return producto;
 };
 /**
  * Lista productos de acceso con paginación y filtros.
- * Filtro multi-tenant obligatorio por organizationId.
+ * Filtro multi-tenant obligatorio por dependencia (resuelta desde areaId).
  */
-export const listProductosAcceso = async (organizationId, filters, userId) => {
-    await assertCanAccessOrganization(userId, organizationId);
+export const listProductosAcceso = async (areaId, filters, userId) => {
+    await assertCanAccessOrganization(userId, areaId);
+    const dependenciaId = await getDependenciaIdFromAreaId(areaId);
     const where = {
-        organizationId,
+        dependenciaId,
     };
     if (filters.name) {
         where['name'] = { [Op.iLike]: `%${filters.name}%` };
@@ -87,17 +99,18 @@ export const listProductosAcceso = async (organizationId, filters, userId) => {
  * Actualiza un producto de acceso.
  * Solo los administradores pueden actualizar.
  */
-export const updateProductoAcceso = async (productoAccesoId, organizationId, data, userId) => {
-    await assertIsAdmin(userId, organizationId);
-    await assertCanAccessOrganization(userId, organizationId);
+export const updateProductoAcceso = async (productoAccesoId, areaId, data, userId) => {
+    await assertIsAdmin(userId, areaId);
+    await assertCanAccessOrganization(userId, areaId);
+    const dependenciaId = await getDependenciaIdFromAreaId(areaId);
     const producto = await ProductoAcceso.findOne({
         where: {
             id: productoAccesoId,
-            organizationId,
+            dependenciaId,
         },
     });
     if (!producto) {
-        throw new NotFoundError('Producto de acceso', { productoAccesoId, organizationId });
+        throw new NotFoundError('Producto de acceso', { productoAccesoId, dependenciaId });
     }
     const updateData = {};
     if (data.name !== undefined)
@@ -113,26 +126,27 @@ export const updateProductoAcceso = async (productoAccesoId, organizationId, dat
     if (data.active !== undefined)
         updateData.active = data.active;
     await producto.update(updateData);
-    logger.info({ productoAccesoId, organizationId, updatedFields: Object.keys(updateData), userId }, 'Producto de acceso actualizado');
+    logger.info({ productoAccesoId, dependenciaId, updatedFields: Object.keys(updateData), userId }, 'Producto de acceso actualizado');
     return producto;
 };
 /**
  * Elimina un producto de acceso (soft delete).
  * Solo los administradores pueden eliminar.
  */
-export const deleteProductoAcceso = async (productoAccesoId, organizationId, userId) => {
-    await assertIsAdmin(userId, organizationId);
-    await assertCanAccessOrganization(userId, organizationId);
+export const deleteProductoAcceso = async (productoAccesoId, areaId, userId) => {
+    await assertIsAdmin(userId, areaId);
+    await assertCanAccessOrganization(userId, areaId);
+    const dependenciaId = await getDependenciaIdFromAreaId(areaId);
     const producto = await ProductoAcceso.findOne({
         where: {
             id: productoAccesoId,
-            organizationId,
+            dependenciaId,
         },
     });
     if (!producto) {
-        throw new NotFoundError('Producto de acceso', { productoAccesoId, organizationId });
+        throw new NotFoundError('Producto de acceso', { productoAccesoId, dependenciaId });
     }
     await producto.destroy();
-    logger.info({ productoAccesoId, organizationId, userId }, 'Producto de acceso eliminado (soft delete)');
+    logger.info({ productoAccesoId, dependenciaId, userId }, 'Producto de acceso eliminado (soft delete)');
 };
 //# sourceMappingURL=producto-acceso.service.js.map

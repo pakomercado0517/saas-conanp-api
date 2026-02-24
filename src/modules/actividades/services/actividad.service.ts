@@ -76,7 +76,7 @@ export const createActividad = async (
 
   // Crear la actividad
   const actividad = await Actividad.create({
-    organizationId: data.organizationId,
+    areaId: data.organizationId,
     name: data.name,
     type: data.type,
     agendaType: data.agendaType,
@@ -91,7 +91,7 @@ export const createActividad = async (
   logger.info(
     {
       actividadId: actividad.id,
-      organizationId: actividad.organizationId,
+      organizationId: actividad.areaId,
       name: actividad.name,
       agendaType: actividad.agendaType,
       userId,
@@ -134,7 +134,7 @@ export const getActividadById = async (
   const actividad = await Actividad.findOne({
     where: {
       id: actividadId,
-      organizationId, // Multi-tenant obligatorio
+      areaId: organizationId, // Multi-tenant obligatorio
     },
   });
 
@@ -169,7 +169,7 @@ export const listActividades = async (
   // Construir query con filtros multi-tenant obligatorio
   // Nota: paranoid: true en el modelo excluye automáticamente registros eliminados
   const where: Record<string, unknown> = {
-    organizationId, // Multi-tenant obligatorio
+    areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
   };
 
   // Aplicar filtros opcionales
@@ -246,7 +246,7 @@ export const updateActividad = async (
   const actividad = await Actividad.findOne({
     where: {
       id: actividadId,
-      organizationId, // Multi-tenant obligatorio
+      areaId: organizationId, // Multi-tenant obligatorio
     },
   });
 
@@ -334,7 +334,7 @@ export const deleteActividad = async (
   const actividad = await Actividad.findOne({
     where: {
       id: actividadId,
-      organizationId, // Multi-tenant obligatorio
+      areaId: organizationId, // Multi-tenant obligatorio
     },
   });
 

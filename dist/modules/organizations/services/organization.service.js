@@ -1,23 +1,24 @@
 import { Op } from 'sequelize';
-import { Organization } from '../../../modules/organizations/models/organization.model';
-import { Subscription } from '../../../modules/subscriptions/models/subscription.model';
-import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model';
-import { Membership } from '../../../modules/users/models/membership.model';
-import { ForbiddenError, NotFoundError } from '../../../shared/errors';
-import { logger } from '../../../shared/logger';
-import { cache } from '../../../shared/cache';
-import { CacheKeys } from '../../../shared/cache/keys';
-import { cacheConfig } from '../../../shared/cache/config';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { ForbiddenError, NotFoundError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { cache } from '../../../shared/cache/index.js';
+import { CacheKeys } from '../../../shared/cache/keys.js';
+import { cacheConfig } from '../../../shared/cache/config.js';
 /** Estados de suscripción que permiten operaciones (no bloquean). */
 const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
 /**
  * Invalida el caché de organización.
  * Se llama después de UPDATE/DELETE de organizaciones.
  */
-const invalidateOrganizationCache = async (organizationId) => {
-    const cacheKey = CacheKeys.organization(organizationId);
+const invalidateOrganizationCache = async (areaId) => {
+    const cacheKey = CacheKeys.organization(areaId);
     await cache.del(cacheKey);
-    logger.debug({ organizationId, cacheKey }, 'Caché de organización invalidado');
+    logger.debug({ areaId, cacheKey }, 'Caché de área invalidado');
 };
 /**
  * Valida que el usuario tenga acceso a la organización.
@@ -25,39 +26,68 @@ const invalidateOrganizationCache = async (organizationId) => {
  *
  * @throws {ForbiddenError} Si no existe membresía activa
  */
-export const assertCanAccessOrganization = async (userId, organizationId) => {
+/**
+ * Valida que el usuario tenga acceso al área (membresía activa en esa área).
+ */
+export const assertCanAccessOrganization = async (userId, areaId) => {
     const membership = await Membership.findOne({
         where: {
             userId,
-            organizationId,
+            areaId,
             status: 'activo',
         },
     });
     if (!membership) {
-        throw new ForbiddenError('No tienes acceso a esta organización', {
-            organizationId,
+        throw new ForbiddenError('No tienes acceso a esta área', {
+            areaId,
             userId,
         });
     }
 };
 /**
- * Obtiene la suscripción de una organización (cualquier estado).
- * Usa caché para reducir consultas a la base de datos.
+ * Valida que el usuario tenga acceso a la dependencia (membresía activa en al menos un área de esa dependencia).
  */
-const getSubscriptionByOrganization = async (organizationId) => {
-    const cacheKey = CacheKeys.activeSubscription(organizationId);
-    // Intentar obtener del caché
-    const cached = await cache.get(cacheKey);
-    if (cached) {
-        return cached;
+export const assertCanAccessDependencia = async (userId, dependenciaId) => {
+    const areasOfDep = await Area.findAll({
+        where: { dependenciaId },
+        attributes: ['id'],
+    });
+    const areaIds = areasOfDep.map((a) => a.id);
+    if (areaIds.length === 0) {
+        throw new ForbiddenError('Dependencia no encontrada', { dependenciaId, userId });
     }
-    // Si no está en caché, consultar la base de datos
+    const membership = await Membership.findOne({
+        where: {
+            userId,
+            areaId: { [Op.in]: areaIds },
+            status: 'activo',
+        },
+    });
+    if (!membership) {
+        throw new ForbiddenError('No tienes acceso a esta dependencia', {
+            dependenciaId,
+            userId,
+        });
+    }
+};
+/**
+ * Obtiene la suscripción de un área (vía dependencia). Cualquier estado.
+ * Usa caché por dependenciaId.
+ */
+const getSubscriptionByOrganization = async (areaId) => {
+    const area = await Area.findByPk(areaId);
+    if (!area)
+        return null;
+    const dependenciaId = area.dependenciaId;
+    const cacheKey = CacheKeys.activeSubscription(dependenciaId);
+    const cached = await cache.get(cacheKey);
+    if (cached)
+        return cached;
     const subscription = await Subscription.findOne({
-        where: { organizationId },
+        where: { dependenciaId },
         order: [['currentPeriodEnd', 'DESC']],
         include: [{ model: SubscriptionPlan, as: 'SubscriptionPlan' }],
     });
-    // Guardar en caché si existe
     if (subscription) {
         await cache.set(cacheKey, subscription, cacheConfig.ttl.subscription);
     }
@@ -70,20 +100,18 @@ const getSubscriptionByOrganization = async (organizationId) => {
  *
  * @throws {ForbiddenError} Si no hay suscripción, el estado no permite operaciones o está vencida
  */
-export const assertActiveSubscription = async (organizationId) => {
-    const subscription = await getSubscriptionByOrganization(organizationId);
+export const assertActiveSubscription = async (areaId) => {
+    const subscription = await getSubscriptionByOrganization(areaId);
     if (!subscription) {
-        throw new ForbiddenError('La organización no tiene suscripción. Contrata un plan para continuar.', {
-            organizationId,
-        });
+        throw new ForbiddenError('La dependencia no tiene suscripción. Contrata un plan para continuar.', { areaId });
     }
     if (!ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status)) {
-        throw new ForbiddenError(`La suscripción no está activa (estado: ${subscription.status}). Renueva o actualiza el pago para continuar.`, { organizationId, status: subscription.status });
+        throw new ForbiddenError(`La suscripción no está activa (estado: ${subscription.status}). Renueva o actualiza el pago para continuar.`, { areaId, status: subscription.status });
     }
     const now = new Date();
     if (subscription.currentPeriodEnd < now) {
         throw new ForbiddenError('La suscripción está vencida. Renueva tu plan para continuar.', {
-            organizationId,
+            areaId,
             currentPeriodEnd: subscription.currentPeriodEnd,
         });
     }
@@ -93,8 +121,8 @@ export const assertActiveSubscription = async (organizationId) => {
  *
  * @returns Estado y fecha de fin del periodo, o null si no hay suscripción
  */
-export const getSubscriptionStatus = async (organizationId) => {
-    const subscription = await getSubscriptionByOrganization(organizationId);
+export const getSubscriptionStatus = async (areaId) => {
+    const subscription = await getSubscriptionByOrganization(areaId);
     if (!subscription)
         return null;
     return {
@@ -109,12 +137,12 @@ export const getSubscriptionStatus = async (organizationId) => {
  * @returns { brazaletesObligatorios, brazaletesExcluyenLocales } normalizado
  * @throws {NotFoundError} Si la organización no existe
  */
-export const getBrazaletesConfig = async (organizationId) => {
-    const org = await Organization.findByPk(organizationId);
-    if (!org) {
-        throw new NotFoundError('Organización', { organizationId });
+export const getBrazaletesConfig = async (areaId) => {
+    const area = await Area.findByPk(areaId);
+    if (!area) {
+        throw new NotFoundError('Área', { areaId });
     }
-    const acceso = org.settings?.['acceso'];
+    const acceso = area.settings?.['acceso'];
     const brazaletesObligatorios = acceso?.brazaletesObligatorios !== undefined ? acceso.brazaletesObligatorios : null;
     const brazaletesExcluyenLocales = acceso?.brazaletesExcluyenLocales === true;
     return {
@@ -127,16 +155,16 @@ export const getBrazaletesConfig = async (organizationId) => {
  * Incluye organizationId, name y acceso (brazaletesObligatorios, brazaletesExcluyenLocales).
  * Valida que el usuario tenga acceso a la organización.
  */
-export const getConfigAcceso = async (organizationId, userId) => {
-    await assertCanAccessOrganization(userId, organizationId);
-    const org = await Organization.findByPk(organizationId);
-    if (!org) {
-        throw new NotFoundError('Organización', { organizationId });
+export const getConfigAcceso = async (areaId, userId) => {
+    await assertCanAccessOrganization(userId, areaId);
+    const area = await Area.findByPk(areaId);
+    if (!area) {
+        throw new NotFoundError('Área', { areaId });
     }
-    const acceso = await getBrazaletesConfig(organizationId);
+    const acceso = await getBrazaletesConfig(areaId);
     return {
-        organizationId: org.id,
-        name: org.name,
+        organizationId: area.id,
+        name: area.name,
         acceso,
     };
 };
@@ -145,8 +173,8 @@ export const getConfigAcceso = async (organizationId, userId) => {
  *
  * @returns Información del plan y periodo, o null si no hay suscripción activa
  */
-export const getCurrentPlanInfo = async (organizationId) => {
-    const subscription = await getSubscriptionByOrganization(organizationId);
+export const getCurrentPlanInfo = async (areaId) => {
+    const subscription = await getSubscriptionByOrganization(areaId);
     if (!subscription?.SubscriptionPlan ||
         !ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status)) {
         return null;
@@ -166,51 +194,61 @@ export const getCurrentPlanInfo = async (organizationId) => {
     };
 };
 /**
- * Crea una nueva organización.
- * No requiere validación de acceso (no hay organización previa).
+ * Crea una nueva dependencia y su primera área (flujo admin / onboarding).
+ * No requiere validación de acceso.
  */
 export const createOrganization = async (data) => {
-    const org = await Organization.create({
+    const dependencia = await Dependencia.create({
+        name: data.name,
+        settings: data.settings ?? {},
+    });
+    const area = await Area.create({
+        dependenciaId: dependencia.id,
         name: data.name,
         ecosystem_type: data.ecosystem_type,
         settings: data.settings ?? {},
     });
-    logger.info({ organizationId: org.id, name: org.name, ecosystem_type: org.ecosystem_type }, 'Organización creada');
-    return org;
+    logger.info({
+        areaId: area.id,
+        dependenciaId: dependencia.id,
+        name: area.name,
+        ecosystem_type: area.ecosystem_type,
+    }, 'Dependencia y área creadas');
+    return area;
 };
 /**
- * Obtiene una organización por ID.
+ * Obtiene un área por ID.
  * Filtro multi-tenant: solo si el usuario tiene acceso vía membresía activa.
- * Bloquea si la organización no tiene suscripción activa.
+ * Bloquea si la dependencia no tiene suscripción activa.
  */
-export const getOrganizationById = async (organizationId, userId) => {
-    await assertCanAccessOrganization(userId, organizationId);
-    await assertActiveSubscription(organizationId);
-    const org = await Organization.findByPk(organizationId);
-    if (!org) {
-        throw new NotFoundError('Organización', { organizationId });
+export const getOrganizationById = async (areaId, userId) => {
+    await assertCanAccessOrganization(userId, areaId);
+    await assertActiveSubscription(areaId);
+    const area = await Area.findByPk(areaId);
+    if (!area) {
+        throw new NotFoundError('Área', { areaId });
     }
-    return org;
+    return area;
 };
 /**
- * Lista organizaciones con paginación y filtros.
- * Filtro multi-tenant obligatorio: solo organizaciones donde el usuario tiene membresía activa.
+ * Lista áreas con paginación y filtros.
+ * Filtro multi-tenant: solo áreas donde el usuario tiene membresía activa.
  */
 export const listOrganizations = async (filters, userId) => {
     const memberships = await Membership.findAll({
         where: { userId, status: 'activo' },
-        attributes: ['organizationId'],
+        attributes: ['areaId'],
     });
-    const organizationIds = memberships.map((m) => m.organizationId);
+    const areaIds = memberships.map((m) => m.areaId);
     const limit = filters.limit;
     let total = 0;
     let rows = [];
-    if (organizationIds.length === 0) {
+    if (areaIds.length === 0) {
         total = 0;
     }
     else {
         const where = {
-            id: { [Op.in]: organizationIds },
+            id: { [Op.in]: areaIds },
         };
         if (filters.name) {
             where['name'] = { [Op.iLike]: `%${filters.name}%` };
@@ -221,7 +259,7 @@ export const listOrganizations = async (filters, userId) => {
         const sortBy = filters.sortBy ?? 'createdAt';
         const sortOrder = filters.sortOrder ?? 'desc';
         const offset = (filters.page - 1) * limit;
-        const result = await Organization.findAndCountAll({
+        const result = await Area.findAndCountAll({
             where,
             limit,
             offset,
@@ -240,20 +278,20 @@ export const listOrganizations = async (filters, userId) => {
     return { data: rows, pagination };
 };
 /**
- * Actualiza una organización.
+ * Actualiza un área.
  * Filtro multi-tenant: solo si el usuario tiene acceso.
  * Bloquea si la suscripción no está activa.
  */
-export const updateOrganization = async (organizationId, data, userId) => {
-    await assertCanAccessOrganization(userId, organizationId);
-    await assertActiveSubscription(organizationId);
-    const org = await Organization.findByPk(organizationId);
-    if (!org) {
-        throw new NotFoundError('Organización', { organizationId });
+export const updateOrganization = async (areaId, data, userId) => {
+    await assertCanAccessOrganization(userId, areaId);
+    await assertActiveSubscription(areaId);
+    const area = await Area.findByPk(areaId);
+    if (!area) {
+        throw new NotFoundError('Área', { areaId });
     }
     let newSettings;
     if (data.settings !== undefined) {
-        const current = org.settings ?? {};
+        const current = area.settings ?? {};
         const incoming = data.settings;
         const mergedAcceso = incoming['acceso'] != null
             ? {
@@ -267,36 +305,34 @@ export const updateOrganization = async (organizationId, data, userId) => {
             ...(mergedAcceso !== undefined && { acceso: mergedAcceso }),
         };
     }
-    await org.update({
+    await area.update({
         ...(data.name !== undefined && { name: data.name }),
         ...(data.ecosystem_type !== undefined && { ecosystem_type: data.ecosystem_type }),
         ...(newSettings !== undefined && { settings: newSettings }),
     });
-    // Invalidar caché después de actualizar organización
-    await invalidateOrganizationCache(organizationId);
+    await invalidateOrganizationCache(areaId);
     const updatedKeys = [
         data.name !== undefined && 'name',
         data.ecosystem_type !== undefined && 'ecosystem_type',
         data.settings !== undefined && 'settings',
     ].filter(Boolean);
-    logger.info({ organizationId: org.id, userId, updates: updatedKeys }, 'Organización actualizada');
-    return org;
+    logger.info({ areaId: area.id, userId, updates: updatedKeys }, 'Área actualizada');
+    return area;
 };
 /**
  * Elimina una organización (soft delete).
  * Filtro multi-tenant: solo si el usuario tiene acceso.
  * Bloquea si la suscripción no está activa.
  */
-export const deleteOrganization = async (organizationId, userId) => {
-    await assertCanAccessOrganization(userId, organizationId);
-    await assertActiveSubscription(organizationId);
-    const org = await Organization.findByPk(organizationId);
-    if (!org) {
-        throw new NotFoundError('Organización', { organizationId });
+export const deleteOrganization = async (areaId, userId) => {
+    await assertCanAccessOrganization(userId, areaId);
+    await assertActiveSubscription(areaId);
+    const area = await Area.findByPk(areaId);
+    if (!area) {
+        throw new NotFoundError('Área', { areaId });
     }
-    await org.destroy();
-    // Invalidar caché después de eliminar organización
-    await invalidateOrganizationCache(organizationId);
-    logger.info({ organizationId, userId }, 'Organización eliminada (soft delete)');
+    await area.destroy();
+    await invalidateOrganizationCache(areaId);
+    logger.info({ areaId, userId }, 'Área eliminada (soft delete)');
 };
 //# sourceMappingURL=organization.service.js.map

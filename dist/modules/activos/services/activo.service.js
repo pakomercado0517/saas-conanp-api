@@ -1,10 +1,20 @@
 import { Activo } from '../../../modules/activos/models/activo.model.js';
 import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
 import { User } from '../../../modules/users/models/user.model.js';
-import { Organization } from '../../../modules/organizations/models/organization.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
 import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { checkActivosLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
+/** Resuelve areaId (organizationId en API) a dependenciaId para Activo (activos son por dependencia). */
+const getDependenciaIdFromAreaId = async (areaId) => {
+    const area = await Area.findByPk(areaId);
+    if (!area) {
+        throw new NotFoundError('Área', { areaId });
+    }
+    return area.dependenciaId;
+};
 /**
  * Valida que una transición de estado sea válida según las reglas de negocio.
  *
@@ -44,23 +54,27 @@ export const validateEstadoTransition = (currentStatus, newStatus) => {
  * @throws {NotFoundError} Si el activo no existe o no pertenece a la organización
  * @throws {ValidationError} Si el activo no está aprobado
  */
-export const validateActivoAprobado = async (activoId, organizationId) => {
-    // Nota: deletedAt no está en el tipo del modelo, se usa type assertion
+export const validateActivoAprobado = async (activoId, areaId) => {
+    const area = await Area.findByPk(areaId);
+    if (!area) {
+        throw new NotFoundError('Área', { areaId });
+    }
+    const dependenciaId = area.dependenciaId;
     const activo = await Activo.findOne({
         where: {
             id: activoId,
-            organizationId,
+            dependenciaId,
             deletedAt: null,
         },
     });
     if (!activo) {
-        throw new NotFoundError('Activo', { activoId, organizationId });
+        throw new NotFoundError('Activo', { activoId, areaId });
     }
     if (activo.status !== 'aprobado') {
         throw new ValidationError('Solo los activos aprobados pueden usarse', undefined, {
             activoId,
+            areaId,
             status: activo.status,
-            organizationId,
         });
     }
     return activo;
@@ -77,21 +91,17 @@ export const validateActivoAprobado = async (activoId, organizationId) => {
  * @throws {ValidationError} Si el organizationId del data no coincide con el parámetro
  */
 export const createActivo = async (data, organizationId, creatorUserId) => {
-    // Validar acceso a la organización
     await assertCanAccessOrganization(creatorUserId, organizationId);
-    // Validar que el organizationId del data coincida con el parámetro (consistencia multi-tenant)
+    await checkActivosLimit(organizationId);
     if (data.organizationId !== organizationId) {
         throw new ValidationError('El ID de organización en los datos no coincide con el parámetro', undefined, {
             dataOrganizationId: data.organizationId,
             parameterOrganizationId: organizationId,
         });
     }
-    // Validar que el prestador existe y pertenece a la organización
+    const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const prestador = await PrestadorProfile.findOne({
-        where: {
-            id: data.ownerId,
-            organizationId,
-        },
+        where: { id: data.ownerId, dependenciaId },
     });
     if (!prestador) {
         throw new NotFoundError('Prestador', {
@@ -99,23 +109,21 @@ export const createActivo = async (data, organizationId, creatorUserId) => {
             organizationId,
         });
     }
-    // Crear el activo
     const activo = await Activo.create({
-        organizationId: data.organizationId,
+        dependenciaId,
         ownerId: data.ownerId,
         type: data.type,
         status: data.status ?? 'pendiente',
     });
-    // Cargar relaciones para retornar datos completos
     await activo.reload({
         include: [
-            { model: Organization, as: 'Organization' },
+            { model: Dependencia, as: 'Dependencia' },
             { model: PrestadorProfile, as: 'Owner' },
         ],
     });
     logger.info({
         activoId: activo.id,
-        organizationId: activo.organizationId,
+        dependenciaId: activo.dependenciaId,
         ownerId: activo.ownerId,
         type: activo.type,
         status: activo.status,
@@ -134,18 +142,16 @@ export const createActivo = async (data, organizationId, creatorUserId) => {
  * @throws {NotFoundError} Si el activo no existe o no pertenece a la organización
  */
 export const getActivoById = async (activoId, organizationId, requestingUserId) => {
-    // Validar acceso a la organización
     await assertCanAccessOrganization(requestingUserId, organizationId);
-    // Buscar activo con filtro multi-tenant y excluir eliminados
-    // Nota: deletedAt no está en el tipo del modelo, se usa type assertion
+    const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const activo = await Activo.findOne({
         where: {
             id: activoId,
-            organizationId,
+            dependenciaId,
             deletedAt: null,
         },
         include: [
-            { model: Organization, as: 'Organization' },
+            { model: Dependencia, as: 'Dependencia' },
             { model: PrestadorProfile, as: 'Owner' },
         ],
     });
@@ -164,13 +170,11 @@ export const getActivoById = async (activoId, organizationId, requestingUserId) 
  * @throws {ForbiddenError} Si no tiene acceso a la organización
  */
 export const listActivos = async (organizationId, filters, requestingUserId) => {
-    // Validar acceso a la organización
     await assertCanAccessOrganization(requestingUserId, organizationId);
-    // Construir query con filtros multi-tenant obligatorio
-    // Nota: deletedAt no está en el tipo del modelo, se incluye en Record<string, unknown>
+    const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const where = {
-        organizationId, // Multi-tenant obligatorio
-        deletedAt: null, // Excluir eliminados
+        dependenciaId,
+        deletedAt: null,
     };
     // Aplicar filtros opcionales
     if (filters.ownerId) {
@@ -195,8 +199,8 @@ export const listActivos = async (organizationId, filters, requestingUserId) => 
         order: [[sortBy, sortOrder]],
         include: [
             {
-                model: Organization,
-                as: 'Organization',
+                model: Dependencia,
+                as: 'Dependencia',
                 attributes: ['id', 'name'],
             },
             {
@@ -236,14 +240,12 @@ export const listActivos = async (organizationId, filters, requestingUserId) => 
  * @throws {ValidationError} Si la transición de estado no es válida
  */
 export const updateActivoStatus = async (activoId, organizationId, newStatus, requestingUserId) => {
-    // Validar acceso a la organización
     await assertCanAccessOrganization(requestingUserId, organizationId);
-    // Buscar activo con filtro multi-tenant y excluir eliminados
-    // Nota: deletedAt no está en el tipo del modelo, se usa type assertion
+    const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const activo = await Activo.findOne({
         where: {
             id: activoId,
-            organizationId,
+            dependenciaId,
             deletedAt: null,
         },
     });
@@ -259,7 +261,7 @@ export const updateActivoStatus = async (activoId, organizationId, newStatus, re
     // Cargar relaciones para retornar datos completos
     await activo.reload({
         include: [
-            { model: Organization, as: 'Organization' },
+            { model: Dependencia, as: 'Dependencia' },
             { model: PrestadorProfile, as: 'Owner' },
         ],
     });
@@ -286,14 +288,12 @@ export const updateActivoStatus = async (activoId, organizationId, newStatus, re
  * @throws {ValidationError} Si la transición de estado no es válida
  */
 export const updateActivo = async (activoId, organizationId, data, requestingUserId) => {
-    // Validar acceso a la organización
     await assertCanAccessOrganization(requestingUserId, organizationId);
-    // Buscar activo con filtro multi-tenant y excluir eliminados
-    // Nota: deletedAt no está en el tipo del modelo, se usa type assertion
+    const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const activo = await Activo.findOne({
         where: {
             id: activoId,
-            organizationId,
+            dependenciaId,
             deletedAt: null,
         },
     });
@@ -317,7 +317,7 @@ export const updateActivo = async (activoId, organizationId, data, requestingUse
     // Cargar relaciones para retornar datos completos
     await activo.reload({
         include: [
-            { model: Organization, as: 'Organization' },
+            { model: Dependencia, as: 'Dependencia' },
             { model: PrestadorProfile, as: 'Owner' },
         ],
     });
@@ -343,14 +343,12 @@ export const updateActivo = async (activoId, organizationId, data, requestingUse
  * @throws {NotFoundError} Si el activo no existe o no pertenece a la organización
  */
 export const deleteActivo = async (activoId, organizationId, requestingUserId) => {
-    // Validar acceso a la organización
     await assertCanAccessOrganization(requestingUserId, organizationId);
-    // Buscar activo con filtro multi-tenant y excluir eliminados
-    // Nota: deletedAt no está en el tipo del modelo, se usa type assertion
+    const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const activo = await Activo.findOne({
         where: {
             id: activoId,
-            organizationId,
+            dependenciaId,
             deletedAt: null,
         },
     });

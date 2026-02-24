@@ -2,8 +2,8 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import { DateTime } from 'luxon';
 import type { UUID } from '@/shared/database/types';
-import { Organization } from '@/modules/organizations/models/organization.model';
-import { Invitation } from '@/modules/users/models/invitation.model';
+import { Area } from '@/modules/areas/models/area.model.js';
+import { Invitation } from '@/modules/users/models/invitation.model.js';
 import { InvitationEmailProof } from '@/modules/users/models/invitation-email-proof.model';
 import {
   sendInvitationOtpEmail,
@@ -45,7 +45,7 @@ const assertInvitationValidForEmailProof = async (
   email: string
 ): Promise<Invitation> => {
   const invitation = await Invitation.findByPk(invitationId, {
-    include: [{ model: Organization, as: 'Organization', attributes: ['id', 'name'] }],
+    include: [{ model: Area, as: 'Area', attributes: ['id', 'name'] }],
   });
 
   if (!invitation) {
@@ -117,8 +117,7 @@ export const startVerifyEmail = async (
   });
 
   const organizationName =
-    (invitation as Invitation & { Organization?: { name: string } }).Organization?.name ??
-    'la organización';
+    (invitation as Invitation & { Area?: { name: string } }).Area?.name ?? 'el área';
   await sendInvitationOtpEmail({
     to: emailNormalized,
     organizationName,
@@ -253,7 +252,7 @@ export const consumeProofForRegistration = async (
 
   const invitation = proofRecord.Invitation;
   return {
-    organizationId: invitation.organizationId,
+    organizationId: invitation.areaId,
     role: invitation.role,
   };
 };

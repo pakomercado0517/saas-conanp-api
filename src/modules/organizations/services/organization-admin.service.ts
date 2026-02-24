@@ -3,13 +3,14 @@ import bcrypt from 'bcrypt';
 import { randomBytes } from 'node:crypto';
 import { DateTime } from 'luxon';
 import type { UUID } from '@/shared/database/types';
-import { Organization } from '@/modules/organizations/models/organization.model';
-import { Subscription } from '@/modules/subscriptions/models/subscription.model';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model';
+import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
+import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
 import { createFreeSubscriptionForOrganization } from '@/modules/subscriptions/services/subscription.service.js';
-import { Membership } from '@/modules/users/models/membership.model';
-import { User } from '@/modules/users/models/user.model';
-import { Invitation } from '@/modules/users/models/invitation.model';
+import { Membership } from '@/modules/users/models/membership.model.js';
+import { User } from '@/modules/users/models/user.model.js';
+import { Invitation } from '@/modules/users/models/invitation.model.js';
 import type {
   CreateOrganizationDTO,
   UpdateOrganizationDTO,
@@ -35,8 +36,8 @@ export interface CreateOrganizationAdminResult extends Record<string, unknown> {
   invitationId?: UUID;
 }
 
-const invalidateOrganizationCache = async (organizationId: UUID): Promise<void> => {
-  const cacheKey = CacheKeys.organization(organizationId);
+const invalidateOrganizationCache = async (areaId: UUID): Promise<void> => {
+  const cacheKey = CacheKeys.organization(areaId);
   await cache.del(cacheKey);
 };
 
@@ -50,8 +51,13 @@ export const createOrganization = async (
   return sequelize.transaction(async (transaction): Promise<CreateOrganizationAdminResult> => {
     const normalizedAdminEmail = data.admin_email.trim().toLowerCase();
 
-    const org = await Organization.create(
+    const dependencia = await Dependencia.create(
+      { name: data.name, settings: data.settings ?? {} },
+      { transaction }
+    );
+    const area = await Area.create(
       {
+        dependenciaId: dependencia.id,
         name: data.name,
         ecosystem_type: data.ecosystem_type,
         settings: data.settings ?? {},
@@ -65,14 +71,11 @@ export const createOrganization = async (
       transaction,
     });
 
-    // Si existe pero está soft-deleted, bloquear explícitamente.
     if (targetUser?.deletedAt) {
       throw new ValidationError(
         'No se puede asignar como admin a un usuario eliminado. Usa otro email.',
         undefined,
-        {
-          admin_email: normalizedAdminEmail,
-        }
+        { admin_email: normalizedAdminEmail }
       );
     }
 
@@ -82,17 +85,14 @@ export const createOrganization = async (
 
     if (targetUser) {
       const existingMembership = await Membership.findOne({
-        where: {
-          userId: targetUser.id,
-          organizationId: org.id,
-        },
+        where: { userId: targetUser.id, areaId: area.id },
         transaction,
       });
 
       if (existingMembership) {
-        throw new ConflictError('El usuario ya tiene una membresía en esta organización', {
+        throw new ConflictError('El usuario ya tiene una membresía en esta área', {
           userId: targetUser.id,
-          organizationId: org.id,
+          areaId: area.id,
           membershipId: existingMembership.id,
         });
       }
@@ -100,7 +100,7 @@ export const createOrganization = async (
       const membership = await Membership.create(
         {
           userId: targetUser.id,
-          organizationId: org.id,
+          areaId: area.id,
           role: 'admin',
           status: 'activo',
         },
@@ -116,7 +116,7 @@ export const createOrganization = async (
 
       const invitation = await Invitation.create(
         {
-          organizationId: org.id,
+          areaId: area.id,
           email: normalizedAdminEmail,
           role: 'admin',
           tokenHash,
@@ -130,7 +130,7 @@ export const createOrganization = async (
       try {
         await sendInvitationEmail({
           to: normalizedAdminEmail,
-          organizationName: org.name,
+          organizationName: area.name,
           role: 'admin',
           invitationId: invitation.id,
           token,
@@ -146,22 +146,23 @@ export const createOrganization = async (
       invitationId = invitation.id;
     }
 
-    await createFreeSubscriptionForOrganization(org.id, transaction);
+    await createFreeSubscriptionForOrganization(area.id, transaction);
 
     logger.info(
       {
-        organizationId: org.id,
-        name: org.name,
-        ecosystem_type: org.ecosystem_type,
+        areaId: area.id,
+        dependenciaId: dependencia.id,
+        name: area.name,
+        ecosystem_type: area.ecosystem_type,
         adminAssignment,
         admin_email: normalizedAdminEmail,
         invitedByUserId: actor.userId,
       },
-      'Organización creada por super admin con admin inicial'
+      'Dependencia y área creadas por super admin con admin inicial'
     );
 
     return {
-      ...(org.toJSON() as unknown as Record<string, unknown>),
+      ...(area.toJSON() as unknown as Record<string, unknown>),
       adminAssignment,
       adminEmail: normalizedAdminEmail,
       ...(membershipId && { membershipId }),
@@ -171,13 +172,12 @@ export const createOrganization = async (
 };
 
 /**
- * Lista todas las organizaciones con paginación y filtros.
- * Sin filtro de membresía — el super admin ve todas.
- * Incluye estado de suscripción y conteo de miembros.
+ * Lista todas las áreas con paginación y filtros (super admin).
+ * Incluye suscripción vía dependencia.
  */
 export const listAllOrganizations = async (
   filters: ListOrganizationsDTO
-): Promise<{ data: Organization[]; pagination: PaginationMeta }> => {
+): Promise<{ data: Area[]; pagination: PaginationMeta }> => {
   const where: Record<string, unknown> = {};
 
   if (filters.name) {
@@ -192,22 +192,26 @@ export const listAllOrganizations = async (
   const limit = filters.limit;
   const offset = (filters.page - 1) * limit;
 
-  const { rows, count } = await Organization.findAndCountAll({
+  const { rows, count } = await Area.findAndCountAll({
     where,
     limit,
     offset,
     order: [[sortBy, sortOrder]],
     include: [
       {
-        model: Subscription,
-        as: 'Subscription',
-        attributes: ['id', 'status', 'currentPeriodEnd', 'planId'],
-        required: false,
+        model: Dependencia,
+        as: 'Dependencia',
+        attributes: ['id', 'name'],
+        required: true,
         include: [
           {
-            model: SubscriptionPlan,
-            as: 'SubscriptionPlan',
-            attributes: ['id', 'name'],
+            model: Subscription,
+            as: 'Subscription',
+            attributes: ['id', 'status', 'currentPeriodEnd', 'planId'],
+            required: false,
+            include: [
+              { model: SubscriptionPlan, as: 'SubscriptionPlan', attributes: ['id', 'name'] },
+            ],
           },
         ],
       },
@@ -228,65 +232,72 @@ export const listAllOrganizations = async (
 };
 
 /**
- * Obtiene una organización por ID con info de suscripción y miembros.
- * Sin validación de membresía — acceso directo para super admin.
+ * Obtiene un área por ID con info de suscripción (vía dependencia) y miembros.
  */
-export const getOrganizationById = async (organizationId: UUID): Promise<Organization> => {
-  const org = await Organization.findByPk(organizationId, {
+export const getOrganizationById = async (areaId: UUID): Promise<Area> => {
+  const area = await Area.findByPk(areaId, {
     include: [
       {
-        model: Subscription,
-        as: 'Subscription',
-        attributes: [
-          'id',
-          'status',
-          'billingCycle',
-          'currentPeriodStart',
-          'currentPeriodEnd',
-          'cancelAtPeriodEnd',
-          'planId',
-        ],
-        required: false,
+        model: Dependencia,
+        as: 'Dependencia',
+        attributes: ['id', 'name'],
+        required: true,
         include: [
           {
-            model: SubscriptionPlan,
-            as: 'SubscriptionPlan',
-            attributes: ['id', 'name', 'maxUsers', 'maxEventos', 'maxActividades'],
+            model: Subscription,
+            as: 'Subscription',
+            attributes: [
+              'id',
+              'status',
+              'billingCycle',
+              'currentPeriodStart',
+              'currentPeriodEnd',
+              'cancelAtPeriodEnd',
+              'planId',
+            ],
+            required: false,
+            include: [
+              {
+                model: SubscriptionPlan,
+                as: 'SubscriptionPlan',
+                attributes: ['id', 'name', 'maxUsers', 'maxEventos', 'maxActividades'],
+              },
+            ],
           },
         ],
       },
     ],
   });
 
-  if (!org) {
-    throw new NotFoundError('Organización', { organizationId });
+  if (!area) {
+    throw new NotFoundError('Área', { areaId });
   }
 
   const membersCount = await Membership.count({
-    where: { organizationId, status: 'activo' },
+    where: { areaId, status: 'activo' },
   });
 
-  const result = org.toJSON() as unknown as Record<string, unknown>;
+  const result = area.toJSON() as unknown as Record<string, unknown>;
   result['membersCount'] = membersCount;
 
-  return result as unknown as Organization;
+  return result as unknown as Area;
 };
 
 /**
- * Actualiza una organización sin validar membresía ni suscripción.
+ * Actualiza un área sin validar membresía ni suscripción (super admin).
  */
 export const updateOrganization = async (
-  organizationId: UUID,
+  areaId: UUID,
   data: UpdateOrganizationDTO
-): Promise<Organization> => {
-  const org = await Organization.findByPk(organizationId);
-  if (!org) {
-    throw new NotFoundError('Organización', { organizationId });
+): Promise<Area> => {
+  const area = await Area.findByPk(areaId);
+  if (!area) {
+    throw new NotFoundError('Área', { areaId });
   }
 
   let newSettings: Record<string, unknown> | undefined;
   if (data.settings !== undefined) {
-    const current = (org.settings as Record<string, unknown>) ?? {};
+    const current = (area.settings as Record<string, unknown>) ?? {};
     const incoming = data.settings as Record<string, unknown>;
     const mergedAcceso =
       incoming['acceso'] != null
@@ -302,30 +313,30 @@ export const updateOrganization = async (
     };
   }
 
-  await org.update({
+  await area.update({
     ...(data.name !== undefined && { name: data.name }),
     ...(data.ecosystem_type !== undefined && { ecosystem_type: data.ecosystem_type }),
     ...(newSettings !== undefined && { settings: newSettings }),
   });
 
-  await invalidateOrganizationCache(organizationId);
+  await invalidateOrganizationCache(areaId);
 
-  logger.info({ organizationId: org.id }, 'Organización actualizada por super admin');
+  logger.info({ areaId: area.id }, 'Área actualizada por super admin');
 
-  return org;
+  return area;
 };
 
 /**
- * Elimina una organización (soft delete) sin validar membresía ni suscripción.
+ * Elimina un área (soft delete) sin validar membresía ni suscripción (super admin).
  */
-export const deleteOrganization = async (organizationId: UUID): Promise<void> => {
-  const org = await Organization.findByPk(organizationId);
-  if (!org) {
-    throw new NotFoundError('Organización', { organizationId });
+export const deleteOrganization = async (areaId: UUID): Promise<void> => {
+  const area = await Area.findByPk(areaId);
+  if (!area) {
+    throw new NotFoundError('Área', { areaId });
   }
 
-  await org.destroy();
-  await invalidateOrganizationCache(organizationId);
+  await area.destroy();
+  await invalidateOrganizationCache(areaId);
 
-  logger.info({ organizationId }, 'Organización eliminada por super admin (soft delete)');
+  logger.info({ areaId }, 'Área eliminada por super admin (soft delete)');
 };
