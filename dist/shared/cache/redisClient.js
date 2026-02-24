@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { logger } from '@/shared/logger/index.js';
+import { logger } from '../../shared/logger/index.js';
 export class RedisClient {
     client;
     constructor(redisUrl) {

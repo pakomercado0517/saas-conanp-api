@@ -1,4 +1,4 @@
-import { stripSensitiveKeys } from '@/shared/sanitizers/stripe-sanitizer.js';
+import { stripSensitiveKeys } from '../../../shared/sanitizers/stripe-sanitizer.js';
 /**
  * Sanitiza una suscripción para enviarla en respuestas de API.
  * - Elimina metadata (puede contener datos internos de Stripe).
@@ -18,9 +18,9 @@ export const sanitizeSubscriptionForResponse = (subscription) => {
     if ('metadata' in sanitized) {
         sanitized['metadata'] = null;
     }
-    // Sanitizar objetos anidados (Organization, SubscriptionPlan)
-    if (sanitized['Organization'] != null && typeof sanitized['Organization'] === 'object') {
-        sanitized['Organization'] = stripSensitiveKeys(sanitized['Organization']);
+    // Sanitizar objetos anidados (Dependencia, SubscriptionPlan)
+    if (sanitized['Dependencia'] != null && typeof sanitized['Dependencia'] === 'object') {
+        sanitized['Dependencia'] = stripSensitiveKeys(sanitized['Dependencia']);
     }
     if (sanitized['SubscriptionPlan'] != null && typeof sanitized['SubscriptionPlan'] === 'object') {
         sanitized['SubscriptionPlan'] = stripSensitiveKeys(sanitized['SubscriptionPlan']);

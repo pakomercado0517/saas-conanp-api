@@ -1,8 +1,7 @@
 import { type Router as ExpressRouter } from 'express';
 /**
- * Router de organizaciones
- *
- * Todas las rutas están bajo el prefijo /api/v1/organizations
+ * Router de áreas (antes "organizations").
+ * Parámetro de ruta: areaId. Montado en /api/v1/areas y /api/v1/organizations (compatibilidad).
  */
 declare const organizationRouter: ExpressRouter;
 export default organizationRouter;

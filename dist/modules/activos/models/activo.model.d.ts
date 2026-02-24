@@ -1,7 +1,7 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, ActivoType } from '@/shared/database/types';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
+import type { UUID, ActivoType } from '../../../shared/database/types';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
 export interface ActivoAttributes {
     id: UUID;
     dependenciaId: UUID;

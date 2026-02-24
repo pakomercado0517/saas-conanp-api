@@ -1,5 +1,5 @@
 import * as bloqueService from '../services/bloque.service.js';
-import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '@/shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
 /**
  * Crea un nuevo bloque.
  * Solo los administradores pueden crear bloques.

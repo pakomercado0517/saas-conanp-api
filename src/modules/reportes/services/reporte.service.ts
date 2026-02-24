@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import type { UUID } from '@/shared/database/types.js';
 import { sequelize } from '@/shared/database/index.js';
 import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import { Actividad } from '@/modules/actividades/models/actividad.model.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
 import { User } from '@/modules/users/models/user.model.js';
@@ -35,7 +36,7 @@ import type {
 } from '@/modules/reportes/types/reporte.types.js';
 import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
 import { toDateOnlyDB, DateTime } from '@/shared/dates/index.js';
-import { ValidationError } from '@/shared/errors/index.js';
+import { ValidationError, NotFoundError } from '@/shared/errors/index.js';
 
 // Límites para evitar respuestas muy grandes
 const MAX_DATE_RANGE_DAYS = 365; // Máximo 1 año de rango
@@ -83,9 +84,8 @@ export const getReporteEventosPorActividad = async (
 
   // Construir filtros base
   const whereClause: Record<string, unknown> = {
-    organizationId,
-    deletedAt: null,
-  } as unknown as Record<string, unknown>;
+    areaId: organizationId,
+  };
 
   // Aplicar filtros opcionales
   if (filters.actividadId) {
@@ -224,9 +224,8 @@ export const getReporteEventosPorPrestador = async (
 
   // Construir filtros base
   const whereClause: Record<string, unknown> = {
-    organizationId,
-    deletedAt: null,
-  } as unknown as Record<string, unknown>;
+    areaId: organizationId,
+  };
 
   // Aplicar filtros opcionales
   if (filters.prestadorId) {
@@ -427,9 +426,8 @@ export const getReporteEventosPorFecha = async (
 
   // Construir filtros base
   const whereClause: Record<string, unknown> = {
-    organizationId,
-    deletedAt: null,
-  } as unknown as Record<string, unknown>;
+    areaId: organizationId,
+  };
 
   // Aplicar filtros opcionales
   if (filters.actividadId) {
@@ -598,7 +596,7 @@ export const getReporteCapacidadUtilizada = async (
 
   // Construir filtros para capacidades
   const capacidadWhere: Record<string, unknown> = {
-    organizationId,
+    areaId: organizationId,
   };
 
   if (filters.actividadId) {
@@ -659,7 +657,7 @@ export const getReporteCapacidadUtilizada = async (
   // Una sola query: sum(peopleCount) agrupado por actividadId, date, bloqueId
   const sumsRows = await EventoOperativo.findAll({
     where: {
-      organizationId,
+      areaId: organizationId,
       status: { [Op.in]: ['programado', 'en_curso'] },
       actividadId: { [Op.in]: actividadIds },
       date: { [Op.in]: allDates },
@@ -688,7 +686,7 @@ export const getReporteCapacidadUtilizada = async (
     const bloques = await Bloque.findAll({
       where: {
         actividadId: { [Op.in]: actividadIds },
-        organizationId,
+        areaId: organizationId,
       },
       attributes: ['id', 'actividadId', 'capacity', 'startTime', 'endTime'],
     });
@@ -770,9 +768,13 @@ export const getReportePrestadoresActivos = async (
   // Validar acceso a la organización
   await assertCanAccessOrganization(userId, organizationId);
 
+  const area = await Area.findByPk(organizationId);
+  if (!area) throw new NotFoundError('Área', { organizationId });
+  const dependenciaId = area.dependenciaId;
+
   // Construir filtros para prestadores
   const prestadorWhere: Record<string, unknown> = {
-    organizationId,
+    dependenciaId,
   };
 
   if (filters.status) {
@@ -783,10 +785,10 @@ export const getReportePrestadoresActivos = async (
   if (filters.conPermisosVigentes) {
     const ahora = DateTime.now().setZone('America/Mexico_City');
 
-    // Obtener prestadores de la organización
+    // Obtener prestadores de la organización (dependencia)
     const prestadoresOrg = await PrestadorProfile.findAll({
       where: {
-        organizationId,
+        dependenciaId,
         ...(filters.status ? { status: filters.status } : {}),
       },
       attributes: ['id'],
@@ -859,9 +861,8 @@ export const getReportePrestadoresActivos = async (
   const eventos = await EventoOperativo.findAll({
     where: {
       prestadorId: { [Op.in]: prestadorIds },
-      organizationId,
-      deletedAt: null,
-    } as unknown as Record<string, unknown>,
+      areaId: organizationId,
+    },
     attributes: ['prestadorId', 'date', 'peopleCount'],
     order: [['date', 'DESC']],
   });
@@ -943,8 +944,11 @@ export const getReporteStockActual = async (
 ): Promise<ReporteStockActualItem[]> => {
   await assertCanAccessOrganization(userId, organizationId);
 
+  const area = await Area.findByPk(organizationId);
+  if (!area) throw new NotFoundError('Área', { organizationId });
+
   const stocks = await StockAcceso.findAll({
-    where: { organizationId },
+    where: { dependenciaId: area.dependenciaId },
     include: [
       {
         model: ProductoAcceso,
@@ -976,11 +980,14 @@ export const getReporteSalidasPorPeriodo = async (
   await assertCanAccessOrganization(userId, organizationId);
   validateDateRange(filters.dateFrom, filters.dateTo);
 
+  const area = await Area.findByPk(organizationId);
+  if (!area) throw new NotFoundError('Área', { organizationId });
+
   const dateFromStr = toDateStr(filters.dateFrom);
   const dateToStr = toDateStr(filters.dateTo);
 
   const where: Record<string, unknown> = {
-    organizationId,
+    dependenciaId: area.dependenciaId,
     tipo: 'salida',
   };
   if (filters.productoAccesoId) where['productoAccesoId'] = filters.productoAccesoId;
@@ -1041,7 +1048,7 @@ export const getReporteSalidasPorPeriodo = async (
     const products =
       productIds.length > 0
         ? await ProductoAcceso.findAll({
-            where: { id: { [Op.in]: productIds }, organizationId },
+            where: { id: { [Op.in]: productIds }, dependenciaId: area.dependenciaId },
             attributes: ['id', 'name'],
           })
         : [];
@@ -1077,11 +1084,14 @@ export const getReporteVentasPorPrestador = async (
   await assertCanAccessOrganization(userId, organizationId);
   validateDateRange(filters.dateFrom, filters.dateTo);
 
+  const area = await Area.findByPk(organizationId);
+  if (!area) throw new NotFoundError('Área', { organizationId });
+
   const dateFromStr = toDateStr(filters.dateFrom);
   const dateToStr = toDateStr(filters.dateTo);
 
   const where: Record<string, unknown> = {
-    organizationId,
+    dependenciaId: area.dependenciaId,
     tipo: 'salida',
     motivo: 'venta',
   };
@@ -1120,7 +1130,7 @@ export const getReporteVentasPorPrestador = async (
   const prestadores =
     prestadorIds.length > 0
       ? await PrestadorProfile.findAll({
-          where: { id: { [Op.in]: prestadorIds }, organizationId },
+          where: { id: { [Op.in]: prestadorIds }, dependenciaId: area.dependenciaId },
           include: [{ model: User, as: 'User', attributes: ['name'] }],
         })
       : [];
@@ -1153,11 +1163,14 @@ export const getReporteVentasPorProducto = async (
   await assertCanAccessOrganization(userId, organizationId);
   validateDateRange(filters.dateFrom, filters.dateTo);
 
+  const area = await Area.findByPk(organizationId);
+  if (!area) throw new NotFoundError('Área', { organizationId });
+
   const dateFromStr = toDateStr(filters.dateFrom);
   const dateToStr = toDateStr(filters.dateTo);
 
   const where: Record<string, unknown> = {
-    organizationId,
+    dependenciaId: area.dependenciaId,
     tipo: 'salida',
     motivo: 'venta',
   };
@@ -1203,7 +1216,7 @@ export const getReporteVentasPorProducto = async (
   const products =
     productIds.length > 0
       ? await ProductoAcceso.findAll({
-          where: { id: { [Op.in]: productIds }, organizationId },
+          where: { id: { [Op.in]: productIds }, dependenciaId: area.dependenciaId },
           attributes: ['id', 'name'],
         })
       : [];

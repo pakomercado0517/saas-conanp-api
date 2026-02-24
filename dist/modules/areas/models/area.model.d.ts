@@ -1,6 +1,6 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, EcosystemType, SubscriptionStatus } from '@/shared/database/types';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import type { UUID, EcosystemType, SubscriptionStatus } from '../../../shared/database/types';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
 export interface AreaAttributes {
     id: UUID;
     dependenciaId: UUID;

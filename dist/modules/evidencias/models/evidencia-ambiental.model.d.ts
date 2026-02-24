@@ -1,6 +1,6 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '@/shared/database/types';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model';
+import type { UUID } from '../../../shared/database/types';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model';
 export interface EvidenciaAmbientalAttributes {
     id: UUID;
     eventoId: UUID;

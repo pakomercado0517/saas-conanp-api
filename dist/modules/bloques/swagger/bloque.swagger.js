@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { CreateBloqueSchema, CreateBloqueFromTemplateSchema, UpdateBloqueSchema, ListBloquesSchema, } from '../../actividades/validators/bloque.validator.js';
 const BloqueSchema = registry.register('Bloque', z.object({
     id: z.string().uuid().describe('ID único del bloque'),

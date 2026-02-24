@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
-import { Area } from '@/modules/areas/models/area.model.js';
+import { sequelize } from '../../../shared/database';
+import { Area } from '../../../modules/areas/models/area.model.js';
 import { User } from './user.model.js';
 export class Invitation extends Model {
 }

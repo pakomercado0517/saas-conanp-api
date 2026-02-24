@@ -1,4 +1,4 @@
-import type { UUID } from '@/shared/database/types';
+import type { UUID } from '../../../shared/database/types';
 /**
  * Payload del JWT access token
  */

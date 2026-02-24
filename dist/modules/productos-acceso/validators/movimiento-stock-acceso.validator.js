@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry } from '@/shared/swagger/index.js';
+import { registry } from '../../../shared/swagger/index.js';
 extendZodWithOpenApi(z);
 const MOTIVO_ENTRADA = ['compra', 'ajuste', 'devolucion'];
 const motivoEntradaEnum = z.enum(MOTIVO_ENTRADA, {

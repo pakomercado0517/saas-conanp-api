@@ -1,11 +1,12 @@
-import { Activo } from '@/modules/activos/models/activo.model.js';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
-import { User } from '@/modules/users/models/user.model.js';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { Activo } from '../../../modules/activos/models/activo.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { checkActivosLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
 /** Resuelve areaId (organizationId en API) a dependenciaId para Activo (activos son por dependencia). */
 const getDependenciaIdFromAreaId = async (areaId) => {
     const area = await Area.findByPk(areaId);
@@ -90,8 +91,8 @@ export const validateActivoAprobado = async (activoId, areaId) => {
  * @throws {ValidationError} Si el organizationId del data no coincide con el parámetro
  */
 export const createActivo = async (data, organizationId, creatorUserId) => {
-    // Validar acceso a la organización
     await assertCanAccessOrganization(creatorUserId, organizationId);
+    await checkActivosLimit(organizationId);
     if (data.organizationId !== organizationId) {
         throw new ValidationError('El ID de organización en los datos no coincide con el parámetro', undefined, {
             dataOrganizationId: data.organizationId,

@@ -2,8 +2,8 @@
 // The following code is the actual content of the file.
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry } from '@/shared/swagger/index.js';
-import { dateTimeSchema, optionalDateTimeSchema } from '@/shared/dates/zod-schemas.js';
+import { registry } from '../../../shared/swagger/index.js';
+import { dateTimeSchema, optionalDateTimeSchema } from '../../../shared/dates/zod-schemas.js';
 import { URL } from 'url';
 extendZodWithOpenApi(z);
 // Constantes para enums reutilizables

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import app from '@/server.js';
+import app from '../../server.js';
 import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationWithSubscription, createMembership, authRequest, } from './helpers.js';
 const API_ORGS = '/api/v1/organizations';
 const API_USERS = '/api/v1/users';

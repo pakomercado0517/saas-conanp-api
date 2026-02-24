@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model';
-import { Actividad } from '@/modules/actividades/models/actividad.model';
+import { sequelize } from '../../../shared/database';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model';
+import { Actividad } from '../../../modules/actividades/models/actividad.model';
 export class Permiso extends Model {
 }
 Permiso.init({

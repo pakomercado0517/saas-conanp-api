@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ValidationError, NotFoundError } from '@/shared/errors/index.js';
+import { ValidationError, NotFoundError } from '../../../../shared/errors/index.js';
 import * as subscriptionLimitsService from '../subscription-limits.service.js';
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const PLAN_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';

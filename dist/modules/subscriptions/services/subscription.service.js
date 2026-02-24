@@ -1,20 +1,20 @@
 import { Op } from 'sequelize';
-import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
-import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
-import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
-import { getPlanById, getPlanByStripePriceId, assertPlanExistsAndActive, getFreePlan, } from '@/modules/subscriptions/services/subscription-plan.service.js';
-import { sequelize } from '@/shared/database/index.js';
-import { stripeClient, handleStripeError } from '@/shared/stripe/index.js';
-import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { cache } from '@/shared/cache/index.js';
-import { CacheKeys } from '@/shared/cache/keys.js';
+import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { assertCanAccessOrganization, assertCanAccessDependencia, } from '../../../modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
+import { getPlanById, getPlanByStripePriceId, assertPlanExistsAndActive, getFreePlan, } from '../../../modules/subscriptions/services/subscription-plan.service.js';
+import { sequelize } from '../../../shared/database/index.js';
+import { stripeClient, handleStripeError } from '../../../shared/stripe/index.js';
+import { ConflictError, NotFoundError, ValidationError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { cache } from '../../../shared/cache/index.js';
+import { CacheKeys } from '../../../shared/cache/keys.js';
 const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
 const CANCELABLE_STATUSES = ['active', 'trialing', 'past_due', 'unpaid'];
 /**
@@ -101,13 +101,19 @@ export const assertPlanLimits = async (planId, organizationId) => {
     const plan = await getPlanById(planId);
     const usage = await getOrganizationUsage(organizationId);
     if (plan.maxUsers != null && usage.usersCount >= plan.maxUsers) {
-        throw new ValidationError(`Has alcanzado el límite de usuarios del plan (${plan.maxUsers}). Considera actualizar tu plan.`, 'maxUsers');
+        throw new ValidationError(plan.name === 'free'
+            ? 'El plan gratuito permite solo 1 usuario. Actualiza tu plan para agregar más.'
+            : `Has alcanzado el límite de usuarios del plan (${plan.maxUsers}). Considera actualizar tu plan.`, 'maxUsers');
     }
     if (plan.maxEventos != null && usage.eventosCount >= plan.maxEventos) {
-        throw new ValidationError(`Has alcanzado el límite de eventos del plan (${plan.maxEventos}). Considera actualizar tu plan.`, 'maxEventos');
+        throw new ValidationError(plan.name === 'free'
+            ? 'El plan gratuito permite solo 1 evento por periodo. Actualiza tu plan para agregar más.'
+            : `Has alcanzado el límite de eventos del plan (${plan.maxEventos}). Considera actualizar tu plan.`, 'maxEventos');
     }
     if (plan.maxActividades != null && usage.actividadesCount >= plan.maxActividades) {
-        throw new ValidationError(`Has alcanzado el límite de actividades del plan (${plan.maxActividades}). Considera actualizar tu plan.`, 'maxActividades');
+        throw new ValidationError(plan.name === 'free'
+            ? 'El plan gratuito permite solo 1 actividad. Actualiza tu plan para agregar más.'
+            : `Has alcanzado el límite de actividades del plan (${plan.maxActividades}). Considera actualizar tu plan.`, 'maxActividades');
     }
 };
 /**
@@ -428,20 +434,16 @@ export const getBillingHistory = async (subscriptionId, userId, page = 1, limit 
 };
 /**
  * Cambia el plan de una suscripción (upgrade/downgrade).
+ * La suscripción está a nivel dependencia.
  *
  * @param subscriptionId - ID de la suscripción
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param dependenciaId - ID de la dependencia
  * @param userId - ID del usuario
  * @param data - Datos del cambio (planId, billingCycle, prorate)
  * @returns Suscripción actualizada
  */
-export const changePlan = async (subscriptionId, areaId, userId, data) => {
-    await assertIsAdmin(userId, areaId);
-    const area = await Area.findByPk(areaId);
-    if (!area) {
-        throw new NotFoundError('Área', { areaId });
-    }
-    const dependenciaId = area.dependenciaId;
+export const changePlan = async (subscriptionId, dependenciaId, userId, data) => {
+    await assertCanAccessDependencia(userId, dependenciaId);
     const subscription = await Subscription.findOne({
         where: {
             id: subscriptionId,
@@ -453,7 +455,7 @@ export const changePlan = async (subscriptionId, areaId, userId, data) => {
         ],
     });
     if (!subscription) {
-        throw new NotFoundError('Suscripción', { subscriptionId, areaId });
+        throw new NotFoundError('Suscripción', { subscriptionId, dependenciaId });
     }
     if (!ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status)) {
         throw new ValidationError(`No se puede cambiar el plan de una suscripción en estado '${subscription.status}'. La suscripción debe estar activa o en período de prueba.`, 'status');
@@ -461,7 +463,10 @@ export const changePlan = async (subscriptionId, areaId, userId, data) => {
     const planId = data.planId ?? subscription.planId;
     const billingCycle = data.billingCycle ?? subscription.billingCycle;
     await assertPlanExistsAndActive(planId);
-    await assertPlanLimits(planId, areaId);
+    const areaForLimits = await Area.findOne({ where: { dependenciaId }, attributes: ['id'] });
+    if (areaForLimits) {
+        await assertPlanLimits(planId, areaForLimits.id);
+    }
     const plan = await getPlanById(planId);
     const stripePriceId = billingCycle === 'monthly' ? plan.stripePriceIdMonthly : plan.stripePriceIdYearly;
     if (!stripePriceId) {
@@ -511,20 +516,16 @@ export const changePlan = async (subscriptionId, areaId, userId, data) => {
 };
 /**
  * Cancela una suscripción.
+ * La suscripción está a nivel dependencia.
  *
  * @param subscriptionId - ID de la suscripción
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param dependenciaId - ID de la dependencia
  * @param userId - ID del usuario
  * @param data - Opciones de cancelación
  * @returns Suscripción actualizada
  */
-export const cancelSubscription = async (subscriptionId, areaId, userId, data) => {
-    await assertIsAdmin(userId, areaId);
-    const area = await Area.findByPk(areaId);
-    if (!area) {
-        throw new NotFoundError('Área', { areaId });
-    }
-    const dependenciaId = area.dependenciaId;
+export const cancelSubscription = async (subscriptionId, dependenciaId, userId, data) => {
+    await assertCanAccessDependencia(userId, dependenciaId);
     const subscription = await Subscription.findOne({
         where: {
             id: subscriptionId,
@@ -536,7 +537,7 @@ export const cancelSubscription = async (subscriptionId, areaId, userId, data) =
         ],
     });
     if (!subscription) {
-        throw new NotFoundError('Suscripción', { subscriptionId, areaId });
+        throw new NotFoundError('Suscripción', { subscriptionId, dependenciaId });
     }
     if (subscription.status === 'canceled') {
         throw new ValidationError('La suscripción ya está cancelada', 'status');
@@ -599,19 +600,15 @@ export const cancelSubscription = async (subscriptionId, areaId, userId, data) =
 };
 /**
  * Reactiva una suscripción cancelada (quita cancel_at_period_end).
+ * La suscripción está a nivel dependencia.
  *
  * @param subscriptionId - ID de la suscripción
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param dependenciaId - ID de la dependencia
  * @param userId - ID del usuario
  * @returns Suscripción actualizada
  */
-export const reactivateSubscription = async (subscriptionId, areaId, userId) => {
-    await assertIsAdmin(userId, areaId);
-    const area = await Area.findByPk(areaId);
-    if (!area) {
-        throw new NotFoundError('Área', { areaId });
-    }
-    const dependenciaId = area.dependenciaId;
+export const reactivateSubscription = async (subscriptionId, dependenciaId, userId) => {
+    await assertCanAccessDependencia(userId, dependenciaId);
     const subscription = await Subscription.findOne({
         where: {
             id: subscriptionId,
@@ -623,7 +620,7 @@ export const reactivateSubscription = async (subscriptionId, areaId, userId) => 
         ],
     });
     if (!subscription) {
-        throw new NotFoundError('Suscripción', { subscriptionId, areaId });
+        throw new NotFoundError('Suscripción', { subscriptionId, dependenciaId });
     }
     if (!subscription.cancelAtPeriodEnd) {
         throw new ValidationError('La suscripción no está programada para cancelarse al final del período. No hay nada que reactivar.', 'cancelAtPeriodEnd');

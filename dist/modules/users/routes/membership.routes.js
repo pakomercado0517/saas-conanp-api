@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { inviteUser, listMemberships, updateMembershipRole, deleteMembership, } from '../controllers/membership.controller.js';
 import { validateCreateMembership, validateUpdateMembership, validateListMemberships, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, attachSubscriptionLimits, } from '@/shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, attachSubscriptionLimits, } from '../../../shared/middleware/index.js';
 /**
  * Router de memberships
  *

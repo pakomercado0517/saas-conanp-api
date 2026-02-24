@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createEvidencia, getEvidenciaById, listEvidencias, updateEvidencia, deleteEvidencia, } from '../controllers/evidencia.controller.js';
 import { validateCreateEvidencia, validateUpdateEvidencia, validateListEvidencias, } from '../middleware/validation.middleware.js';
 import { uploadFile } from '../middleware/file-upload.middleware.js';
-import { authenticate, requireOrganizationAccess } from '@/shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
 /**
  * Router de evidencias ambientales
  *

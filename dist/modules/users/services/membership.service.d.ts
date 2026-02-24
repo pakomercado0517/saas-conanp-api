@@ -1,7 +1,7 @@
-import type { UUID } from '@/shared/database/types.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import type { CreateMembershipDTO, UpdateMembershipDTO, ListMembershipsDTO } from '@/modules/users/validators/membership.validator.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { UUID } from '../../../shared/database/types.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import type { CreateMembershipDTO, UpdateMembershipDTO, ListMembershipsDTO } from '../../../modules/users/validators/membership.validator.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
 /**
  * Valida que el usuario tenga rol 'admin' en la organización especificada.
  * Verifica membresía activa con rol 'admin'.

@@ -8,7 +8,7 @@ import type { Request, Response, NextFunction } from 'express';
  *
  * Uso:
  * ```typescript
- * import { authenticate } from '@/shared/middleware';
+ * import { authenticate } from '../../shared/middleware';
  *
  * router.get('/protected', authenticate, protectedController);
  * ```
@@ -30,7 +30,7 @@ export declare const authenticate: (req: Request, _res: Response, next: NextFunc
  *
  * Uso:
  * ```typescript
- * import { optionalAuthenticate } from '@/shared/middleware';
+ * import { optionalAuthenticate } from '../../shared/middleware';
  *
  * router.get('/public-or-private', optionalAuthenticate, controller);
  * ```

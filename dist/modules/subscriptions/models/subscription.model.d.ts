@@ -1,7 +1,7 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, SubscriptionStatus, BillingCycle } from '@/shared/database/types';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
+import type { UUID, SubscriptionStatus, BillingCycle } from '../../../shared/database/types';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
 export interface SubscriptionAttributes {
     id: UUID;
     dependenciaId: UUID;

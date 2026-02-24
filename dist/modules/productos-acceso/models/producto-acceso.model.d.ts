@@ -1,7 +1,7 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '@/shared/database/types';
-import type { ProductoAccesoTipo } from '@/shared/database/types';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
+import type { UUID } from '../../../shared/database/types';
+import type { ProductoAccesoTipo } from '../../../shared/database/types';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
 export interface ProductoAccesoAttributes {
     id: UUID;
     dependenciaId: UUID;

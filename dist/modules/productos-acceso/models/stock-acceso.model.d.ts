@@ -1,7 +1,7 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '@/shared/database/types';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
+import type { UUID } from '../../../shared/database/types';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
 export interface StockAccesoAttributes {
     id: UUID;
     dependenciaId: UUID;

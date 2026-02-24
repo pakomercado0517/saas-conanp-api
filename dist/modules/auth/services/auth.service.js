@@ -3,14 +3,14 @@ import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import { DateTime } from 'luxon';
 import { randomBytes } from 'crypto';
-import { User } from '@/modules/users/models/user.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { RefreshToken } from '@/modules/auth/models/refresh-token.model.js';
-import { ConflictError, UnauthorizedError, BadRequestError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { consumeInvitationForRegistration, consumeInvitationAfterProof, } from '@/modules/users/services/invitation.service.js';
-import { consumeProofForRegistration } from '@/modules/users/services/invitation-email-proof.service.js';
-import { sendVerificationEmail, sendPasswordResetEmail } from '@/shared/email/index.js';
+import { User } from '../../../modules/users/models/user.model.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { RefreshToken } from '../../../modules/auth/models/refresh-token.model.js';
+import { ConflictError, UnauthorizedError, BadRequestError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { consumeInvitationForRegistration, consumeInvitationAfterProof, } from '../../../modules/users/services/invitation.service.js';
+import { consumeProofForRegistration } from '../../../modules/users/services/invitation-email-proof.service.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../../../shared/email/index.js';
 /**
  * Configuración de JWT
  */
@@ -169,7 +169,7 @@ export const register = async (data) => {
     if (invitationData) {
         await Membership.create({
             userId: user.id,
-            organizationId: invitationData.organizationId,
+            areaId: invitationData.organizationId, // API usa "organizationId" pero el valor es areaId
             role: invitationData.role,
             status: 'activo',
         });

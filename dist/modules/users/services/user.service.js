@@ -1,9 +1,9 @@
 import bcrypt from 'bcrypt';
-import { User } from '@/modules/users/models/user.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { NotFoundError, ConflictError, UnauthorizedError, ValidationError, } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { revokeAllUserRefreshTokens } from '@/modules/auth/services/auth.service.js';
+import { User } from '../../../modules/users/models/user.model.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { NotFoundError, ConflictError, UnauthorizedError, ValidationError, } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { revokeAllUserRefreshTokens } from '../../../modules/auth/services/auth.service.js';
 /**
  * Configuración de bcrypt
  */
@@ -129,7 +129,7 @@ export const deleteUser = async (userId) => {
         const details = {
             userId,
             activeMembershipsCount: activeMemberships.length,
-            organizationIds: activeMemberships.map((m) => m.organizationId),
+            organizationIds: activeMemberships.map((m) => m.areaId),
         };
         throw new ValidationError('No se puede eliminar el usuario porque tiene membresías activas en organizaciones. Por favor, contacta a los administradores de las organizaciones para que eliminen tu membresía primero.', undefined, details);
     }

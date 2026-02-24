@@ -1,13 +1,13 @@
 import { Op } from 'sequelize';
-import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
-import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
-import { checkActividadesLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
-import { cache } from '@/shared/cache/index.js';
-import { CacheKeys } from '@/shared/cache/keys.js';
-import { cacheConfig } from '@/shared/cache/config.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
+import { checkActividadesLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
+import { cache } from '../../../shared/cache/index.js';
+import { CacheKeys } from '../../../shared/cache/keys.js';
+import { cacheConfig } from '../../../shared/cache/config.js';
 /**
  * Invalida el caché de actividades de una organización.
  * Se llama después de CREATE/UPDATE/DELETE de actividades.
@@ -56,7 +56,7 @@ export const createActividad = async (data, userId) => {
     await checkActividadesLimit(data.organizationId);
     // Crear la actividad
     const actividad = await Actividad.create({
-        organizationId: data.organizationId,
+        areaId: data.organizationId,
         name: data.name,
         type: data.type,
         agendaType: data.agendaType,
@@ -68,7 +68,7 @@ export const createActividad = async (data, userId) => {
     await invalidateActividadCache(data.organizationId);
     logger.info({
         actividadId: actividad.id,
-        organizationId: actividad.organizationId,
+        organizationId: actividad.areaId,
         name: actividad.name,
         agendaType: actividad.agendaType,
         userId,
@@ -100,7 +100,7 @@ export const getActividadById = async (actividadId, organizationId, userId) => {
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId, // Multi-tenant obligatorio
         },
     });
     if (!actividad) {
@@ -126,7 +126,7 @@ export const listActividades = async (organizationId, filters, userId) => {
     // Construir query con filtros multi-tenant obligatorio
     // Nota: paranoid: true en el modelo excluye automáticamente registros eliminados
     const where = {
-        organizationId, // Multi-tenant obligatorio
+        areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
     };
     // Aplicar filtros opcionales
     if (filters.name) {
@@ -189,7 +189,7 @@ export const updateActividad = async (actividadId, organizationId, data, userId)
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId, // Multi-tenant obligatorio
         },
     });
     if (!actividad) {
@@ -251,7 +251,7 @@ export const deleteActividad = async (actividadId, organizationId, userId) => {
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId, // Multi-tenant obligatorio
         },
     });
     if (!actividad) {

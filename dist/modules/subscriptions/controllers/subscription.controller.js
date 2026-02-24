@@ -1,6 +1,6 @@
 import * as subscriptionService from '../services/subscription.service.js';
 import { sanitizeSubscriptionForResponse } from '../sanitizers/subscription-sanitizer.js';
-import { sendSuccess, sendCreated, sendPaginated } from '@/shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
 /**
  * Crea una suscripción para la organización.
  *
@@ -66,7 +66,7 @@ export const changePlan = async (req, res) => {
     const userId = req.user.userId;
     const data = req.body;
     const subscription = await subscriptionService.getSubscriptionById(subscriptionId, userId);
-    const result = await subscriptionService.changePlan(subscriptionId, subscription.organizationId, userId, data);
+    const result = await subscriptionService.changePlan(subscriptionId, subscription.dependenciaId, userId, data);
     const sanitized = sanitizeSubscriptionForResponse(result);
     return sendSuccess(res, sanitized, 'Plan actualizado exitosamente');
 };
@@ -89,7 +89,7 @@ export const cancelSubscription = async (req, res) => {
     const userId = req.user.userId;
     const data = req.body;
     const subscription = await subscriptionService.getSubscriptionById(subscriptionId, userId);
-    const result = await subscriptionService.cancelSubscription(subscriptionId, subscription.organizationId, userId, data);
+    const result = await subscriptionService.cancelSubscription(subscriptionId, subscription.dependenciaId, userId, data);
     const sanitized = sanitizeSubscriptionForResponse(result);
     return sendSuccess(res, sanitized, 'Suscripción cancelada exitosamente');
 };
@@ -111,7 +111,7 @@ export const reactivateSubscription = async (req, res) => {
     const subscriptionId = req.params['subscriptionId'];
     const userId = req.user.userId;
     const subscription = await subscriptionService.getSubscriptionById(subscriptionId, userId);
-    const result = await subscriptionService.reactivateSubscription(subscriptionId, subscription.organizationId, userId);
+    const result = await subscriptionService.reactivateSubscription(subscriptionId, subscription.dependenciaId, userId);
     const sanitized = sanitizeSubscriptionForResponse(result);
     return sendSuccess(res, sanitized, 'Suscripción reactivada exitosamente');
 };

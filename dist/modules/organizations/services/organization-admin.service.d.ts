@@ -1,7 +1,7 @@
-import type { UUID } from '@/shared/database/types';
-import { Area } from '@/modules/areas/models/area.model.js';
-import type { CreateOrganizationDTO, UpdateOrganizationDTO, ListOrganizationsDTO } from '@/modules/organizations/validators/organization.validator';
-import type { PaginationMeta } from '@/shared/responses/types';
+import type { UUID } from '../../../shared/database/types';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import type { CreateOrganizationDTO, UpdateOrganizationDTO, ListOrganizationsDTO } from '../../../modules/organizations/validators/organization.validator';
+import type { PaginationMeta } from '../../../shared/responses/types';
 type AdminAssignment = 'membership_created' | 'invitation_created';
 export interface CreateOrganizationAdminResult extends Record<string, unknown> {
     adminAssignment: AdminAssignment;

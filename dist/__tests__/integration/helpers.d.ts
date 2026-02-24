@@ -1,6 +1,6 @@
 import type { Application } from 'express';
 import request from 'supertest';
-import type { UUID } from '@/shared/database/types.js';
+import type { UUID } from '../../shared/database/types.js';
 export interface AuthResult {
     user: {
         id: string;
@@ -55,7 +55,7 @@ export declare function bootstrapOrganizationWithSubscription(userId: UUID, orga
 export interface MembershipData {
     id: string;
     userId: string;
-    organizationId: string;
+    areaId: string;
     role: string;
     status: string;
     createdAt: string;

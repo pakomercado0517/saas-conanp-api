@@ -1,16 +1,16 @@
 import { Op } from 'sequelize';
-import { sequelize } from '@/shared/database/index.js';
-import { Payment, } from '@/modules/payments/models/payment.model.js';
-import { StripeWebhookEvent } from '@/modules/payments/models/stripe-webhook-event.model.js';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
-import { markEventoPaid, unmarkEventoPaid } from '@/modules/eventos/services/evento.service.js';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
-import { stripeClient, handleStripeError } from '@/shared/stripe/index.js';
-import { ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
+import { sequelize } from '../../../shared/database/index.js';
+import { Payment, } from '../../../modules/payments/models/payment.model.js';
+import { StripeWebhookEvent } from '../../../modules/payments/models/stripe-webhook-event.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import { markEventoPaid, unmarkEventoPaid } from '../../../modules/eventos/services/evento.service.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { stripeClient, handleStripeError } from '../../../shared/stripe/index.js';
+import { ForbiddenError, NotFoundError, ValidationError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
 import { DateTime } from 'luxon';
 /**
  * Helper interno: Obtiene un evento y valida que pertenezca a la organización
@@ -82,13 +82,13 @@ const assertCanCreatePaymentForEvent = async (userId, organizationId, evento) =>
     const membership = await Membership.findOne({
         where: {
             userId,
-            organizationId,
+            areaId: organizationId,
             status: 'activo',
         },
     });
     if (!membership) {
         throw new ForbiddenError('No tienes acceso a esta organización', {
-            organizationId,
+            areaId: organizationId,
             userId,
         });
     }
@@ -96,10 +96,13 @@ const assertCanCreatePaymentForEvent = async (userId, organizationId, evento) =>
         return;
     }
     if (membership.role === 'prestador') {
+        const area = await Area.findByPk(organizationId);
+        if (!area)
+            throw new ForbiddenError('Área no encontrada', { organizationId });
         const prestadorProfile = await PrestadorProfile.findOne({
             where: {
                 userId,
-                organizationId,
+                dependenciaId: area.dependenciaId,
             },
         });
         if (!prestadorProfile || evento.prestadorId !== prestadorProfile.id) {
@@ -112,7 +115,7 @@ const assertCanCreatePaymentForEvent = async (userId, organizationId, evento) =>
         return;
     }
     throw new ForbiddenError('Solo administradores y prestadores pueden crear o confirmar pagos para eventos', {
-        organizationId,
+        areaId: organizationId,
         userId,
         currentRole: membership.role,
     });
@@ -213,7 +216,7 @@ export const createPaymentIntent = async (data, organizationId, userId) => {
         });
         logger.info({
             paymentId: payment.id,
-            organizationId,
+            areaId: organizationId,
             eventoId: data.eventoId,
             amount: data.amount,
             currency: data.currency,
@@ -333,7 +336,7 @@ export const confirmPayment = async (data, organizationId, userId) => {
         });
         logger.info({
             paymentId: payment.id,
-            organizationId,
+            areaId: organizationId,
             stripePaymentIntentId: data.stripePaymentIntentId,
             status: payment.status,
             userId,
@@ -395,7 +398,7 @@ export const listPayments = async (organizationId, filters, userId) => {
     await assertCanAccessOrganization(userId, organizationId);
     // Construir query con filtro multi-tenant obligatorio
     const where = {
-        organizationId, // Multi-tenant obligatorio
+        areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
     };
     // Aplicar filtros opcionales
     if (filters.eventoId) {
@@ -539,7 +542,7 @@ export const processRefund = async (data, organizationId, userId) => {
                 reason: data.reason ? 'requested_by_customer' : 'requested_by_customer',
                 metadata: {
                     paymentId: payment.id,
-                    organizationId,
+                    areaId: organizationId,
                     reason: data.reason || '',
                 },
             });
@@ -568,7 +571,7 @@ export const processRefund = async (data, organizationId, userId) => {
         });
         logger.info({
             paymentId: payment.id,
-            organizationId,
+            areaId: organizationId,
             refundAmount,
             refundedAmount: payment.refundedAmount,
             isFullRefund,

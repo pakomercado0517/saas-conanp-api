@@ -1,9 +1,9 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
-import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import { Bloque } from '@/modules/actividades/models/bloque.model.js';
+import { sequelize } from '../../../shared/database';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
 export class EventoOperativo extends Model {
 }
 EventoOperativo.init({

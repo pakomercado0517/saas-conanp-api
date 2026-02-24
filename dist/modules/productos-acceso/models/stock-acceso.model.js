@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
+import { sequelize } from '../../../shared/database';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
 export class StockAcceso extends Model {
 }
 StockAcceso.init({

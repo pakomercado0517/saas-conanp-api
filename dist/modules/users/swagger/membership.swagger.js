@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { CreateMembershipSchema, UpdateMembershipSchema, ListMembershipsSchema, } from '../validators/membership.validator.js';
 /**
  * Schema de membership en respuestas

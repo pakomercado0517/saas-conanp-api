@@ -1,7 +1,7 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, PaymentStatus } from '@/shared/database/types';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import type { UUID, PaymentStatus } from '../../../shared/database/types';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
 export interface PaymentAttributes {
     id: UUID;
     areaId: UUID;

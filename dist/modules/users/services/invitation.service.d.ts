@@ -1,7 +1,7 @@
-import type { UUID } from '@/shared/database/types.js';
-import { Invitation } from '@/modules/users/models/invitation.model.js';
-import type { CreateInvitationDTO, ListInvitationsDTO } from '@/modules/users/validators/invitation.validator.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { UUID } from '../../../shared/database/types.js';
+import { Invitation } from '../../../modules/users/models/invitation.model.js';
+import type { CreateInvitationDTO, ListInvitationsDTO } from '../../../modules/users/validators/invitation.validator.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
 export interface CreateInvitationResult {
     id: UUID;
     email: string;

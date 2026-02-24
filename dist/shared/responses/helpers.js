@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_LIMITS_LOCALS_KEY } from '@/shared/middleware/subscription-limits.middleware.js';
+import { SUBSCRIPTION_LIMITS_LOCALS_KEY } from '../../shared/middleware/subscription-limits.middleware.js';
 /** Convierte LimitsAndUsage a SubscriptionLimitsInfo para la respuesta. */
 const toLimitsInfo = (limitsAndUsage) => ({
     limits: {

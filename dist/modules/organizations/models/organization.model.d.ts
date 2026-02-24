@@ -1,5 +1,5 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, EcosystemType, SubscriptionStatus } from '@/shared/database/types';
+import type { UUID, EcosystemType, SubscriptionStatus } from '../../../shared/database/types';
 export interface OrganizationAttributes {
     id: UUID;
     name: string;

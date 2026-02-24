@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import { ConflictError, NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 import * as subscriptionService from '../subscription.service.js';
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';

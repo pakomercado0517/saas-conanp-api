@@ -8,6 +8,7 @@ import { Bloque } from '@/modules/actividades/models/bloque.model.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
 import { User } from '@/modules/users/models/user.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
+import { Area } from '@/modules/areas/models/area.model.js';
 import type {
   CreateEventoDTO,
   UpdateEventoDTO,
@@ -42,7 +43,7 @@ const validateEventoPermissions = async (
 ): Promise<void> => {
   // Obtener membership para verificar rol
   const membership = await Membership.findOne({
-    where: { userId: requestingUserId, organizationId, status: 'activo' },
+    where: { userId: requestingUserId, areaId: organizationId, status: 'activo' },
   });
 
   if (!membership) {
@@ -59,8 +60,10 @@ const validateEventoPermissions = async (
 
   // Si es prestador, verificar que el evento pertenece a su prestadorId
   if (membership.role === 'prestador') {
+    const area = await Area.findByPk(organizationId);
+    if (!area) throw new ForbiddenError('Área no encontrada', { organizationId });
     const prestador = await PrestadorProfile.findOne({
-      where: { userId: requestingUserId, organizationId },
+      where: { userId: requestingUserId, dependenciaId: area.dependenciaId },
     });
 
     if (!prestador) {
@@ -105,7 +108,7 @@ export const createEvento = async (
   const actividad = await Actividad.findOne({
     where: {
       id: data.actividadId,
-      organizationId,
+      areaId: organizationId,
     },
   });
 
@@ -141,7 +144,7 @@ export const createEvento = async (
       where: {
         id: data.bloqueId,
         actividadId: data.actividadId,
-        organizationId,
+        areaId: organizationId,
       },
     });
 
@@ -162,11 +165,13 @@ export const createEvento = async (
     }
   }
 
-  // 4. Validar que el prestador existe y pertenece a la organización
+  // 4. Validar que el prestador existe y pertenece a la organización (por dependencia del área)
+  const areaForPrestador = await Area.findByPk(organizationId);
+  if (!areaForPrestador) throw new NotFoundError('Área', { organizationId });
   const prestador = await PrestadorProfile.findOne({
     where: {
       id: data.prestadorId,
-      organizationId,
+      dependenciaId: areaForPrestador.dependenciaId,
     },
   });
 
@@ -263,7 +268,7 @@ export const createEvento = async (
     // Crear el evento
     const evento = await EventoOperativo.create(
       {
-        organizationId,
+        areaId: organizationId,
         prestadorId: data.prestadorId,
         actividadId: data.actividadId,
         date: dateStr,
@@ -328,13 +333,12 @@ export const getEventoById = async (
   // Validar acceso a la organización
   await assertCanAccessOrganization(requestingUserId, organizationId);
 
-  // Buscar evento con filtro multi-tenant y excluir eliminados
+  // Buscar evento con filtro multi-tenant
   const evento = await EventoOperativo.findOne({
     where: {
       id: eventoId,
-      organizationId,
-      deletedAt: null,
-    } as unknown as Record<string, unknown>,
+      areaId: organizationId,
+    },
     include: [
       { model: Actividad, as: 'Actividad' },
       { model: PrestadorProfile, as: 'PrestadorProfile' },
@@ -372,7 +376,7 @@ export const listEventos = async (
 
   // Obtener membership del usuario para determinar permisos
   const membership = await Membership.findOne({
-    where: { userId: requestingUserId, organizationId, status: 'activo' },
+    where: { userId: requestingUserId, areaId: organizationId, status: 'activo' },
   });
 
   if (!membership) {
@@ -384,14 +388,15 @@ export const listEventos = async (
 
   // Construir query con filtros multi-tenant obligatorio
   const where: Record<string, unknown> = {
-    organizationId, // Multi-tenant obligatorio
-    deletedAt: null, // Excluir eliminados
-  } as unknown as Record<string, unknown>;
+    areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
+  };
 
   // Permisos granulares: Si es prestador, solo puede ver sus propios eventos
   if (membership.role === 'prestador') {
+    const area = await Area.findByPk(organizationId);
+    if (!area) throw new ForbiddenError('Área no encontrada', { organizationId });
     const prestador = await PrestadorProfile.findOne({
-      where: { userId: requestingUserId, organizationId },
+      where: { userId: requestingUserId, dependenciaId: area.dependenciaId },
     });
 
     if (!prestador) {
@@ -544,9 +549,8 @@ export const updateEvento = async (
   const evento = await EventoOperativo.findOne({
     where: {
       id: eventoId,
-      organizationId,
-      deletedAt: null,
-    } as unknown as Record<string, unknown>,
+      areaId: organizationId,
+    },
     include: [{ model: Actividad, as: 'Actividad' }],
   });
 
@@ -720,13 +724,12 @@ export const deleteEvento = async (
   // Validar acceso a la organización
   await assertCanAccessOrganization(requestingUserId, organizationId);
 
-  // Buscar evento con filtro multi-tenant y excluir eliminados
+  // Buscar evento con filtro multi-tenant
   const evento = await EventoOperativo.findOne({
     where: {
       id: eventoId,
-      organizationId,
-      deletedAt: null,
-    } as unknown as Record<string, unknown>,
+      areaId: organizationId,
+    },
   });
 
   if (!evento) {
@@ -768,7 +771,7 @@ export const eventoHasPagoCompletado = async (
     status: 'succeeded',
   };
   if (organizationId) {
-    where['organizationId'] = organizationId;
+    where['areaId'] = organizationId;
   }
   const payment = await Payment.findOne({
     where: where as Record<string, unknown>,
@@ -785,7 +788,7 @@ export const eventoHasPagoCompletado = async (
  */
 export const markEventoPaid = async (eventoId: UUID, organizationId: UUID): Promise<void> => {
   const evento = await EventoOperativo.findOne({
-    where: { id: eventoId, organizationId },
+    where: { id: eventoId, areaId: organizationId },
   });
   if (!evento) {
     return;
@@ -806,7 +809,7 @@ export const unmarkEventoPaid = async (eventoId: UUID, organizationId: UUID): Pr
   const other = await Payment.findOne({
     where: {
       eventoId,
-      organizationId,
+      areaId: organizationId,
       status: 'succeeded',
     },
   });
@@ -814,7 +817,7 @@ export const unmarkEventoPaid = async (eventoId: UUID, organizationId: UUID): Pr
     return;
   }
   const evento = await EventoOperativo.findOne({
-    where: { id: eventoId, organizationId },
+    where: { id: eventoId, areaId: organizationId },
   });
   if (!evento) {
     return;

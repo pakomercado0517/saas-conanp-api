@@ -1,5 +1,5 @@
 import * as organizationService from '../services/organization.service.js';
-import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '@/shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
 /**
  * Crea una nueva organización
  *

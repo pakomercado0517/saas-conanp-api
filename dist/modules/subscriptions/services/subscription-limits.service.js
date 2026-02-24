@@ -1,12 +1,17 @@
 import { Op } from 'sequelize';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
-import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import { getPlanById } from '@/modules/subscriptions/services/subscription-plan.service.js';
-import { ValidationError, NotFoundError } from '@/shared/errors/index.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { Activo } from '../../../modules/activos/models/activo.model.js';
+import { getPlanById } from '../../../modules/subscriptions/services/subscription-plan.service.js';
+import { ValidationError, NotFoundError } from '../../../shared/errors/index.js';
+/** Límite de prestadores y activos en plan FREE (enforcement sin columna en plan). */
+const FREE_PLAN_PRESTADORES_LIMIT = 1;
+const FREE_PLAN_ACTIVOS_LIMIT = 1;
 const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
 /** Estados de evento que cuentan para el límite (excluye cancelados) */
 const EVENTO_STATUSES_COUNTED = ['programado', 'en_curso', 'completado'];
@@ -145,7 +150,9 @@ export const checkUsersLimit = async (organizationId, currentCount) => {
     }
     const count = currentCount ?? (await getOrganizationUsage(organizationId)).usersCount;
     if (count >= plan.maxUsers) {
-        throw new ValidationError(`Has alcanzado el límite de usuarios del plan (${plan.maxUsers}). Considera actualizar tu plan.`, 'maxUsers');
+        throw new ValidationError(plan.name === 'free'
+            ? 'El plan gratuito permite solo 1 usuario. Actualiza tu plan para agregar más.'
+            : `Has alcanzado el límite de usuarios del plan (${plan.maxUsers}). Considera actualizar tu plan.`, 'maxUsers');
     }
 };
 /**
@@ -172,7 +179,9 @@ export const checkEventosLimit = async (organizationId, currentCount) => {
             periodEnd: subscription.currentPeriodEnd,
         });
     if (usage.eventosCount >= plan.maxEventos) {
-        throw new ValidationError(`Has alcanzado el límite de eventos del plan en este periodo (${plan.maxEventos}). Considera actualizar tu plan.`, 'maxEventos');
+        throw new ValidationError(plan.name === 'free'
+            ? 'El plan gratuito permite solo 1 evento por periodo. Actualiza tu plan para agregar más.'
+            : `Has alcanzado el límite de eventos del plan en este periodo (${plan.maxEventos}). Considera actualizar tu plan.`, 'maxEventos');
     }
 };
 /**
@@ -194,7 +203,61 @@ export const checkActividadesLimit = async (organizationId, currentCount) => {
     }
     const count = currentCount ?? (await getOrganizationUsage(organizationId)).actividadesCount;
     if (count >= plan.maxActividades) {
-        throw new ValidationError(`Has alcanzado el límite de actividades del plan (${plan.maxActividades}). Considera actualizar tu plan.`, 'maxActividades');
+        throw new ValidationError(plan.name === 'free'
+            ? 'El plan gratuito permite solo 1 actividad. Actualiza tu plan para agregar más.'
+            : `Has alcanzado el límite de actividades del plan (${plan.maxActividades}). Considera actualizar tu plan.`, 'maxActividades');
+    }
+};
+/**
+ * Verifica el límite de prestadores (plan FREE = 1).
+ * Solo aplica cuando el plan es "free".
+ *
+ * @param areaId - ID del área (organizationId en API)
+ * @throws {NotFoundError} Si no tiene suscripción activa
+ * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ */
+export const checkPrestadoresLimit = async (areaId) => {
+    const subscription = await getActiveSubscriptionByOrganization(areaId);
+    if (!subscription?.SubscriptionPlan) {
+        throw new NotFoundError('Suscripción activa', { organizationId: areaId });
+    }
+    const plan = subscription.SubscriptionPlan;
+    if (plan.name !== 'free')
+        return;
+    const area = await Area.findByPk(areaId);
+    if (!area)
+        return;
+    const count = await PrestadorProfile.count({
+        where: { dependenciaId: area.dependenciaId },
+    });
+    if (count >= FREE_PLAN_PRESTADORES_LIMIT) {
+        throw new ValidationError('El plan gratuito permite solo 1 prestador. Actualiza tu plan para agregar más.', 'maxPrestadores');
+    }
+};
+/**
+ * Verifica el límite de activos (plan FREE = 1).
+ * Solo aplica cuando el plan es "free".
+ *
+ * @param areaId - ID del área (organizationId en API)
+ * @throws {NotFoundError} Si no tiene suscripción activa
+ * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ */
+export const checkActivosLimit = async (areaId) => {
+    const subscription = await getActiveSubscriptionByOrganization(areaId);
+    if (!subscription?.SubscriptionPlan) {
+        throw new NotFoundError('Suscripción activa', { organizationId: areaId });
+    }
+    const plan = subscription.SubscriptionPlan;
+    if (plan.name !== 'free')
+        return;
+    const area = await Area.findByPk(areaId);
+    if (!area)
+        return;
+    const count = await Activo.count({
+        where: { dependenciaId: area.dependenciaId },
+    });
+    if (count >= FREE_PLAN_ACTIVOS_LIMIT) {
+        throw new ValidationError('El plan gratuito permite solo 1 activo. Actualiza tu plan para agregar más.', 'maxActivos');
     }
 };
 /**

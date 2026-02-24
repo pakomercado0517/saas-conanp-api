@@ -1,5 +1,5 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '@/shared/database/types';
+import type { UUID } from '../../../shared/database/types';
 import { Activo } from './activo.model';
 export interface ActivoRequisitoAttributes {
     id: UUID;

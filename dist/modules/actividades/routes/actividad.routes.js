@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createActividad, getActividadById, listActividades, updateActividad, deleteActividad, } from '../controllers/actividad.controller.js';
 import { validateCreateActividad, validateUpdateActividad, validateListActividades, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, attachSubscriptionLimits, } from '@/shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, attachSubscriptionLimits, } from '../../../shared/middleware/index.js';
 /**
  * Router de actividades
  *

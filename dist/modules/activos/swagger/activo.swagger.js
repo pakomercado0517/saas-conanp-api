@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { CreateActivoSchema, UpdateActivoSchema, ListActivosSchema, CreateActivoRequisitoSchema, UpdateActivoRequisitoSchema, ListActivoRequisitosSchema, } from '../validators/activo.validator.js';
 const ActivoSchema = registry.register('Activo', z.object({
     id: z.string().uuid().describe('ID único del activo'),

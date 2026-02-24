@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import bcrypt from 'bcrypt';
-import app from '@/server.js';
+import app from '../../server.js';
 import request from 'supertest';
 import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationWithSubscription, authRequest, } from './helpers.js';
 import { DateTime } from 'luxon';
-import { Invitation } from '@/modules/users/models/invitation.model.js';
-import { InvitationEmailProof } from '@/modules/users/models/invitation-email-proof.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { User } from '@/modules/users/models/user.model.js';
+import { Invitation } from '../../modules/users/models/invitation.model.js';
+import { InvitationEmailProof } from '../../modules/users/models/invitation-email-proof.model.js';
+import { Membership } from '../../modules/users/models/membership.model.js';
+import { User } from '../../modules/users/models/user.model.js';
 const API = '/api/v1';
 const BCRYPT_ROUNDS = 10;
 describe('Invitaciones y registro con invitación (integration)', () => {
@@ -55,7 +55,7 @@ describe('Invitaciones y registro con invitación (integration)', () => {
             const expiresAt = new Date();
             expiresAt.setDate(expiresAt.getDate() + 7);
             const invitation = await Invitation.create({
-                organizationId: org.id,
+                areaId: org.id,
                 email: emailForFlow,
                 role: 'gestor',
                 tokenHash,
@@ -93,7 +93,7 @@ describe('Invitaciones y registro con invitación (integration)', () => {
             const membership = await Membership.findOne({
                 where: {
                     userId: registerRes.body.data.user.id,
-                    organizationId: org.id,
+                    areaId: org.id,
                 },
             });
             expect(membership).not.toBeNull();
@@ -126,7 +126,7 @@ describe('Invitaciones y registro con invitación (integration)', () => {
             const expiresAt = new Date();
             expiresAt.setDate(expiresAt.getDate() + 7);
             const invitation = await Invitation.create({
-                organizationId: org.id,
+                areaId: org.id,
                 email: emailLink,
                 role: 'observador',
                 tokenHash,
@@ -166,7 +166,7 @@ describe('Invitaciones y registro con invitación (integration)', () => {
             const expiresAt = new Date();
             expiresAt.setDate(expiresAt.getDate() + 7);
             const invitation = await Invitation.create({
-                organizationId: org.id,
+                areaId: org.id,
                 email: emailProof,
                 role: 'prestador',
                 tokenHash,

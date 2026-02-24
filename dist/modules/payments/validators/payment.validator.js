@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { registry } from '@/shared/swagger/index.js';
-import { optionalDateOnlySchema } from '@/shared/dates/zod-schemas.js';
+import { registry } from '../../../shared/swagger/index.js';
+import { optionalDateOnlySchema } from '../../../shared/dates/zod-schemas.js';
 // Constantes para monedas permitidas
 const ALLOWED_CURRENCIES = ['MXN', 'USD'];
 // Schema helper para montos (decimales → centavos)

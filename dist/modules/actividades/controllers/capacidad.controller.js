@@ -1,9 +1,9 @@
 import * as capacidadService from '../services/capacidad.service.js';
-import { sendSuccess, sendCreated } from '@/shared/responses/helpers.js';
-import { ConflictError, ValidationError } from '@/shared/errors/index.js';
+import { sendSuccess, sendCreated } from '../../../shared/responses/helpers.js';
+import { ConflictError, ValidationError } from '../../../shared/errors/index.js';
 import { Capacidad } from '../models/capacidad.model.js';
 import { Actividad } from '../models/actividad.model.js';
-import { toDateOnlyDB } from '@/shared/dates/index.js';
+import { toDateOnlyDB } from '../../../shared/dates/index.js';
 /**
  * Crea o actualiza una capacidad para una actividad y fecha.
  * Si ya existe una capacidad para esa actividad y fecha, la actualiza.
@@ -65,7 +65,7 @@ export const createOrUpdateCapacidad = async (req, res) => {
                 where: {
                     actividadId,
                     date: dateStr,
-                    organizationId,
+                    areaId: organizationId,
                 },
             });
             if (!existingCapacidad) {
@@ -140,7 +140,7 @@ export const verificarDisponibilidad = async (req, res) => {
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (!actividad) {

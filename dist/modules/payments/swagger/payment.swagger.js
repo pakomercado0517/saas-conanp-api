@@ -1,4 +1,4 @@
-import { z, registry } from '@/shared/swagger/index.js';
+import { z, registry } from '../../../shared/swagger/index.js';
 import { CreatePaymentIntentSchema, ConfirmPaymentSchema, ListPaymentsSchema, ProcessRefundSchema, } from '../validators/payment.validator.js';
 // Registrar schemas en el registry de OpenAPI
 registry.register('CreatePaymentIntent', CreatePaymentIntentSchema);

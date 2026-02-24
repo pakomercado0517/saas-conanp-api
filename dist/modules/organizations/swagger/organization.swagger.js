@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { CreateOrganizationSchema, UpdateOrganizationSchema, ListOrganizationsSchema, } from '../validators/organization.validator.js';
 /**
  * Schema de organización en respuestas

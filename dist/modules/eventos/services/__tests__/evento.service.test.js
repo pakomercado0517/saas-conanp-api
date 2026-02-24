@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DateTime } from 'luxon';
-import { ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import { ForbiddenError, NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 import * as eventoService from '../evento.service.js';
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';

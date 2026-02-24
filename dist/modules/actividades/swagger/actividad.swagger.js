@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { CreateActividadSchema, UpdateActividadSchema, ListActividadesSchema, } from '../validators/actividad.validator.js';
 /**
  * Schema de actividad en respuestas

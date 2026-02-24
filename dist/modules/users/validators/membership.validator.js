@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry } from '@/shared/swagger/index.js';
+import { registry } from '../../../shared/swagger/index.js';
 // Extender Zod con funcionalidad OpenAPI
 extendZodWithOpenApi(z);
 const ROLE_VALUES = ['admin', 'gestor', 'prestador', 'observador'];

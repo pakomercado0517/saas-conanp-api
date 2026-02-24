@@ -1,5 +1,5 @@
 import NodeCache from 'node-cache';
-import { logger } from '@/shared/logger/index.js';
+import { logger } from '../../shared/logger/index.js';
 export class MemoryClient {
     client;
     constructor() {

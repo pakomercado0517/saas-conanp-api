@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { LimitsAndUsage } from '@/modules/subscriptions/services/subscription-limits.service.js';
+import type { LimitsAndUsage } from '../../modules/subscriptions/services/subscription-limits.service.js';
 /** Clave en res.locals para la información de límites */
 export declare const SUBSCRIPTION_LIMITS_LOCALS_KEY: "subscriptionLimits";
 /** Tipo de la información de límites en res.locals */

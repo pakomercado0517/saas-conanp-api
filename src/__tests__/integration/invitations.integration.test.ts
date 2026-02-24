@@ -69,7 +69,7 @@ describe('Invitaciones y registro con invitación (integration)', () => {
       expiresAt.setDate(expiresAt.getDate() + 7);
 
       const invitation = await Invitation.create({
-        organizationId: org.id,
+        areaId: org.id,
         email: emailForFlow,
         role: 'gestor',
         tokenHash,
@@ -112,7 +112,7 @@ describe('Invitaciones y registro con invitación (integration)', () => {
       const membership = await Membership.findOne({
         where: {
           userId: (registerRes.body.data.user as { id: string }).id,
-          organizationId: org.id,
+          areaId: org.id,
         },
       });
       expect(membership).not.toBeNull();
@@ -153,7 +153,7 @@ describe('Invitaciones y registro con invitación (integration)', () => {
       expiresAt.setDate(expiresAt.getDate() + 7);
 
       const invitation = await Invitation.create({
-        organizationId: org.id,
+        areaId: org.id,
         email: emailLink,
         role: 'observador',
         tokenHash,
@@ -202,7 +202,7 @@ describe('Invitaciones y registro con invitación (integration)', () => {
       expiresAt.setDate(expiresAt.getDate() + 7);
 
       const invitation = await Invitation.create({
-        organizationId: org.id,
+        areaId: org.id,
         email: emailProof,
         role: 'prestador',
         tokenHash,

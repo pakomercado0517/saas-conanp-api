@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createPlan, listPlans, getPlanById, updatePlan, deletePlan, } from '../controllers/subscription-plan.controller.js';
 import { validateCreateSubscriptionPlan, validateUpdateSubscriptionPlan, validateListSubscriptionPlans, } from '../middleware/validation.middleware.js';
-import { authenticate, requireSuperAdmin } from '@/shared/middleware/index.js';
+import { authenticate, requireSuperAdmin } from '../../../shared/middleware/index.js';
 /**
  * Router de planes de suscripción
  *

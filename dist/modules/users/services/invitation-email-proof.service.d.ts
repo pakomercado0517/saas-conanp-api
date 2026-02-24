@@ -1,4 +1,4 @@
-import type { UUID } from '@/shared/database/types';
+import type { UUID } from '../../../shared/database/types';
 /**
  * Inicia el flujo de verificación de email para registro por código manual.
  * Valida la invitación, crea un proof con OTP y envía el OTP por correo.

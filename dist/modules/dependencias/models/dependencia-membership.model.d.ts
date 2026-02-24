@@ -1,7 +1,7 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, DependenciaRole } from '@/shared/database/types';
+import type { UUID, DependenciaRole } from '../../../shared/database/types';
 import { Dependencia } from './dependencia.model.js';
-import { User } from '@/modules/users/models/user.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 export interface DependenciaMembershipAttributes {
     id: UUID;
     userId: UUID;

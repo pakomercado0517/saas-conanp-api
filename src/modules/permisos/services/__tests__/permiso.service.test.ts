@@ -289,7 +289,7 @@ describe('permiso.service', () => {
     it('throws NotFoundError when actividad does not belong to organization', async () => {
       const permisoRecord = {
         id: PERMISO_ID,
-        Actividad: { organizationId: 'other-org-id' },
+        Actividad: { areaId: 'other-org-id' },
       };
       mockPermisoFindOne.mockResolvedValueOnce(permisoRecord);
 

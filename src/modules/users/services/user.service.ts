@@ -177,7 +177,7 @@ export const deleteUser = async (userId: UUID): Promise<void> => {
     const details = {
       userId,
       activeMembershipsCount: activeMemberships.length,
-      organizationIds: activeMemberships.map((m) => m.organizationId),
+      organizationIds: activeMemberships.map((m) => m.areaId),
     };
     throw new ValidationError(
       'No se puede eliminar el usuario porque tiene membresías activas en organizaciones. Por favor, contacta a los administradores de las organizaciones para que eliminen tu membresía primero.',

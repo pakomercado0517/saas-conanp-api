@@ -1,5 +1,5 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
+import { sequelize } from '../../../shared/database';
 import { Activo } from './activo.model';
 export class ActivoRequisito extends Model {
 }

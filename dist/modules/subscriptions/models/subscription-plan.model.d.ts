@@ -1,5 +1,5 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, SubscriptionPlanName } from '@/shared/database/types';
+import type { UUID, SubscriptionPlanName } from '../../../shared/database/types';
 export interface SubscriptionPlanFeatures {
     limits?: Record<string, number>;
     functionalities?: string[];

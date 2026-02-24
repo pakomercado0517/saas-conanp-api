@@ -1,14 +1,21 @@
-import type { UUID, SubscriptionStatus } from '@/shared/database/types.js';
-import { Area } from '@/modules/areas/models/area.model.js';
-import type { CreateOrganizationDTO, UpdateOrganizationDTO, ListOrganizationsDTO } from '@/modules/organizations/validators/organization.validator.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { UUID, SubscriptionStatus } from '../../../shared/database/types.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import type { CreateOrganizationDTO, UpdateOrganizationDTO, ListOrganizationsDTO } from '../../../modules/organizations/validators/organization.validator.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
 /**
  * Valida que el usuario tenga acceso a la organización.
  * Verifica membresía activa (userId + organizationId, status 'activo').
  *
  * @throws {ForbiddenError} Si no existe membresía activa
  */
+/**
+ * Valida que el usuario tenga acceso al área (membresía activa en esa área).
+ */
 export declare const assertCanAccessOrganization: (userId: UUID, areaId: UUID) => Promise<void>;
+/**
+ * Valida que el usuario tenga acceso a la dependencia (membresía activa en al menos un área de esa dependencia).
+ */
+export declare const assertCanAccessDependencia: (userId: UUID, dependenciaId: UUID) => Promise<void>;
 /**
  * Verifica que la organización tenga suscripción activa (active o trialing)
  * y que el periodo actual no haya vencido.

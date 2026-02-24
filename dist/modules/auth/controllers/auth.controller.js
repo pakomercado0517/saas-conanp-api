@@ -1,5 +1,5 @@
 import * as authService from '../services/auth.service.js';
-import { sendSuccess, sendCreated, sendNoContent } from '@/shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendNoContent } from '../../../shared/responses/helpers.js';
 /**
  * Registra un nuevo usuario
  *

@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
+import { sequelize } from '../../../shared/database';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
 const PAYMENT_STATUSES = [
     'pending',
     'processing',

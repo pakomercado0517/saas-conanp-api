@@ -1,8 +1,8 @@
 import { type Transaction } from 'sequelize';
-import type { UUID, SubscriptionStatus, BillingCycle } from '@/shared/database/types.js';
-import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
-import type { CreateSubscriptionDTO, UpdateSubscriptionDTO, CancelSubscriptionDTO, ListSubscriptionsDTO } from '@/modules/subscriptions/validators/subscription.validator.js';
+import type { UUID, SubscriptionStatus, BillingCycle } from '../../../shared/database/types.js';
+import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
+import type { CreateSubscriptionDTO, UpdateSubscriptionDTO, CancelSubscriptionDTO, ListSubscriptionsDTO } from '../../../modules/subscriptions/validators/subscription.validator.js';
 /**
  * Valida que la organización no tenga una suscripción activa.
  * Estados "activos" considerados: active, trialing.
@@ -140,33 +140,36 @@ export declare const getBillingHistory: (subscriptionId: UUID, userId: UUID, pag
 }>;
 /**
  * Cambia el plan de una suscripción (upgrade/downgrade).
+ * La suscripción está a nivel dependencia.
  *
  * @param subscriptionId - ID de la suscripción
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param dependenciaId - ID de la dependencia
  * @param userId - ID del usuario
  * @param data - Datos del cambio (planId, billingCycle, prorate)
  * @returns Suscripción actualizada
  */
-export declare const changePlan: (subscriptionId: UUID, areaId: UUID, userId: UUID, data: UpdateSubscriptionDTO) => Promise<Subscription>;
+export declare const changePlan: (subscriptionId: UUID, dependenciaId: UUID, userId: UUID, data: UpdateSubscriptionDTO) => Promise<Subscription>;
 /**
  * Cancela una suscripción.
+ * La suscripción está a nivel dependencia.
  *
  * @param subscriptionId - ID de la suscripción
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param dependenciaId - ID de la dependencia
  * @param userId - ID del usuario
  * @param data - Opciones de cancelación
  * @returns Suscripción actualizada
  */
-export declare const cancelSubscription: (subscriptionId: UUID, areaId: UUID, userId: UUID, data: CancelSubscriptionDTO) => Promise<Subscription>;
+export declare const cancelSubscription: (subscriptionId: UUID, dependenciaId: UUID, userId: UUID, data: CancelSubscriptionDTO) => Promise<Subscription>;
 /**
  * Reactiva una suscripción cancelada (quita cancel_at_period_end).
+ * La suscripción está a nivel dependencia.
  *
  * @param subscriptionId - ID de la suscripción
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param dependenciaId - ID de la dependencia
  * @param userId - ID del usuario
  * @returns Suscripción actualizada
  */
-export declare const reactivateSubscription: (subscriptionId: UUID, areaId: UUID, userId: UUID) => Promise<Subscription>;
+export declare const reactivateSubscription: (subscriptionId: UUID, dependenciaId: UUID, userId: UUID) => Promise<Subscription>;
 /**
  * Crea o actualiza una suscripción en BD desde el webhook customer.subscription.created.
  * Idempotente: si ya existe por stripeSubscriptionId, actualiza y retorna.

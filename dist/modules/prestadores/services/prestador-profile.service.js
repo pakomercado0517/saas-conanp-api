@@ -1,11 +1,12 @@
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { User } from '@/modules/users/models/user.model.js';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { ForbiddenError, NotFoundError, ConflictError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { ForbiddenError, NotFoundError, ConflictError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { checkPrestadoresLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
 /**
  * Valida que el usuario tenga una membership activa en la organización.
  *
@@ -18,7 +19,7 @@ export const validateUserMembership = async (userId, organizationId) => {
     const membership = await Membership.findOne({
         where: {
             userId,
-            organizationId,
+            areaId: organizationId,
             status: 'activo',
         },
     });
@@ -82,6 +83,7 @@ export const createPrestadorProfile = async (data, creatorUserId) => {
             currentRole: creatorMembership.role,
         });
     }
+    await checkPrestadoresLimit(data.organizationId);
     await validateUserMembership(data.userId, data.organizationId);
     const area = await Area.findByPk(data.organizationId);
     if (!area) {

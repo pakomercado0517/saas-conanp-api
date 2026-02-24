@@ -1,9 +1,9 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '@/shared/database/types';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
-import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import { Bloque } from '@/modules/actividades/models/bloque.model.js';
+import type { UUID } from '../../../shared/database/types';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
 export interface EventoOperativoAttributes {
     id: UUID;
     areaId: UUID;

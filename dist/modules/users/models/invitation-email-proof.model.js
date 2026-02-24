@@ -1,5 +1,5 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
+import { sequelize } from '../../../shared/database';
 import { Invitation } from './invitation.model';
 export class InvitationEmailProof extends Model {
 }

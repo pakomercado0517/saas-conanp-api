@@ -1,7 +1,7 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID } from '@/shared/database/types';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { User } from '@/modules/users/models/user.model.js';
+import type { UUID } from '../../../shared/database/types';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 export interface PrestadorProfileAttributes {
     id: UUID;
     userId: UUID;

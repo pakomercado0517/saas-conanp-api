@@ -1,19 +1,20 @@
 import { Op } from 'sequelize';
-import { sequelize } from '@/shared/database/index.js';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
-import { Payment } from '@/modules/payments/models/payment.model.js';
-import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import { Bloque } from '@/modules/actividades/models/bloque.model.js';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
-import { User } from '@/modules/users/models/user.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { NotFoundError, ValidationError, ForbiddenError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
-import { validatePrestadorHasPermisoVigente } from '@/modules/permisos/services/permiso.service.js';
-import { verificarDisponibilidadPorBloque, verificarDisponibilidadPorDia, } from '@/modules/actividades/services/capacidad.service.js';
-import { checkEventosLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
-import { toDateOnlyDB, toTimeOnly, DateTime } from '@/shared/dates/index.js';
+import { sequelize } from '../../../shared/database/index.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import { Payment } from '../../../modules/payments/models/payment.model.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { NotFoundError, ValidationError, ForbiddenError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { validatePrestadorHasPermisoVigente } from '../../../modules/permisos/services/permiso.service.js';
+import { verificarDisponibilidadPorBloque, verificarDisponibilidadPorDia, } from '../../../modules/actividades/services/capacidad.service.js';
+import { checkEventosLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
+import { toDateOnlyDB, toTimeOnly, DateTime } from '../../../shared/dates/index.js';
 /**
  * Helper interno: Valida permisos granulares para acceder a un evento.
  * - Los administradores pueden ver/editar cualquier evento
@@ -27,7 +28,7 @@ import { toDateOnlyDB, toTimeOnly, DateTime } from '@/shared/dates/index.js';
 const validateEventoPermissions = async (requestingUserId, eventoPrestadorId, organizationId) => {
     // Obtener membership para verificar rol
     const membership = await Membership.findOne({
-        where: { userId: requestingUserId, organizationId, status: 'activo' },
+        where: { userId: requestingUserId, areaId: organizationId, status: 'activo' },
     });
     if (!membership) {
         throw new ForbiddenError('No tienes acceso a esta organización', {
@@ -41,8 +42,11 @@ const validateEventoPermissions = async (requestingUserId, eventoPrestadorId, or
     }
     // Si es prestador, verificar que el evento pertenece a su prestadorId
     if (membership.role === 'prestador') {
+        const area = await Area.findByPk(organizationId);
+        if (!area)
+            throw new ForbiddenError('Área no encontrada', { organizationId });
         const prestador = await PrestadorProfile.findOne({
-            where: { userId: requestingUserId, organizationId },
+            where: { userId: requestingUserId, dependenciaId: area.dependenciaId },
         });
         if (!prestador) {
             throw new ForbiddenError('No tienes un perfil de prestador en esta organización', {
@@ -79,7 +83,7 @@ export const createEvento = async (data, organizationId, userId) => {
     const actividad = await Actividad.findOne({
         where: {
             id: data.actividadId,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (!actividad) {
@@ -103,7 +107,7 @@ export const createEvento = async (data, organizationId, userId) => {
             where: {
                 id: data.bloqueId,
                 actividadId: data.actividadId,
-                organizationId,
+                areaId: organizationId,
             },
         });
         if (!bloque) {
@@ -119,11 +123,14 @@ export const createEvento = async (data, organizationId, userId) => {
             throw new ValidationError('Esta actividad requiere definir hora de inicio y fin (tipo de agenda: HORARIO_LIBRE)', undefined, { actividadId: data.actividadId, agendaType: data.agendaType });
         }
     }
-    // 4. Validar que el prestador existe y pertenece a la organización
+    // 4. Validar que el prestador existe y pertenece a la organización (por dependencia del área)
+    const areaForPrestador = await Area.findByPk(organizationId);
+    if (!areaForPrestador)
+        throw new NotFoundError('Área', { organizationId });
     const prestador = await PrestadorProfile.findOne({
         where: {
             id: data.prestadorId,
-            organizationId,
+            dependenciaId: areaForPrestador.dependenciaId,
         },
     });
     if (!prestador) {
@@ -182,7 +189,7 @@ export const createEvento = async (data, organizationId, userId) => {
         }
         // Crear el evento
         const evento = await EventoOperativo.create({
-            organizationId,
+            areaId: organizationId,
             prestadorId: data.prestadorId,
             actividadId: data.actividadId,
             date: dateStr,
@@ -233,12 +240,11 @@ export const createEvento = async (data, organizationId, userId) => {
 export const getEventoById = async (eventoId, organizationId, requestingUserId) => {
     // Validar acceso a la organización
     await assertCanAccessOrganization(requestingUserId, organizationId);
-    // Buscar evento con filtro multi-tenant y excluir eliminados
+    // Buscar evento con filtro multi-tenant
     const evento = await EventoOperativo.findOne({
         where: {
             id: eventoId,
-            organizationId,
-            deletedAt: null,
+            areaId: organizationId,
         },
         include: [
             { model: Actividad, as: 'Actividad' },
@@ -268,7 +274,7 @@ export const listEventos = async (organizationId, filters, requestingUserId) => 
     await assertCanAccessOrganization(requestingUserId, organizationId);
     // Obtener membership del usuario para determinar permisos
     const membership = await Membership.findOne({
-        where: { userId: requestingUserId, organizationId, status: 'activo' },
+        where: { userId: requestingUserId, areaId: organizationId, status: 'activo' },
     });
     if (!membership) {
         throw new ForbiddenError('No tienes acceso a esta organización', {
@@ -278,13 +284,15 @@ export const listEventos = async (organizationId, filters, requestingUserId) => 
     }
     // Construir query con filtros multi-tenant obligatorio
     const where = {
-        organizationId, // Multi-tenant obligatorio
-        deletedAt: null, // Excluir eliminados
+        areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
     };
     // Permisos granulares: Si es prestador, solo puede ver sus propios eventos
     if (membership.role === 'prestador') {
+        const area = await Area.findByPk(organizationId);
+        if (!area)
+            throw new ForbiddenError('Área no encontrada', { organizationId });
         const prestador = await PrestadorProfile.findOne({
-            where: { userId: requestingUserId, organizationId },
+            where: { userId: requestingUserId, dependenciaId: area.dependenciaId },
         });
         if (!prestador) {
             throw new ForbiddenError('No tienes un perfil de prestador en esta organización', {
@@ -418,8 +426,7 @@ export const updateEvento = async (eventoId, organizationId, data, requestingUse
     const evento = await EventoOperativo.findOne({
         where: {
             id: eventoId,
-            organizationId,
-            deletedAt: null,
+            areaId: organizationId,
         },
         include: [{ model: Actividad, as: 'Actividad' }],
     });
@@ -538,12 +545,11 @@ export const updateEvento = async (eventoId, organizationId, data, requestingUse
 export const deleteEvento = async (eventoId, organizationId, requestingUserId) => {
     // Validar acceso a la organización
     await assertCanAccessOrganization(requestingUserId, organizationId);
-    // Buscar evento con filtro multi-tenant y excluir eliminados
+    // Buscar evento con filtro multi-tenant
     const evento = await EventoOperativo.findOne({
         where: {
             id: eventoId,
-            organizationId,
-            deletedAt: null,
+            areaId: organizationId,
         },
     });
     if (!evento) {
@@ -575,7 +581,7 @@ export const eventoHasPagoCompletado = async (eventoId, organizationId) => {
         status: 'succeeded',
     };
     if (organizationId) {
-        where['organizationId'] = organizationId;
+        where['areaId'] = organizationId;
     }
     const payment = await Payment.findOne({
         where: where,
@@ -591,7 +597,7 @@ export const eventoHasPagoCompletado = async (eventoId, organizationId) => {
  */
 export const markEventoPaid = async (eventoId, organizationId) => {
     const evento = await EventoOperativo.findOne({
-        where: { id: eventoId, organizationId },
+        where: { id: eventoId, areaId: organizationId },
     });
     if (!evento) {
         return;
@@ -611,7 +617,7 @@ export const unmarkEventoPaid = async (eventoId, organizationId) => {
     const other = await Payment.findOne({
         where: {
             eventoId,
-            organizationId,
+            areaId: organizationId,
             status: 'succeeded',
         },
     });
@@ -619,7 +625,7 @@ export const unmarkEventoPaid = async (eventoId, organizationId) => {
         return;
     }
     const evento = await EventoOperativo.findOne({
-        where: { id: eventoId, organizationId },
+        where: { id: eventoId, areaId: organizationId },
     });
     if (!evento) {
         return;

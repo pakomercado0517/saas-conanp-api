@@ -1,6 +1,6 @@
-import { validateToken } from '@/modules/auth/services/auth.service.js';
-import { UnauthorizedError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
+import { validateToken } from '../../modules/auth/services/auth.service.js';
+import { UnauthorizedError } from '../../shared/errors/index.js';
+import { logger } from '../../shared/logger/index.js';
 /**
  * Extrae el token JWT del header Authorization
  *
@@ -35,7 +35,7 @@ const extractTokenFromHeader = (authHeader) => {
  *
  * Uso:
  * ```typescript
- * import { authenticate } from '@/shared/middleware';
+ * import { authenticate } from '../../shared/middleware';
  *
  * router.get('/protected', authenticate, protectedController);
  * ```
@@ -102,7 +102,7 @@ export const authenticate = async (req, _res, next) => {
  *
  * Uso:
  * ```typescript
- * import { optionalAuthenticate } from '@/shared/middleware';
+ * import { optionalAuthenticate } from '../../shared/middleware';
  *
  * router.get('/public-or-private', optionalAuthenticate, controller);
  * ```

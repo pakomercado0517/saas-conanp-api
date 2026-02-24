@@ -1,10 +1,10 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { ProductoAcceso } from '@/modules/productos-acceso/models/producto-acceso.model.js';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
-import { User } from '@/modules/users/models/user.model.js';
+import { sequelize } from '../../../shared/database';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { ProductoAcceso } from '../../../modules/productos-acceso/models/producto-acceso.model.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 export class MovimientoStockAcceso extends Model {
 }
 MovimientoStockAcceso.init({

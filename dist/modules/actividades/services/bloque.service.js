@@ -1,11 +1,11 @@
 import { Op } from 'sequelize';
-import { Bloque } from '@/modules/actividades/models/bloque.model.js';
-import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
-import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
-import { toDateOnlyDB, toTimeOnly, parseTimeOnly, parseDateOnly, doTimeRangesOverlap, DateTime, } from '@/shared/dates/index.js';
+import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
+import { toDateOnlyDB, toTimeOnly, parseTimeOnly, parseDateOnly, doTimeRangesOverlap, DateTime, } from '../../../shared/dates/index.js';
 /**
  * Valida que una actividad tenga tipo de agenda BLOQUES
  *
@@ -18,7 +18,7 @@ const validateActividadHasBloquesType = async (actividadId, organizationId) => {
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (!actividad) {
@@ -52,7 +52,7 @@ const validateNoTimeOverlap = async (actividadId, date, startTime, endTime, orga
     // Buscar bloques existentes para la misma fecha y actividad
     const whereClause = {
         actividadId,
-        organizationId,
+        areaId: organizationId,
         date: dateStr,
         isTemplate: false, // Solo validar solapamiento con bloques no plantilla
     };
@@ -110,7 +110,7 @@ export const getBloquesTemplates = async (actividadId, organizationId) => {
     return await Bloque.findAll({
         where: {
             actividadId,
-            organizationId,
+            areaId: organizationId,
             isTemplate: true,
         },
         order: [['startTime', 'ASC']],
@@ -147,7 +147,7 @@ export const createBloque = async (data, userId) => {
     }
     // Crear el bloque
     const bloque = await Bloque.create({
-        organizationId: data.organizationId,
+        areaId: data.organizationId,
         actividadId: data.actividadId,
         date: dateStr,
         startTime: startTimeStr,
@@ -157,7 +157,7 @@ export const createBloque = async (data, userId) => {
     });
     logger.info({
         bloqueId: bloque.id,
-        organizationId: bloque.organizationId,
+        organizationId: bloque.areaId,
         actividadId: bloque.actividadId,
         date: bloque.date,
         startTime: bloque.startTime,
@@ -188,7 +188,7 @@ export const createBloqueFromTemplate = async (data, organizationId, userId) => 
     const template = await Bloque.findOne({
         where: {
             id: data.templateId,
-            organizationId,
+            areaId: organizationId,
             isTemplate: true,
         },
         include: [
@@ -218,7 +218,7 @@ export const createBloqueFromTemplate = async (data, organizationId, userId) => 
     await validateNoTimeOverlap(template.actividadId, dateStr, template.startTime, template.endTime, organizationId);
     // Crear el bloque desde la plantilla
     const bloque = await Bloque.create({
-        organizationId: template.organizationId,
+        areaId: template.areaId,
         actividadId: template.actividadId,
         date: dateStr,
         startTime: template.startTime,
@@ -229,7 +229,7 @@ export const createBloqueFromTemplate = async (data, organizationId, userId) => 
     logger.info({
         bloqueId: bloque.id,
         templateId: data.templateId,
-        organizationId: bloque.organizationId,
+        organizationId: bloque.areaId,
         actividadId: bloque.actividadId,
         date: bloque.date,
         userId,
@@ -254,7 +254,7 @@ export const getBloqueById = async (bloqueId, organizationId, userId) => {
     const bloque = await Bloque.findOne({
         where: {
             id: bloqueId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
         },
         include: [
             {
@@ -288,7 +288,7 @@ export const listBloquesByActividad = async (actividadId, organizationId, filter
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (!actividad) {
@@ -297,7 +297,7 @@ export const listBloquesByActividad = async (actividadId, organizationId, filter
     // Construir query con filtros multi-tenant obligatorio
     const where = {
         actividadId,
-        organizationId, // Multi-tenant obligatorio
+        areaId: organizationId, // Multi-tenant obligatorio
     };
     // Aplicar filtros opcionales
     if (filters['date']) {
@@ -346,7 +346,7 @@ export const listBloques = async (organizationId, filters, userId) => {
     await assertCanAccessOrganization(userId, organizationId);
     // Construir query con filtros multi-tenant obligatorio
     const where = {
-        organizationId, // Multi-tenant obligatorio
+        areaId: organizationId, // Multi-tenant obligatorio
     };
     // Aplicar filtros opcionales
     if (filters['actividadId']) {
@@ -405,7 +405,7 @@ export const updateBloque = async (bloqueId, organizationId, data, userId) => {
     const bloque = await Bloque.findOne({
         where: {
             id: bloqueId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId, // Multi-tenant obligatorio
         },
         include: [
             {
@@ -489,7 +489,7 @@ export const deleteBloque = async (bloqueId, organizationId, userId) => {
     const bloque = await Bloque.findOne({
         where: {
             id: bloqueId,
-            organizationId, // Multi-tenant obligatorio
+            areaId: organizationId, // Multi-tenant obligatorio
         },
     });
     if (!bloque) {

@@ -1,6 +1,6 @@
-import type { UUID } from '@/shared/database/types.js';
-import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
+import type { UUID } from '../../../shared/database/types.js';
+import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
 export interface OrganizationLimits {
     maxUsers: number | null;
     maxEventos: number | null;
@@ -78,6 +78,24 @@ export declare const checkEventosLimit: (organizationId: UUID, currentCount?: nu
  * @throws {ValidationError} Si se excede el límite
  */
 export declare const checkActividadesLimit: (organizationId: UUID, currentCount?: number) => Promise<void>;
+/**
+ * Verifica el límite de prestadores (plan FREE = 1).
+ * Solo aplica cuando el plan es "free".
+ *
+ * @param areaId - ID del área (organizationId en API)
+ * @throws {NotFoundError} Si no tiene suscripción activa
+ * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ */
+export declare const checkPrestadoresLimit: (areaId: UUID) => Promise<void>;
+/**
+ * Verifica el límite de activos (plan FREE = 1).
+ * Solo aplica cuando el plan es "free".
+ *
+ * @param areaId - ID del área (organizationId en API)
+ * @throws {NotFoundError} Si no tiene suscripción activa
+ * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ */
+export declare const checkActivosLimit: (areaId: UUID) => Promise<void>;
 /**
  * Verifica el límite de organizaciones para un plan.
  * Aplica cuando el plan tiene maxOrganizations (ej. capacidad del plan).

@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { User } from '@/modules/users/models/user.model.js';
+import { sequelize } from '../../../shared/database';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 export class PrestadorProfile extends Model {
 }
 PrestadorProfile.init({

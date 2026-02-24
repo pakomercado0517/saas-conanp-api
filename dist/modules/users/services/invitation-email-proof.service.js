@@ -1,12 +1,12 @@
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import { DateTime } from 'luxon';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { Invitation } from '@/modules/users/models/invitation.model.js';
-import { InvitationEmailProof } from '@/modules/users/models/invitation-email-proof.model';
-import { sendInvitationOtpEmail, INVITATION_OTP_EXPIRES_MINUTES, } from '@/shared/email/email.service';
-import { ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
-import { logger } from '@/shared/logger';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { Invitation } from '../../../modules/users/models/invitation.model.js';
+import { InvitationEmailProof } from '../../../modules/users/models/invitation-email-proof.model';
+import { sendInvitationOtpEmail, INVITATION_OTP_EXPIRES_MINUTES, } from '../../../shared/email/email.service';
+import { ForbiddenError, NotFoundError, ValidationError } from '../../../shared/errors';
+import { logger } from '../../../shared/logger';
 const BCRYPT_ROUNDS = 10;
 const OTP_LENGTH = 6;
 const PROOF_EXPIRES_MINUTES = 5;

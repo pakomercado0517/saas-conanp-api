@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
-import app from '@/server.js';
+import app from '../../server.js';
 import { createTestUserAndToken } from './helpers.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { Invitation } from '@/modules/users/models/invitation.model.js';
-import { User } from '@/modules/users/models/user.model.js';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
+import { Membership } from '../../modules/users/models/membership.model.js';
+import { Invitation } from '../../modules/users/models/invitation.model.js';
+import { User } from '../../modules/users/models/user.model.js';
+import { SubscriptionPlan } from '../../modules/subscriptions/models/subscription-plan.model.js';
 const API = '/api/v1/admin/organizations';
 describe('Admin Organizations endpoints (integration)', () => {
     let superAdmin;
@@ -56,7 +56,7 @@ describe('Admin Organizations endpoints (integration)', () => {
         });
         const membership = await Membership.findOne({
             where: {
-                organizationId: res.body.data.id,
+                areaId: res.body.data.id,
                 userId: existingAdmin.user.id,
             },
         });
@@ -83,7 +83,7 @@ describe('Admin Organizations endpoints (integration)', () => {
         expect(res.body.data).toHaveProperty('invitationId');
         const invitation = await Invitation.findByPk(res.body.data.invitationId);
         expect(invitation).toBeTruthy();
-        expect(invitation?.organizationId).toBe(res.body.data.id);
+        expect(invitation?.areaId).toBe(res.body.data.id);
         expect(invitation?.email).toBe(adminEmail);
         expect(invitation?.role).toBe('admin');
         expect(invitation?.status).toBe('pending');

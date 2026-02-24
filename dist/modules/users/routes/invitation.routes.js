@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createInvitation, listInvitations, revokeInvitation, } from '../controllers/invitation.controller.js';
 import { validateCreateInvitation, validateListInvitations, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '@/shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
 /**
  * Router de invitaciones bajo organización.
  * Prefijo: /api/v1/organizations/:organizationId/invitations

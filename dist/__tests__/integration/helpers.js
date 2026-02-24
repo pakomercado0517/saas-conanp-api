@@ -1,11 +1,12 @@
 import request from 'supertest';
 import bcrypt from 'bcrypt';
-import { User } from '@/modules/users/models/user.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { Invitation } from '@/modules/users/models/invitation.model.js';
-import { Organization } from '@/modules/organizations/models/organization.model.js';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
-import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
+import { User } from '../../modules/users/models/user.model.js';
+import { Membership } from '../../modules/users/models/membership.model.js';
+import { Invitation } from '../../modules/users/models/invitation.model.js';
+import { Dependencia } from '../../modules/dependencias/models/dependencia.model.js';
+import { Area } from '../../modules/areas/models/area.model.js';
+import { SubscriptionPlan } from '../../modules/subscriptions/models/subscription-plan.model.js';
+import { Subscription } from '../../modules/subscriptions/models/subscription.model.js';
 const API_PREFIX = '/api/v1';
 const BCRYPT_ROUNDS = 10;
 /**
@@ -51,15 +52,20 @@ async function getRegisterPayloadWithInvitation(_app, email) {
             active: true,
         });
     }
-    const org = await Organization.create({
+    const dependencia = await Dependencia.create({
         name: `Org Invitation ${Date.now()}`,
+        settings: {},
+    });
+    const area = await Area.create({
+        dependenciaId: dependencia.id,
+        name: dependencia.name,
         ecosystem_type: 'terrestre',
         settings: {},
     });
     const periodEnd = new Date();
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
     await Subscription.create({
-        organizationId: org.id,
+        dependenciaId: dependencia.id,
         planId: plan.id,
         status: 'active',
         billingCycle: 'monthly',
@@ -77,10 +83,10 @@ async function getRegisterPayloadWithInvitation(_app, email) {
         },
     });
     const [_adminMembership] = await Membership.findOrCreate({
-        where: { userId: adminUser.id, organizationId: org.id },
+        where: { userId: adminUser.id, areaId: area.id },
         defaults: {
             userId: adminUser.id,
-            organizationId: org.id,
+            areaId: area.id,
             role: 'admin',
             status: 'activo',
         },
@@ -88,7 +94,7 @@ async function getRegisterPayloadWithInvitation(_app, email) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
     const invitation = await Invitation.create({
-        organizationId: org.id,
+        areaId: area.id,
         email: email.trim().toLowerCase(),
         role: 'prestador',
         tokenHash,
@@ -124,12 +130,14 @@ export async function createTestOrganization(app, body) {
     const name = body?.name ?? `Org ${Date.now()}`;
     const ecosystem_type = body?.ecosystem_type ?? 'terrestre';
     if (process.env['NODE_ENV'] === 'test') {
-        const org = await Organization.create({
+        const dependencia = await Dependencia.create({ name, settings: {} });
+        const area = await Area.create({
+            dependenciaId: dependencia.id,
             name,
             ecosystem_type,
             settings: {},
         });
-        return org.toJSON();
+        return area.toJSON();
     }
     const res = await request(app)
         .post(`${API_PREFIX}/organizations`)
@@ -147,7 +155,7 @@ export async function createTestOrganization(app, body) {
 export async function bootstrapOrganizationMembershipOnly(userId, organizationId) {
     await Membership.create({
         userId,
-        organizationId,
+        areaId: organizationId,
         role: 'admin',
         status: 'activo',
     });
@@ -176,8 +184,11 @@ export async function bootstrapOrganizationWithSubscription(userId, organization
     const now = new Date();
     const periodEnd = new Date(now);
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    const area = await Area.findByPk(organizationId);
+    if (!area)
+        throw new Error('Area not found for organizationId (areaId): ' + organizationId);
     await Subscription.create({
-        organizationId,
+        dependenciaId: area.dependenciaId,
         planId: plan.id,
         status: 'active',
         billingCycle: 'monthly',

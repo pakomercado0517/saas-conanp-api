@@ -1,7 +1,7 @@
-import type { UUID } from '@/shared/database/types.js';
-import { ActivoRequisito } from '@/modules/activos/models/activo-requisito.model.js';
-import type { CreateActivoRequisitoDTO, UpdateActivoRequisitoDTO, ListActivoRequisitosDTO } from '@/modules/activos/validators/activo.validator.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { UUID } from '../../../shared/database/types.js';
+import { ActivoRequisito } from '../../../modules/activos/models/activo-requisito.model.js';
+import type { CreateActivoRequisitoDTO, UpdateActivoRequisitoDTO, ListActivoRequisitosDTO } from '../../../modules/activos/validators/activo.validator.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
 /**
  * Crea un requisito de activo.
  *

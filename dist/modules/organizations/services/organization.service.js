@@ -1,14 +1,14 @@
 import { Op } from 'sequelize';
-import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { Subscription } from '@/modules/subscriptions/models/subscription.model.js';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { ForbiddenError, NotFoundError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { cache } from '@/shared/cache/index.js';
-import { CacheKeys } from '@/shared/cache/keys.js';
-import { cacheConfig } from '@/shared/cache/config.js';
+import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { ForbiddenError, NotFoundError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { cache } from '../../../shared/cache/index.js';
+import { CacheKeys } from '../../../shared/cache/keys.js';
+import { cacheConfig } from '../../../shared/cache/config.js';
 /** Estados de suscripción que permiten operaciones (no bloquean). */
 const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
 /**
@@ -26,6 +26,9 @@ const invalidateOrganizationCache = async (areaId) => {
  *
  * @throws {ForbiddenError} Si no existe membresía activa
  */
+/**
+ * Valida que el usuario tenga acceso al área (membresía activa en esa área).
+ */
 export const assertCanAccessOrganization = async (userId, areaId) => {
     const membership = await Membership.findOne({
         where: {
@@ -37,6 +40,32 @@ export const assertCanAccessOrganization = async (userId, areaId) => {
     if (!membership) {
         throw new ForbiddenError('No tienes acceso a esta área', {
             areaId,
+            userId,
+        });
+    }
+};
+/**
+ * Valida que el usuario tenga acceso a la dependencia (membresía activa en al menos un área de esa dependencia).
+ */
+export const assertCanAccessDependencia = async (userId, dependenciaId) => {
+    const areasOfDep = await Area.findAll({
+        where: { dependenciaId },
+        attributes: ['id'],
+    });
+    const areaIds = areasOfDep.map((a) => a.id);
+    if (areaIds.length === 0) {
+        throw new ForbiddenError('Dependencia no encontrada', { dependenciaId, userId });
+    }
+    const membership = await Membership.findOne({
+        where: {
+            userId,
+            areaId: { [Op.in]: areaIds },
+            status: 'activo',
+        },
+    });
+    if (!membership) {
+        throw new ForbiddenError('No tienes acceso a esta dependencia', {
+            dependenciaId,
             userId,
         });
     }

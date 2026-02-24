@@ -1,7 +1,7 @@
-import type { UUID } from '@/shared/database/types';
-import { SubscriptionPlan } from '@/modules/subscriptions/models/subscription-plan.model';
-import type { CreateSubscriptionPlanDTO, UpdateSubscriptionPlanDTO, ListSubscriptionPlansDTO } from '@/modules/subscriptions/validators/subscription-plan.validator';
-import type { PaginationMeta } from '@/shared/responses/types';
+import type { UUID } from '../../../shared/database/types';
+import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model';
+import type { CreateSubscriptionPlanDTO, UpdateSubscriptionPlanDTO, ListSubscriptionPlansDTO } from '../../../modules/subscriptions/validators/subscription-plan.validator';
+import type { PaginationMeta } from '../../../shared/responses/types';
 /**
  * Valida que el plan no tenga suscripciones activas.
  * Estados "en uso": active, trialing.

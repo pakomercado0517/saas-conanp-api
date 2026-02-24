@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
-import app from '@/server.js';
+import app from '../../server.js';
 import { createTestUserAndToken, loginAs } from './helpers.js';
 const API = '/api/v1/auth';
 describe('Auth endpoints (integration)', () => {
@@ -101,7 +101,7 @@ describe('Auth endpoints (integration)', () => {
                 .send({ email, password: 'password123', name: 'Verify User' })
                 .expect(201);
             // Obtener el token de la BD (en tests no enviamos email real)
-            const { User } = await import('@/modules/users/models/user.model.js');
+            const { User } = await import('../../modules/users/models/user.model.js');
             const user = await User.findOne({ where: { email } });
             expect(user).toBeTruthy();
             expect(user?.emailVerificationToken).toBeTruthy();

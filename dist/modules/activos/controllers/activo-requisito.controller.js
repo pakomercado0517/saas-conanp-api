@@ -1,5 +1,5 @@
 import * as requisitoService from '../services/activo-requisito.service.js';
-import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '@/shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
 /**
  * Crea un requisito de activo.
  *

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createOrUpdateCapacidad, verificarDisponibilidad, } from '../controllers/capacidad.controller.js';
 import { validateCreateCapacidad, validateVerificarDisponibilidad, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireAdmin, } from '@/shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
 /**
  * Router de capacidad anidado en actividades
  *

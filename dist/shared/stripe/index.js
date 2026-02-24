@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import { ValidationError, BadRequestError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
+import { ValidationError, BadRequestError } from '../../shared/errors/index.js';
+import { logger } from '../../shared/logger/index.js';
 dotenv.config();
 /**
  * Valores por defecto para la configuración de Stripe

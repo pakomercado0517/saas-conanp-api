@@ -1,6 +1,6 @@
 import { Model, type Optional } from 'sequelize';
-import type { UUID, Role } from '@/shared/database/types';
-import { Area } from '@/modules/areas/models/area.model.js';
+import type { UUID, Role } from '../../../shared/database/types';
+import { Area } from '../../../modules/areas/models/area.model.js';
 import { User } from './user.model.js';
 export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked';
 export interface InvitationAttributes {

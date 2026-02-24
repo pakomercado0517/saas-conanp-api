@@ -1,13 +1,13 @@
 import { Op } from 'sequelize';
-import { Capacidad } from '@/modules/actividades/models/capacidad.model.js';
-import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import { Bloque } from '@/modules/actividades/models/bloque.model.js';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
-import { NotFoundError, ValidationError, ConflictError } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
-import { assertIsAdmin } from '@/modules/users/services/membership.service.js';
-import { toDateOnlyDB, DateTime } from '@/shared/dates/index.js';
+import { Capacidad } from '../../../modules/actividades/models/capacidad.model.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import { NotFoundError, ValidationError, ConflictError } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
+import { toDateOnlyDB, DateTime } from '../../../shared/dates/index.js';
 /**
  * Helper interno: Calcula la capacidad usada para una actividad, fecha y bloque (opcional)
  *
@@ -21,7 +21,7 @@ const calcularCapacidadUsada = async (actividadId, date, organizationId, bloqueI
     const whereClause = {
         actividadId,
         date,
-        organizationId,
+        areaId: organizationId,
         status: { [Op.in]: ['programado', 'en_curso'] },
     };
     // Si hay bloqueId, filtrar por bloque específico
@@ -60,7 +60,7 @@ export const createCapacidad = async (data, organizationId, userId) => {
     const actividad = await Actividad.findOne({
         where: {
             id: data.actividadId,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (!actividad) {
@@ -76,7 +76,7 @@ export const createCapacidad = async (data, organizationId, userId) => {
         where: {
             actividadId: data.actividadId,
             date: dateStr,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (existingCapacidad) {
@@ -88,7 +88,7 @@ export const createCapacidad = async (data, organizationId, userId) => {
     }
     // Crear la capacidad
     const capacidad = await Capacidad.create({
-        organizationId,
+        areaId: organizationId,
         actividadId: data.actividadId,
         date: dateStr,
         limit: data.limit,
@@ -125,7 +125,7 @@ export const updateCapacidad = async (capacidadId, organizationId, data, userId)
     const capacidad = await Capacidad.findOne({
         where: {
             id: capacidadId,
-            organizationId,
+            areaId: organizationId,
         },
         include: [
             {
@@ -152,7 +152,7 @@ export const updateCapacidad = async (capacidadId, organizationId, data, userId)
                 where: {
                     actividadId: capacidad.actividadId,
                     date: dateStr,
-                    organizationId,
+                    areaId: organizationId,
                     id: { [Op.ne]: capacidadId },
                 },
             });
@@ -198,7 +198,7 @@ export const verificarDisponibilidadPorBloque = async (actividadId, bloqueId, da
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (!actividad) {
@@ -212,7 +212,7 @@ export const verificarDisponibilidadPorBloque = async (actividadId, bloqueId, da
         where: {
             id: bloqueId,
             actividadId,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (!bloque) {
@@ -228,7 +228,7 @@ export const verificarDisponibilidadPorBloque = async (actividadId, bloqueId, da
         where: {
             actividadId,
             date: dateStr,
-            organizationId,
+            areaId: organizationId,
         },
     });
     // Si no existe capacidad, usar el capacity del bloque como límite
@@ -263,7 +263,7 @@ export const verificarDisponibilidadPorDia = async (actividadId, date, cantidad,
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
-            organizationId,
+            areaId: organizationId,
         },
     });
     if (!actividad) {
@@ -282,7 +282,7 @@ export const verificarDisponibilidadPorDia = async (actividadId, date, cantidad,
         where: {
             actividadId,
             date: dateStr,
-            organizationId,
+            areaId: organizationId,
         },
     });
     // Para HORARIO_LIBRE, la capacidad debe existir

@@ -1,7 +1,7 @@
-import type { UUID } from '@/shared/database/types.js';
-import { EvidenciaAmbiental } from '@/modules/evidencias/models/evidencia-ambiental.model.js';
-import type { CreateEvidenciaDTO, UpdateEvidenciaDTO, ListEvidenciasDTO } from '@/modules/evidencias/validators/evidencia.validator.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { UUID } from '../../../shared/database/types.js';
+import { EvidenciaAmbiental } from '../../../modules/evidencias/models/evidencia-ambiental.model.js';
+import type { CreateEvidenciaDTO, UpdateEvidenciaDTO, ListEvidenciasDTO } from '../../../modules/evidencias/validators/evidencia.validator.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
 /**
  * Crea una nueva evidencia ambiental asociada a un evento
  *

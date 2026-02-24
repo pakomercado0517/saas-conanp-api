@@ -1,7 +1,7 @@
-import type { UUID } from '@/shared/database/types.js';
-import { Activo } from '@/modules/activos/models/activo.model.js';
-import type { CreateActivoDTO, UpdateActivoDTO, ListActivosDTO } from '@/modules/activos/validators/activo.validator.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { UUID } from '../../../shared/database/types.js';
+import { Activo } from '../../../modules/activos/models/activo.model.js';
+import type { CreateActivoDTO, UpdateActivoDTO, ListActivosDTO } from '../../../modules/activos/validators/activo.validator.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
 /**
  * Tipo para estados de activo
  */

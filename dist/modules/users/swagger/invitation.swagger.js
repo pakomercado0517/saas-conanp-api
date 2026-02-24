@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { ValidateInvitationTokenSchema, StartVerifyEmailSchema, ConfirmVerifyEmailSchema, } from '../validators/invitation.validator.js';
 /**
  * Respuesta genérica de invitación (validate)

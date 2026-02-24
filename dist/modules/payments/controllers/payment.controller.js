@@ -1,6 +1,6 @@
 import * as paymentService from '../services/payment.service.js';
 import { sanitizePaymentForResponse } from '../sanitizers/payment-sanitizer.js';
-import { sendSuccess, sendCreated, sendPaginated } from '@/shared/responses/helpers.js';
+import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
 /**
  * Crea un Payment Intent en Stripe y guarda el pago en la base de datos.
  * El pago se crea con estado 'pending' y se actualiza cuando se confirma.

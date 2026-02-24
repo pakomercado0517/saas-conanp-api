@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { sequelize, testConnection } from '@/shared/database/index.js';
-import { stripeClient, getDefaultCurrency } from '@/shared/stripe/index.js';
-import { uploadFile, deleteFile, getSignedUrl, getPublicUrl, generateFileKey, } from '@/shared/storage/index.js';
+import { sequelize, testConnection } from '../../shared/database/index.js';
+import { stripeClient, getDefaultCurrency } from '../../shared/stripe/index.js';
+import { uploadFile, deleteFile, getSignedUrl, getPublicUrl, generateFileKey, } from '../../shared/storage/index.js';
 /**
  * Test de humo: verifica que los mocks de BD, Stripe y S3 están activos.
  * No hace llamadas reales a servicios externos.

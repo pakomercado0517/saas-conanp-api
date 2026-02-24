@@ -17,7 +17,8 @@ import type {
 const getOrganizationId = (req: Request): string => {
   const id =
     req.areaId ?? req.organizationId ?? req.params['areaId'] ?? req.params['organizationId'];
-  const str = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : (id as string);
+  const str =
+    typeof id === 'string' ? id : Array.isArray(id) ? id[0] : id != null ? String(id) : '';
   return str ?? '';
 };
 

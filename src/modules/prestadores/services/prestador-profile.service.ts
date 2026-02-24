@@ -31,7 +31,7 @@ export const validateUserMembership = async (
   const membership = await Membership.findOne({
     where: {
       userId,
-      organizationId,
+      areaId: organizationId,
       status: 'activo',
     },
   });

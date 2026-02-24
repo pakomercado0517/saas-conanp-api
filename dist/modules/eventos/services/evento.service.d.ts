@@ -1,7 +1,7 @@
-import type { UUID } from '@/shared/database/types.js';
-import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
-import type { CreateEventoDTO, UpdateEventoDTO, ListEventosDTO } from '@/modules/eventos/validators/evento.validator.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { UUID } from '../../../shared/database/types.js';
+import { EventoOperativo } from '../../../modules/eventos/models/evento-operativo.model.js';
+import type { CreateEventoDTO, UpdateEventoDTO, ListEventosDTO } from '../../../modules/eventos/validators/evento.validator.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
 /**
  * Crea un nuevo evento operativo.
  * Requiere validaciones estrictas de negocio y se ejecuta en una transacción.

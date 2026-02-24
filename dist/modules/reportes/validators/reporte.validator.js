@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { optionalDateOnlySchema } from '@/shared/dates/zod-schemas.js';
-import { registry } from '@/shared/swagger/index.js';
+import { optionalDateOnlySchema } from '../../../shared/dates/zod-schemas.js';
+import { registry } from '../../../shared/swagger/index.js';
 // Constantes para enums reutilizables
 const EVENTO_STATUS_VALUES = ['programado', 'en_curso', 'completado', 'cancelado'];
 const PRESTADOR_STATUS_VALUES = ['activo', 'inactivo', 'suspendido'];

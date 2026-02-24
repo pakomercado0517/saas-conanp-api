@@ -1,4 +1,4 @@
-import type { UUID } from '@/shared/database/types.js';
+import type { UUID } from '../../../shared/database/types.js';
 /**
  * Tipo de respuesta para reporte de eventos por actividad
  */

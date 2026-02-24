@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database/index.js';
-import { Area } from '@/modules/areas/models/area.model.js';
+import { sequelize } from '../../../shared/database/index.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
 import { Actividad } from './actividad.model.js';
 export class Capacidad extends Model {
 }

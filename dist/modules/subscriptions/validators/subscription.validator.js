@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { optionalDateTimeSchema } from '@/shared/dates/zod-schemas.js';
+import { optionalDateTimeSchema } from '../../../shared/dates/zod-schemas.js';
 // Enum reutilizable para ciclo de facturación
 const BILLING_CYCLES = ['monthly', 'yearly'];
 /**

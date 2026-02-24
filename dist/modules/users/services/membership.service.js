@@ -1,10 +1,10 @@
-import { Membership } from '@/modules/users/models/membership.model.js';
-import { User } from '@/modules/users/models/user.model.js';
-import { Area } from '@/modules/areas/models/area.model.js';
-import { ForbiddenError, NotFoundError, ConflictError, ValidationError, } from '@/shared/errors/index.js';
-import { logger } from '@/shared/logger/index.js';
-import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
-import { checkUsersLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
+import { Area } from '../../../modules/areas/models/area.model.js';
+import { ForbiddenError, NotFoundError, ConflictError, ValidationError, } from '../../../shared/errors/index.js';
+import { logger } from '../../../shared/logger/index.js';
+import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
+import { checkUsersLimit } from '../../../modules/subscriptions/services/subscription-limits.service.js';
 /**
  * Valida que el usuario tenga rol 'admin' en la organización especificada.
  * Verifica membresía activa con rol 'admin'.

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { registry } from '@/shared/swagger/index.js';
+import { registry } from '../../../shared/swagger/index.js';
 extendZodWithOpenApi(z);
 const ROLE_VALUES = ['admin', 'gestor', 'prestador', 'observador'];
 const roleEnum = z.enum(ROLE_VALUES, {

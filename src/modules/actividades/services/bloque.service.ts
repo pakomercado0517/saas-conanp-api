@@ -37,7 +37,7 @@ const validateActividadHasBloquesType = async (
   const actividad = await Actividad.findOne({
     where: {
       id: actividadId,
-      organizationId,
+      areaId: organizationId,
     },
   });
 
@@ -87,7 +87,7 @@ const validateNoTimeOverlap = async (
   // Buscar bloques existentes para la misma fecha y actividad
   const whereClause: Record<string, unknown> = {
     actividadId,
-    organizationId,
+    areaId: organizationId,
     date: dateStr,
     isTemplate: false, // Solo validar solapamiento con bloques no plantilla
   };
@@ -168,7 +168,7 @@ export const getBloquesTemplates = async (
   return await Bloque.findAll({
     where: {
       actividadId,
-      organizationId,
+      areaId: organizationId,
       isTemplate: true,
     },
     order: [['startTime', 'ASC']],
@@ -218,7 +218,7 @@ export const createBloque = async (data: CreateBloqueDTO, userId: UUID): Promise
 
   // Crear el bloque
   const bloque = await Bloque.create({
-    organizationId: data.organizationId,
+    areaId: data.organizationId,
     actividadId: data.actividadId,
     date: dateStr,
     startTime: startTimeStr,
@@ -230,7 +230,7 @@ export const createBloque = async (data: CreateBloqueDTO, userId: UUID): Promise
   logger.info(
     {
       bloqueId: bloque.id,
-      organizationId: bloque.organizationId,
+      organizationId: bloque.areaId,
       actividadId: bloque.actividadId,
       date: bloque.date,
       startTime: bloque.startTime,
@@ -271,7 +271,7 @@ export const createBloqueFromTemplate = async (
   const template = await Bloque.findOne({
     where: {
       id: data.templateId,
-      organizationId,
+      areaId: organizationId,
       isTemplate: true,
     },
     include: [
@@ -316,7 +316,7 @@ export const createBloqueFromTemplate = async (
 
   // Crear el bloque desde la plantilla
   const bloque = await Bloque.create({
-    organizationId: template.organizationId,
+    areaId: template.areaId,
     actividadId: template.actividadId,
     date: dateStr,
     startTime: template.startTime,
@@ -329,7 +329,7 @@ export const createBloqueFromTemplate = async (
     {
       bloqueId: bloque.id,
       templateId: data.templateId,
-      organizationId: bloque.organizationId,
+      organizationId: bloque.areaId,
       actividadId: bloque.actividadId,
       date: bloque.date,
       userId,
@@ -363,7 +363,7 @@ export const getBloqueById = async (
   const bloque = await Bloque.findOne({
     where: {
       id: bloqueId,
-      organizationId, // Multi-tenant obligatorio
+      areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
     },
     include: [
       {
@@ -406,7 +406,7 @@ export const listBloquesByActividad = async (
   const actividad = await Actividad.findOne({
     where: {
       id: actividadId,
-      organizationId,
+      areaId: organizationId,
     },
   });
 
@@ -417,7 +417,7 @@ export const listBloquesByActividad = async (
   // Construir query con filtros multi-tenant obligatorio
   const where: Record<string, unknown> = {
     actividadId,
-    organizationId, // Multi-tenant obligatorio
+    areaId: organizationId, // Multi-tenant obligatorio
   };
 
   // Aplicar filtros opcionales
@@ -479,7 +479,7 @@ export const listBloques = async (
 
   // Construir query con filtros multi-tenant obligatorio
   const where: Record<string, unknown> = {
-    organizationId, // Multi-tenant obligatorio
+    areaId: organizationId, // Multi-tenant obligatorio
   };
 
   // Aplicar filtros opcionales
@@ -553,7 +553,7 @@ export const updateBloque = async (
   const bloque = await Bloque.findOne({
     where: {
       id: bloqueId,
-      organizationId, // Multi-tenant obligatorio
+      areaId: organizationId, // Multi-tenant obligatorio
     },
     include: [
       {
@@ -674,7 +674,7 @@ export const deleteBloque = async (
   const bloque = await Bloque.findOne({
     where: {
       id: bloqueId,
-      organizationId, // Multi-tenant obligatorio
+      areaId: organizationId, // Multi-tenant obligatorio
     },
   });
 

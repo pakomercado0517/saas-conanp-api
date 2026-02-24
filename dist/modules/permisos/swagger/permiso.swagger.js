@@ -1,4 +1,4 @@
-import { z, registry, commonErrorResponses } from '@/shared/swagger/index.js';
+import { z, registry, commonErrorResponses } from '../../../shared/swagger/index.js';
 import { CreatePermisoSchema, UpdatePermisoSchema, ListPermisosSchema, } from '../validators/permiso.validator.js';
 const PermisoSchema = registry.register('Permiso', z.object({
     id: z.string().uuid().describe('ID único del permiso'),

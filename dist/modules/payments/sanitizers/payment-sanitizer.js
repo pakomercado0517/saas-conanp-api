@@ -1,4 +1,4 @@
-import { stripSensitiveKeys } from '@/shared/sanitizers/stripe-sanitizer.js';
+import { stripSensitiveKeys } from '../../../shared/sanitizers/stripe-sanitizer.js';
 /**
  * Sanitiza un pago para enviarlo en respuestas de API.
  * - Nunca expone clientSecret salvo cuando includeClientSecret es true (solo en POST /intent).

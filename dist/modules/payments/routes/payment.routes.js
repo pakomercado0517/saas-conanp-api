@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createPaymentIntent, confirmPayment, getPaymentById, listPayments, processRefund, } from '../controllers/payment.controller.js';
 import { validateCreatePaymentIntent, validateConfirmPayment, validateListPayments, validateProcessRefund, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess, requireRole, requireAdmin, paymentCreateLimiter, } from '@/shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireRole, requireAdmin, paymentCreateLimiter, } from '../../../shared/middleware/index.js';
 /**
  * Router de pagos
  *

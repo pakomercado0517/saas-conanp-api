@@ -71,7 +71,7 @@ export const createOrUpdateCapacidad = async (req: Request, res: Response): Prom
         where: {
           actividadId,
           date: dateStr,
-          organizationId,
+          areaId: organizationId,
         },
       });
 
@@ -160,7 +160,7 @@ export const verificarDisponibilidad = async (req: Request, res: Response): Prom
   const actividad = await Actividad.findOne({
     where: {
       id: actividadId,
-      organizationId,
+      areaId: organizationId,
     },
   });
 

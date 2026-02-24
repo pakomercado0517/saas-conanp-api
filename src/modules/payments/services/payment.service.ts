@@ -117,14 +117,14 @@ const assertCanCreatePaymentForEvent = async (
   const membership = await Membership.findOne({
     where: {
       userId,
-      organizationId,
+      areaId: organizationId,
       status: 'activo',
     },
   });
 
   if (!membership) {
     throw new ForbiddenError('No tienes acceso a esta organización', {
-      organizationId,
+      areaId: organizationId,
       userId,
     });
   }
@@ -134,10 +134,12 @@ const assertCanCreatePaymentForEvent = async (
   }
 
   if (membership.role === 'prestador') {
+    const area = await Area.findByPk(organizationId);
+    if (!area) throw new ForbiddenError('Área no encontrada', { organizationId });
     const prestadorProfile = await PrestadorProfile.findOne({
       where: {
         userId,
-        organizationId,
+        dependenciaId: area.dependenciaId,
       },
     });
 
@@ -157,7 +159,7 @@ const assertCanCreatePaymentForEvent = async (
   throw new ForbiddenError(
     'Solo administradores y prestadores pueden crear o confirmar pagos para eventos',
     {
-      organizationId,
+      areaId: organizationId,
       userId,
       currentRole: membership.role,
     }
@@ -291,7 +293,7 @@ export const createPaymentIntent = async (
     logger.info(
       {
         paymentId: payment.id,
-        organizationId,
+        areaId: organizationId,
         eventoId: data.eventoId,
         amount: data.amount,
         currency: data.currency,
@@ -448,7 +450,7 @@ export const confirmPayment = async (
     logger.info(
       {
         paymentId: payment.id,
-        organizationId,
+        areaId: organizationId,
         stripePaymentIntentId: data.stripePaymentIntentId,
         status: payment.status,
         userId,
@@ -527,7 +529,7 @@ export const listPayments = async (
 
   // Construir query con filtro multi-tenant obligatorio
   const where: Record<string, unknown> = {
-    organizationId, // Multi-tenant obligatorio
+    areaId: organizationId, // Multi-tenant obligatorio (organizationId = areaId en API)
   };
 
   // Aplicar filtros opcionales
@@ -710,7 +712,7 @@ export const processRefund = async (
         reason: data.reason ? 'requested_by_customer' : 'requested_by_customer',
         metadata: {
           paymentId: payment.id,
-          organizationId,
+          areaId: organizationId,
           reason: data.reason || '',
         },
       });
@@ -747,7 +749,7 @@ export const processRefund = async (
     logger.info(
       {
         paymentId: payment.id,
-        organizationId,
+        areaId: organizationId,
         refundAmount,
         refundedAmount: payment.refundedAmount,
         isFullRefund,

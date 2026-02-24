@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '@/shared/database';
+import { sequelize } from '../../../shared/database';
 import { Dependencia } from './dependencia.model.js';
-import { User } from '@/modules/users/models/user.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 export class DependenciaMembership extends Model {
 }
 const ROLE_VALUES = ['owner', 'admin', 'gestor', 'prestador', 'observador'];

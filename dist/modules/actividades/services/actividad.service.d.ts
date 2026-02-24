@@ -1,7 +1,7 @@
-import type { UUID } from '@/shared/database/types.js';
-import { Actividad } from '@/modules/actividades/models/actividad.model.js';
-import type { CreateActividadDTO, UpdateActividadDTO, ListActividadesDTO } from '@/modules/actividades/validators/actividad.validator.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { UUID } from '../../../shared/database/types.js';
+import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
+import type { CreateActividadDTO, UpdateActividadDTO, ListActividadesDTO } from '../../../modules/actividades/validators/actividad.validator.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
 /**
  * Crea una nueva actividad.
  * Solo los administradores pueden crear actividades.

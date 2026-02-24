@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DateTime } from 'luxon';
-import { NotFoundError, ValidationError, ConflictError } from '@/shared/errors/index.js';
+import { NotFoundError, ValidationError, ConflictError } from '../../../../shared/errors/index.js';
 import * as capacidadService from '../capacidad.service.js';
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
@@ -58,7 +58,7 @@ describe('capacidad.service', () => {
             limit: 10,
         };
         it('throws when assertIsAdmin rejects', async () => {
-            const { ForbiddenError } = await import('@/shared/errors/index.js');
+            const { ForbiddenError } = await import('../../../../shared/errors/index.js');
             mockAssertIsAdmin.mockRejectedValueOnce(new ForbiddenError('No eres admin'));
             await expect(capacidadService.createCapacidad(createData, ORG_ID, USER_ID)).rejects.toThrow();
         });

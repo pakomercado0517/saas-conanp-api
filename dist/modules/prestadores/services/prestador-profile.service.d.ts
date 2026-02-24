@@ -1,8 +1,8 @@
-import type { UUID } from '@/shared/database/types.js';
-import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
-import { Membership } from '@/modules/users/models/membership.model.js';
-import type { CreatePrestadorProfileDTO, UpdatePrestadorProfileDTO, ListPrestadoresDTO } from '@/modules/prestadores/validators/prestador-profile.validator.js';
-import type { PaginationMeta } from '@/shared/responses/types.js';
+import type { UUID } from '../../../shared/database/types.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import { Membership } from '../../../modules/users/models/membership.model.js';
+import type { CreatePrestadorProfileDTO, UpdatePrestadorProfileDTO, ListPrestadoresDTO } from '../../../modules/prestadores/validators/prestador-profile.validator.js';
+import type { PaginationMeta } from '../../../shared/responses/types.js';
 /**
  * Valida que el usuario tenga una membership activa en la organización.
  *

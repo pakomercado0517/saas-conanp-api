@@ -1,28 +1,19 @@
 import type { Request, Response, NextFunction } from 'express';
 /**
- * Middleware multi-tenant: valida que el usuario pertenezca a la organización
- * y que la organización tenga suscripción activa (active o trialing).
- * Extrae organizationId del request (params o body) y lo agrega a req.organizationId.
- *
- * Requiere que authenticate haya corrido antes (req.user debe existir).
- * organizationId se busca en req.params.organizationId primero, luego en req.body.organizationId.
- *
- * @throws {UnauthorizedError} Si no hay usuario autenticado
- * @throws {BadRequestError} Si no se encuentra organizationId
- * @throws {ForbiddenError} Si el usuario no tiene membresía activa en la organización
- * @throws {ForbiddenError} Si la suscripción está inactiva o vencida
+ * Multi-tenant: valida acceso al área (membresía activa) y suscripción activa de la dependencia.
+ * Lee el id de área de params.organizationId o params.areaId o body; lo expone en req.organizationId y req.areaId.
+ * Requiere authenticate previo.
  */
 export declare const requireOrganizationAccess: (req: Request, _res: Response, next: NextFunction) => Promise<void>;
 /**
- * Middleware multi-tenant: valida solo que el usuario pertenezca a la organización
- * (membresía activa). No valida suscripción activa.
- * Úsalo en rutas que deben ser accesibles sin suscripción (ej. crear suscripción, obtener suscripción actual).
- *
- * Requiere que authenticate haya corrido antes.
- *
- * @throws {UnauthorizedError} Si no hay usuario autenticado
- * @throws {BadRequestError} Si no se encuentra organizationId
- * @throws {ForbiddenError} Si el usuario no tiene membresía activa en la organización
+ * Multi-tenant: valida solo acceso al área (membresía activa). No valida suscripción.
+ * Úsalo en rutas que no requieren suscripción activa (ej. suscripciones, onboarding).
  */
 export declare const requireOrganizationAccessOnly: (req: Request, _res: Response, next: NextFunction) => Promise<void>;
+/**
+ * Multi-tenant: valida acceso a la dependencia (membresía en al menos un área de esa dependencia).
+ * Lee dependenciaId de params.dependenciaId o body; lo expone en req.dependenciaId.
+ * Requiere authenticate previo.
+ */
+export declare const requireDependenciaAccess: (req: Request, _res: Response, next: NextFunction) => Promise<void>;
 //# sourceMappingURL=organization-access.middleware.d.ts.map

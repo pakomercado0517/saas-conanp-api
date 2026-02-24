@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
-import app from '@/server.js';
+import app from '../../server.js';
 import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationMembershipOnly, bootstrapOrganizationWithSubscription, authRequest, } from './helpers.js';
 const API_ORGS = '/api/v1/organizations';
 const API_PLANS = '/api/v1/subscription-plans';
