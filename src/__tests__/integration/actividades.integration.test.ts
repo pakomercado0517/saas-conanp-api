@@ -5,11 +5,10 @@ import {
   createTestOrganization,
   bootstrapOrganizationWithSubscription,
   authRequest,
+  AREAS_API_PREFIX,
   type AuthResult,
   type OrganizationData,
 } from './helpers.js';
-
-const API_ORGS = '/api/v1/organizations';
 
 describe('Actividades endpoints (integration)', () => {
   let auth: AuthResult;
@@ -22,10 +21,10 @@ describe('Actividades endpoints (integration)', () => {
     await bootstrapOrganizationWithSubscription(auth.user.id, org.id);
   });
 
-  describe('POST /organizations/:organizationId/actividades', () => {
+  describe('POST /areas/:areaId/actividades', () => {
     it('crea actividad y devuelve 201', async () => {
       const res = await authRequest(app, auth.accessToken)
-        .post(`${API_ORGS}/${org.id}/actividades`)
+        .post(`${AREAS_API_PREFIX}/${org.id}/actividades`)
         .send({
           organizationId: org.id,
           name: 'Actividad Integración',
@@ -49,7 +48,7 @@ describe('Actividades endpoints (integration)', () => {
 
     it('devuelve 400 con body inválido', async () => {
       await authRequest(app, auth.accessToken)
-        .post(`${API_ORGS}/${org.id}/actividades`)
+        .post(`${AREAS_API_PREFIX}/${org.id}/actividades`)
         .send({
           organizationId: org.id,
           name: '',
@@ -60,10 +59,10 @@ describe('Actividades endpoints (integration)', () => {
     });
   });
 
-  describe('GET /organizations/:organizationId/actividades', () => {
+  describe('GET /areas/:areaId/actividades', () => {
     it('lista actividades y devuelve 200', async () => {
       const res = await authRequest(app, auth.accessToken)
-        .get(`${API_ORGS}/${org.id}/actividades`)
+        .get(`${AREAS_API_PREFIX}/${org.id}/actividades`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -72,10 +71,10 @@ describe('Actividades endpoints (integration)', () => {
     });
   });
 
-  describe('GET /organizations/:organizationId/actividades/:actividadId', () => {
+  describe('GET /areas/:areaId/actividades/:actividadId', () => {
     it('devuelve 200 y la actividad por id', async () => {
       const res = await authRequest(app, auth.accessToken)
-        .get(`${API_ORGS}/${org.id}/actividades/${actividadId}`)
+        .get(`${AREAS_API_PREFIX}/${org.id}/actividades/${actividadId}`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -84,10 +83,10 @@ describe('Actividades endpoints (integration)', () => {
     });
   });
 
-  describe('PATCH /organizations/:organizationId/actividades/:actividadId', () => {
+  describe('PATCH /areas/:areaId/actividades/:actividadId', () => {
     it('actualiza actividad y devuelve 200', async () => {
       const res = await authRequest(app, auth.accessToken)
-        .patch(`${API_ORGS}/${org.id}/actividades/${actividadId}`)
+        .patch(`${AREAS_API_PREFIX}/${org.id}/actividades/${actividadId}`)
         .send({ name: 'Actividad Actualizada' })
         .expect(200);
 
@@ -96,10 +95,10 @@ describe('Actividades endpoints (integration)', () => {
     });
   });
 
-  describe('DELETE /organizations/:organizationId/actividades/:actividadId', () => {
+  describe('DELETE /areas/:areaId/actividades/:actividadId', () => {
     it('elimina actividad y devuelve 204', async () => {
       const createRes = await authRequest(app, auth.accessToken)
-        .post(`${API_ORGS}/${org.id}/actividades`)
+        .post(`${AREAS_API_PREFIX}/${org.id}/actividades`)
         .send({
           organizationId: org.id,
           name: 'Actividad a Borrar',
@@ -110,7 +109,7 @@ describe('Actividades endpoints (integration)', () => {
       const idToDelete = createRes.body.data.id;
 
       await authRequest(app, auth.accessToken)
-        .delete(`${API_ORGS}/${org.id}/actividades/${idToDelete}`)
+        .delete(`${AREAS_API_PREFIX}/${org.id}/actividades/${idToDelete}`)
         .expect(204);
     });
   });

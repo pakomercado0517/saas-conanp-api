@@ -1,13 +1,14 @@
 import * as organizationService from '../services/organization.service.js';
 import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
 /**
- * Crea una nueva organización
- *
- * POST /api/v1/organizations
+ * Crea una nueva organización (dependencia + primera área). Onboarding sin auth.
+ * POST /api/v1/areas o POST /api/v1/organizations
+ * @deprecated Usar POST /dependencias y POST /dependencias/:dependenciaId/areas para el nuevo flujo.
  */
 export const createOrganization = async (req, res) => {
     const data = req.body;
     const result = await organizationService.createOrganization(data);
+    res.set('X-Deprecation-Warning', 'POST /areas (onboarding) está deprecado. Use POST /dependencias y POST /dependencias/:dependenciaId/areas.');
     return sendCreated(res, result, 'Organización creada exitosamente');
 };
 /**

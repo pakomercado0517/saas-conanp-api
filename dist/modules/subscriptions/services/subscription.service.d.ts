@@ -89,6 +89,15 @@ export declare const createSubscriptionInDatabase: (data: {
  */
 export declare const createFreeSubscriptionForOrganization: (areaId: UUID, transaction?: Transaction) => Promise<Subscription>;
 /**
+ * Crea una suscripción FREE para una dependencia (sin Stripe, sin área).
+ * Usado al crear una dependencia sin área inicial (flujo CRUD dependencias).
+ *
+ * @param dependenciaId - ID de la dependencia
+ * @param transaction - Transacción opcional
+ * @returns Suscripción creada con plan "free"
+ */
+export declare const createFreeSubscriptionForDependencia: (dependenciaId: UUID, transaction?: Transaction) => Promise<Subscription>;
+/**
  * Crea una suscripción completa: Stripe + base de datos.
  *
  * @param data - Datos para crear la suscripción

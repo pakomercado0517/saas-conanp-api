@@ -7,11 +7,10 @@ import {
   bootstrapOrganizationMembershipOnly,
   bootstrapOrganizationWithSubscription,
   authRequest,
+  AREAS_API_PREFIX,
   type AuthResult,
   type OrganizationData,
 } from './helpers.js';
-
-const API_ORGS = '/api/v1/organizations';
 const API_PLANS = '/api/v1/subscription-plans';
 const API_SUBS = '/api/v1/subscriptions';
 
@@ -46,10 +45,10 @@ describe('Subscriptions endpoints (integration)', () => {
     planId = plans.length > 0 ? (plans[0]?.id ?? '') : '';
   });
 
-  describe('GET /organizations/:organizationId/subscriptions/current', () => {
+  describe('GET /areas/:areaId/subscriptions/current', () => {
     it('devuelve 200 y suscripción actual', async () => {
       const res = await authRequest(app, adminAuth.accessToken)
-        .get(`${API_ORGS}/${org.id}/subscriptions/current`)
+        .get(`${AREAS_API_PREFIX}/${org.id}/subscriptions/current`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -62,7 +61,7 @@ describe('Subscriptions endpoints (integration)', () => {
     });
   });
 
-  describe('POST /organizations/:organizationId/subscriptions', () => {
+  describe('POST /areas/:areaId/subscriptions', () => {
     it('crea suscripción cuando no hay una y devuelve 201', async () => {
       const orgSinSub = await createTestOrganization(app, { name: 'Org Sin Sub' });
       await bootstrapOrganizationMembershipOnly(adminAuth.user.id, orgSinSub.id);
@@ -77,7 +76,7 @@ describe('Subscriptions endpoints (integration)', () => {
       if (!planToUse) return;
 
       const res = await authRequest(app, adminAuth.accessToken)
-        .post(`${API_ORGS}/${orgSinSub.id}/subscriptions`)
+        .post(`${AREAS_API_PREFIX}/${orgSinSub.id}/subscriptions`)
         .send({ planId: planToUse, billingCycle: 'monthly' });
 
       if (res.status === 201) {
@@ -95,7 +94,7 @@ describe('Subscriptions endpoints (integration)', () => {
       await bootstrapOrganizationMembershipOnly(adminAuth.user.id, orgSinSub.id);
 
       await authRequest(app, adminAuth.accessToken)
-        .post(`${API_ORGS}/${orgSinSub.id}/actividades`)
+        .post(`${AREAS_API_PREFIX}/${orgSinSub.id}/actividades`)
         .send({
           organizationId: orgSinSub.id,
           name: 'Actividad Sin Sub',
@@ -107,7 +106,7 @@ describe('Subscriptions endpoints (integration)', () => {
 
     it('devuelve 201 al crear actividad con suscripción activa', async () => {
       const res = await authRequest(app, adminAuth.accessToken)
-        .post(`${API_ORGS}/${org.id}/actividades`)
+        .post(`${AREAS_API_PREFIX}/${org.id}/actividades`)
         .send({
           organizationId: org.id,
           name: 'Actividad Con Sub',

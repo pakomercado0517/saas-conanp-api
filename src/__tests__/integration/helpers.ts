@@ -197,7 +197,7 @@ export async function createTestOrganization(
   }
 
   const res = await request(app)
-    .post(`${API_PREFIX}/organizations`)
+    .post(`${AREAS_API_PREFIX}`)
     .send({ name, ecosystem_type })
     .expect(201);
   const data = (res.body as { success: boolean; data: OrganizationData }).data;
@@ -284,7 +284,7 @@ export async function createMembership(
   body: { userId: string; role: 'admin' | 'gestor' | 'prestador' | 'observador'; status?: string }
 ): Promise<MembershipData> {
   const res = await request(app)
-    .post(`${API_PREFIX}/organizations/${organizationId}/memberships`)
+    .post(`${AREAS_API_PREFIX}/${organizationId}/memberships`)
     .set('Authorization', `Bearer ${accessToken}`)
     .send({
       userId: body.userId,
@@ -307,7 +307,7 @@ export async function createPrestadorProfile(
   body: { userId: string; status?: string }
 ): Promise<{ id: string; userId: string; organizationId: string; status: string }> {
   const res = await request(app)
-    .post(`${API_PREFIX}/organizations/${organizationId}/prestadores`)
+    .post(`${AREAS_API_PREFIX}/${organizationId}/prestadores`)
     .set('Authorization', `Bearer ${accessToken}`)
     .send({
       userId: body.userId,
@@ -324,6 +324,12 @@ export async function createPrestadorProfile(
   if (!data?.id) throw new Error('Create prestador profile failed');
   return data;
 }
+
+/** Prefijo de rutas de áreas (recomendado). Compatible también con /api/v1/organizations. */
+export const AREAS_API_PREFIX = `${API_PREFIX}/areas`;
+
+/** Prefijo de rutas de organizaciones (compatibilidad). */
+export const ORGANIZATIONS_API_PREFIX = `${API_PREFIX}/organizations`;
 
 /** Retorno de authRequest: métodos HTTP que inyectan el Bearer token. */
 type AuthRequestReturn = {

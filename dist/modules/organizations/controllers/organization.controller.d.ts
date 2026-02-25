@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
 /**
- * Crea una nueva organización
- *
- * POST /api/v1/organizations
+ * Crea una nueva organización (dependencia + primera área). Onboarding sin auth.
+ * POST /api/v1/areas o POST /api/v1/organizations
+ * @deprecated Usar POST /dependencias y POST /dependencias/:dependenciaId/areas para el nuevo flujo.
  */
 export declare const createOrganization: (req: Request, res: Response) => Promise<Response>;
 /**

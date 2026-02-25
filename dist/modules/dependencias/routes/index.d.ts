@@ -1,0 +1,2 @@
+export { default as dependenciasRoutes } from './dependencia.routes.js';
+//# sourceMappingURL=index.d.ts.map

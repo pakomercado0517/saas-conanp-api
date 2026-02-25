@@ -7,11 +7,10 @@ import {
   createMembership,
   createPrestadorProfile,
   authRequest,
+  AREAS_API_PREFIX,
   type AuthResult,
   type OrganizationData,
 } from './helpers.js';
-
-const API_ORGS = '/api/v1/organizations';
 
 describe('Eventos endpoints (integration)', () => {
   let adminAuth: AuthResult;
@@ -45,7 +44,7 @@ describe('Eventos endpoints (integration)', () => {
     prestadorProfileId = prestador.id;
 
     const actRes = await authRequest(app, adminAuth.accessToken)
-      .post(`${API_ORGS}/${org.id}/actividades`)
+      .post(`${AREAS_API_PREFIX}/${org.id}/actividades`)
       .send({
         organizationId: org.id,
         name: 'Actividad Eventos',
@@ -58,14 +57,14 @@ describe('Eventos endpoints (integration)', () => {
     actividadId = actRes.body.data.id;
 
     await authRequest(app, adminAuth.accessToken)
-      .post(`${API_ORGS}/${org.id}/actividades/${actividadId}/capacidad`)
+      .post(`${AREAS_API_PREFIX}/${org.id}/actividades/${actividadId}/capacidad`)
       .send({ date: eventDate, limit: 10 })
       .expect(201);
 
     const validFrom = '2026-02-01T00:00:00.000-06:00';
     const validTo = '2026-02-28T23:59:59.000-06:00';
     await authRequest(app, adminAuth.accessToken)
-      .post(`${API_ORGS}/${org.id}/permisos`)
+      .post(`${AREAS_API_PREFIX}/${org.id}/permisos`)
       .send({
         prestadorId: prestadorProfileId,
         actividadId,
@@ -76,10 +75,10 @@ describe('Eventos endpoints (integration)', () => {
       .expect(201);
   });
 
-  describe('POST /organizations/:organizationId/eventos', () => {
+  describe('POST /areas/:areaId/eventos', () => {
     it('crea evento HORARIO_LIBRE y devuelve 201', async () => {
       const res = await authRequest(app, adminAuth.accessToken)
-        .post(`${API_ORGS}/${org.id}/eventos`)
+        .post(`${AREAS_API_PREFIX}/${org.id}/eventos`)
         .send({
           actividadId,
           prestadorId: prestadorProfileId,
@@ -98,10 +97,10 @@ describe('Eventos endpoints (integration)', () => {
     });
   });
 
-  describe('GET /organizations/:organizationId/eventos', () => {
+  describe('GET /areas/:areaId/eventos', () => {
     it('lista eventos y devuelve 200', async () => {
       const res = await authRequest(app, adminAuth.accessToken)
-        .get(`${API_ORGS}/${org.id}/eventos`)
+        .get(`${AREAS_API_PREFIX}/${org.id}/eventos`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -110,10 +109,10 @@ describe('Eventos endpoints (integration)', () => {
     });
   });
 
-  describe('GET /organizations/:organizationId/eventos/:eventoId', () => {
+  describe('GET /areas/:areaId/eventos/:eventoId', () => {
     it('devuelve 200 y el evento por id', async () => {
       const res = await authRequest(app, adminAuth.accessToken)
-        .get(`${API_ORGS}/${org.id}/eventos/${eventoId}`)
+        .get(`${AREAS_API_PREFIX}/${org.id}/eventos/${eventoId}`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -122,10 +121,10 @@ describe('Eventos endpoints (integration)', () => {
     });
   });
 
-  describe('PATCH /organizations/:organizationId/eventos/:eventoId', () => {
+  describe('PATCH /areas/:areaId/eventos/:eventoId', () => {
     it('actualiza evento y devuelve 200', async () => {
       const res = await authRequest(app, adminAuth.accessToken)
-        .patch(`${API_ORGS}/${org.id}/eventos/${eventoId}`)
+        .patch(`${AREAS_API_PREFIX}/${org.id}/eventos/${eventoId}`)
         .send({ peopleCount: 2 })
         .expect(200);
 
@@ -134,10 +133,10 @@ describe('Eventos endpoints (integration)', () => {
     });
   });
 
-  describe('DELETE /organizations/:organizationId/eventos/:eventoId', () => {
+  describe('DELETE /areas/:areaId/eventos/:eventoId', () => {
     it('elimina evento y devuelve 204', async () => {
       const createRes = await authRequest(app, adminAuth.accessToken)
-        .post(`${API_ORGS}/${org.id}/eventos`)
+        .post(`${AREAS_API_PREFIX}/${org.id}/eventos`)
         .send({
           actividadId,
           prestadorId: prestadorProfileId,
@@ -151,7 +150,7 @@ describe('Eventos endpoints (integration)', () => {
       const idToDelete = createRes.body.data.id;
 
       await authRequest(app, adminAuth.accessToken)
-        .delete(`${API_ORGS}/${org.id}/eventos/${idToDelete}`)
+        .delete(`${AREAS_API_PREFIX}/${org.id}/eventos/${idToDelete}`)
         .expect(204);
     });
   });

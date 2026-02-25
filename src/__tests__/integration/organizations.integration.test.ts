@@ -6,13 +6,12 @@ import {
   createTestOrganization,
   bootstrapOrganizationWithSubscription,
   authRequest,
+  AREAS_API_PREFIX,
   type AuthResult,
   type OrganizationData,
 } from './helpers.js';
 
-const API = '/api/v1/organizations';
-
-describe('Organizations endpoints (integration)', () => {
+describe('Areas / Organizations endpoints (integration)', () => {
   let auth: AuthResult;
   let org: OrganizationData;
 
@@ -25,10 +24,10 @@ describe('Organizations endpoints (integration)', () => {
     await bootstrapOrganizationWithSubscription(auth.user.id, org.id);
   });
 
-  describe('POST /organizations', () => {
-    it('crea organización sin auth y devuelve 201', async () => {
+  describe('POST /areas (crear área + dependencia)', () => {
+    it('crea área sin auth y devuelve 201', async () => {
       const res = await request(app)
-        .post(API)
+        .post(AREAS_API_PREFIX)
         .send({
           name: 'Nueva Org',
           ecosystem_type: 'mixto',
@@ -46,9 +45,9 @@ describe('Organizations endpoints (integration)', () => {
     });
   });
 
-  describe('GET /organizations', () => {
-    it('lista organizaciones del usuario con auth y devuelve 200', async () => {
-      const res = await authRequest(app, auth.accessToken).get(API).expect(200);
+  describe('GET /areas', () => {
+    it('lista áreas del usuario con auth y devuelve 200', async () => {
+      const res = await authRequest(app, auth.accessToken).get(AREAS_API_PREFIX).expect(200);
 
       expect(res.body.success).toBe(true);
       expect(res.body).toHaveProperty('data');
@@ -59,13 +58,15 @@ describe('Organizations endpoints (integration)', () => {
     });
 
     it('devuelve 401 sin token', async () => {
-      await request(app).get(API).expect(401);
+      await request(app).get(AREAS_API_PREFIX).expect(401);
     });
   });
 
-  describe('GET /organizations/:organizationId', () => {
-    it('devuelve 200 y la organización cuando hay acceso y suscripción activa', async () => {
-      const res = await authRequest(app, auth.accessToken).get(`${API}/${org.id}`).expect(200);
+  describe('GET /areas/:areaId', () => {
+    it('devuelve 200 y el área cuando hay acceso y suscripción activa', async () => {
+      const res = await authRequest(app, auth.accessToken)
+        .get(`${AREAS_API_PREFIX}/${org.id}`)
+        .expect(200);
 
       expect(res.body.success).toBe(true);
       expect(res.body.data).toMatchObject({
@@ -75,16 +76,18 @@ describe('Organizations endpoints (integration)', () => {
       });
     });
 
-    it('devuelve 403 para organización sin membresía', async () => {
+    it('devuelve 403 para área sin membresía', async () => {
       const otherOrg = await createTestOrganization(app, { name: 'Otra Org' });
-      await authRequest(app, auth.accessToken).get(`${API}/${otherOrg.id}`).expect(403);
+      await authRequest(app, auth.accessToken)
+        .get(`${AREAS_API_PREFIX}/${otherOrg.id}`)
+        .expect(403);
     });
   });
 
-  describe('PATCH /organizations/:organizationId', () => {
-    it('actualiza organización y devuelve 200', async () => {
+  describe('PATCH /areas/:areaId', () => {
+    it('actualiza área y devuelve 200', async () => {
       const res = await authRequest(app, auth.accessToken)
-        .patch(`${API}/${org.id}`)
+        .patch(`${AREAS_API_PREFIX}/${org.id}`)
         .send({ name: 'Org Actualizada' })
         .expect(200);
 
@@ -93,12 +96,14 @@ describe('Organizations endpoints (integration)', () => {
     });
   });
 
-  describe('DELETE /organizations/:organizationId', () => {
-    it('elimina organización y devuelve 204', async () => {
+  describe('DELETE /areas/:areaId', () => {
+    it('elimina área y devuelve 204', async () => {
       const toDelete = await createTestOrganization(app, { name: 'Org a Borrar' });
       await bootstrapOrganizationWithSubscription(auth.user.id, toDelete.id);
 
-      await authRequest(app, auth.accessToken).delete(`${API}/${toDelete.id}`).expect(204);
+      await authRequest(app, auth.accessToken)
+        .delete(`${AREAS_API_PREFIX}/${toDelete.id}`)
+        .expect(204);
     });
   });
 });

@@ -54,7 +54,8 @@ export declare const PaginationParamsSchema: z.ZodObject<{
     }>>;
 }, z.core.$strip>;
 /**
- * Schema de parámetro organizationId en URL
+ * Schema de parámetro organizationId/areaId en URL.
+ * En rutas bajo /api/v1/areas el parámetro se llama areaId; en /api/v1/organizations, organizationId. Mismo valor (UUID del área).
  */
 export declare const OrganizationIdParamSchema: z.ZodObject<{
     organizationId: z.ZodString;

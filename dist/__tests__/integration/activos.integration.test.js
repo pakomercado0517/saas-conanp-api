@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import app from '../../server.js';
-import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationWithSubscription, createMembership, createPrestadorProfile, authRequest, } from './helpers.js';
-const API_ORGS = '/api/v1/organizations';
+import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationWithSubscription, createMembership, createPrestadorProfile, authRequest, AREAS_API_PREFIX, } from './helpers.js';
 describe('Activos endpoints (integration)', () => {
     let adminAuth;
     let prestadorAuth;
@@ -30,10 +29,10 @@ describe('Activos endpoints (integration)', () => {
         });
         prestadorProfileId = prestador.id;
     });
-    describe('POST /organizations/:organizationId/activos', () => {
+    describe('POST /areas/:areaId/activos', () => {
         it('crea activo y devuelve 201', async () => {
             const res = await authRequest(app, adminAuth.accessToken)
-                .post(`${API_ORGS}/${org.id}/activos`)
+                .post(`${AREAS_API_PREFIX}/${org.id}/activos`)
                 .send({
                 organizationId: org.id,
                 ownerId: prestadorProfileId,
@@ -50,49 +49,49 @@ describe('Activos endpoints (integration)', () => {
             activoId = res.body.data.id;
         });
     });
-    describe('GET /organizations/:organizationId/activos', () => {
+    describe('GET /areas/:areaId/activos', () => {
         it('lista activos y devuelve 200', async () => {
             const res = await authRequest(app, adminAuth.accessToken)
-                .get(`${API_ORGS}/${org.id}/activos`)
+                .get(`${AREAS_API_PREFIX}/${org.id}/activos`)
                 .expect(200);
             expect(res.body.success).toBe(true);
             expect(Array.isArray(res.body.data)).toBe(true);
             expect(res.body).toHaveProperty('pagination');
         });
     });
-    describe('GET /organizations/:organizationId/activos/:activoId', () => {
+    describe('GET /areas/:areaId/activos/:activoId', () => {
         it('devuelve 200 y el activo por id', async () => {
             const res = await authRequest(app, adminAuth.accessToken)
-                .get(`${API_ORGS}/${org.id}/activos/${activoId}`)
+                .get(`${AREAS_API_PREFIX}/${org.id}/activos/${activoId}`)
                 .expect(200);
             expect(res.body.success).toBe(true);
             expect(res.body.data.id).toBe(activoId);
             expect(res.body.data.type).toBe('embarcacion');
         });
     });
-    describe('PATCH /organizations/:organizationId/activos/:activoId', () => {
+    describe('PATCH /areas/:areaId/activos/:activoId', () => {
         it('actualiza activo y devuelve 200', async () => {
             const res = await authRequest(app, adminAuth.accessToken)
-                .patch(`${API_ORGS}/${org.id}/activos/${activoId}`)
+                .patch(`${AREAS_API_PREFIX}/${org.id}/activos/${activoId}`)
                 .send({ type: 'vehiculo' })
                 .expect(200);
             expect(res.body.success).toBe(true);
             expect(res.body.data.type).toBe('vehiculo');
         });
     });
-    describe('POST /organizations/:organizationId/activos/:activoId/aprobar', () => {
+    describe('POST /areas/:areaId/activos/:activoId/aprobar', () => {
         it('aprueba activo y devuelve 200', async () => {
             const res = await authRequest(app, adminAuth.accessToken)
-                .post(`${API_ORGS}/${org.id}/activos/${activoId}/aprobar`)
+                .post(`${AREAS_API_PREFIX}/${org.id}/activos/${activoId}/aprobar`)
                 .expect(200);
             expect(res.body.success).toBe(true);
             expect(res.body.data.status).toBe('aprobado');
         });
     });
-    describe('DELETE /organizations/:organizationId/activos/:activoId', () => {
+    describe('DELETE /areas/:areaId/activos/:activoId', () => {
         it('elimina activo y devuelve 204', async () => {
             const createRes = await authRequest(app, adminAuth.accessToken)
-                .post(`${API_ORGS}/${org.id}/activos`)
+                .post(`${AREAS_API_PREFIX}/${org.id}/activos`)
                 .send({
                 organizationId: org.id,
                 ownerId: prestadorProfileId,
@@ -102,7 +101,7 @@ describe('Activos endpoints (integration)', () => {
                 .expect(201);
             const idToDelete = createRes.body.data.id;
             await authRequest(app, adminAuth.accessToken)
-                .delete(`${API_ORGS}/${org.id}/activos/${idToDelete}`)
+                .delete(`${AREAS_API_PREFIX}/${org.id}/activos/${idToDelete}`)
                 .expect(204);
         });
     });

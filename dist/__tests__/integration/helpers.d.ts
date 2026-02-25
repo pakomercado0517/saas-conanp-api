@@ -81,6 +81,10 @@ export declare function createPrestadorProfile(app: Application, accessToken: st
     organizationId: string;
     status: string;
 }>;
+/** Prefijo de rutas de áreas (recomendado). Compatible también con /api/v1/organizations. */
+export declare const AREAS_API_PREFIX = "/api/v1/areas";
+/** Prefijo de rutas de organizaciones (compatibilidad). */
+export declare const ORGANIZATIONS_API_PREFIX = "/api/v1/organizations";
 /** Retorno de authRequest: métodos HTTP que inyectan el Bearer token. */
 type AuthRequestReturn = {
     get: (url: string) => ReturnType<ReturnType<typeof request>['get']>;

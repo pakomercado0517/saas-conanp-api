@@ -104,4 +104,20 @@ export declare const checkActivosLimit: (areaId: UUID) => Promise<void>;
  * @throws {ValidationError} Si se excede el límite
  */
 export declare const checkOrganizationsLimit: (planId: UUID) => Promise<void>;
+/**
+ * Obtiene la suscripción activa de una dependencia (con plan).
+ */
+export declare const getActiveSubscriptionByDependencia: (dependenciaId: UUID) => Promise<(Subscription & {
+    SubscriptionPlan?: SubscriptionPlan;
+}) | null>;
+/**
+ * Verifica el límite de áreas por dependencia en plan FREE.
+ * FREE = 1 área por dependencia. Llamar antes de crear área bajo dependencia.
+ */
+export declare const checkAreasLimitForDependencia: (dependenciaId: UUID) => Promise<void>;
+/**
+ * Verifica el límite de dependencias FREE por usuario (autoservicio).
+ * FREE = 1 dependencia con plan free por usuario. Llamar antes de crear dependencia.
+ */
+export declare const checkDependenciasLimitForUser: (userId: UUID) => Promise<void>;
 //# sourceMappingURL=subscription-limits.service.d.ts.map

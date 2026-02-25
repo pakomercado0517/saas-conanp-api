@@ -1,5 +1,7 @@
 import * as invitationService from '../services/invitation.service.js';
 import * as invitationEmailProofService from '../services/invitation-email-proof.service.js';
+import { validateDependenciaInvitationToken } from '../../../modules/dependencias/services/dependencia-invitation.service.js';
+import { NotFoundError } from '../../../shared/errors/index.js';
 import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
 const getOrganizationId = (req) => {
     const id = req.areaId ?? req.organizationId ?? req.params['areaId'] ?? req.params['organizationId'];
@@ -42,12 +44,22 @@ export const revokeInvitation = async (req, res) => {
 };
 /**
  * POST /api/v1/invitations/validate
- * Público: valida token para mostrar formulario de registro en frontend.
+ * Público: valida token (área o dependencia) para mostrar formulario de registro en frontend.
+ * Intenta primero invitación a área; si no existe, intenta invitación a dependencia.
  */
 export const validateInvitationToken = async (req, res) => {
     const { invitationId, token } = req.body;
-    const result = await invitationService.validateInvitationToken(invitationId, token);
-    return sendSuccess(res, result, 'Invitación válida');
+    try {
+        const result = await invitationService.validateInvitationToken(invitationId, token);
+        return sendSuccess(res, { ...result, type: 'area' }, 'Invitación válida');
+    }
+    catch (err) {
+        if (err instanceof NotFoundError) {
+            const depResult = await validateDependenciaInvitationToken(invitationId, token);
+            return sendSuccess(res, depResult, 'Invitación válida');
+        }
+        throw err;
+    }
 };
 /**
  * POST /api/v1/invitations/verify-email/start

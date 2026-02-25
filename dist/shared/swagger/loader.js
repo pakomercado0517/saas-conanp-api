@@ -10,6 +10,7 @@ import '../../modules/users/swagger/user.swagger.js';
 import '../../modules/users/swagger/membership.swagger.js';
 import '../../modules/users/swagger/invitation.swagger.js';
 import '../../modules/organizations/swagger/organization.swagger.js';
+import '../../modules/dependencias/swagger/dependencia.swagger.js';
 import '../../modules/actividades/swagger/actividad.swagger.js';
 // TODO: Importar documentación de otros módulos aquí cuando se creen
 import '../../modules/bloques/swagger/bloque.swagger.js';
