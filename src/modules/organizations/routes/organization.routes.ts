@@ -1,5 +1,6 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import {
+  createOrganization,
   getOrganizationById,
   listOrganizations,
   updateOrganization,
@@ -7,6 +8,7 @@ import {
   getConfigAcceso,
 } from '../controllers/organization.controller.js';
 import {
+  validateCreateOrganization,
   validateUpdateOrganization,
   validateListOrganizations,
 } from '../middleware/validation.middleware.js';
@@ -32,6 +34,14 @@ import movimientoStockAccesoRouter from '@/modules/productos-acceso/routes/movim
  * Parámetro de ruta: areaId. Montado en /api/v1/areas y /api/v1/organizations (compatibilidad).
  */
 const organizationRouter: ExpressRouter = Router();
+
+/**
+ * POST /api/v1/areas (o /api/v1/organizations)
+ * Crea dependencia y primera área (onboarding). Sin auth.
+ * @deprecated Preferir flujo: POST /dependencias (auth) + POST /dependencias/:dependenciaId/areas.
+ * Se mantiene por compatibilidad; la respuesta incluye cabecera X-Deprecation-Warning.
+ */
+organizationRouter.post('/', validateCreateOrganization, createOrganization);
 
 /**
  * GET /api/v1/areas (o /api/v1/organizations)

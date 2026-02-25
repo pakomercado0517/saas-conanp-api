@@ -7,6 +7,7 @@ import {
   createTestOrganization,
   bootstrapOrganizationWithSubscription,
   authRequest,
+  AREAS_API_PREFIX,
   type AuthResult,
   type OrganizationData,
 } from './helpers.js';
@@ -37,10 +38,10 @@ describe('Invitaciones y registro con invitación (integration)', () => {
     process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'true';
   });
 
-  describe('POST /organizations/:organizationId/invitations', () => {
+  describe('POST /areas/:areaId/invitations', () => {
     it('crea invitación y devuelve 201 (email puede fallar en test)', async () => {
       const res = await authRequest(app, adminAuth.accessToken)
-        .post(`${API}/organizations/${org.id}/invitations`)
+        .post(`${AREAS_API_PREFIX}/${org.id}/invitations`)
         .send({ email: invitedEmail, role: 'prestador' });
 
       if (res.status === 201) {

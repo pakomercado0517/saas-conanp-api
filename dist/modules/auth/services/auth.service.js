@@ -5,10 +5,12 @@ import { DateTime } from 'luxon';
 import { randomBytes } from 'crypto';
 import { User } from '../../../modules/users/models/user.model.js';
 import { Membership } from '../../../modules/users/models/membership.model.js';
+import { DependenciaMembership } from '../../../modules/dependencias/models/dependencia-membership.model.js';
 import { RefreshToken } from '../../../modules/auth/models/refresh-token.model.js';
-import { ConflictError, UnauthorizedError, BadRequestError } from '../../../shared/errors/index.js';
+import { ConflictError, UnauthorizedError, BadRequestError, NotFoundError, } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
 import { consumeInvitationForRegistration, consumeInvitationAfterProof, } from '../../../modules/users/services/invitation.service.js';
+import { consumeDependenciaInvitationForRegistration } from '../../../modules/dependencias/services/dependencia-invitation.service.js';
 import { consumeProofForRegistration } from '../../../modules/users/services/invitation-email-proof.service.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../../../shared/email/index.js';
 /**
@@ -121,15 +123,23 @@ const generateVerificationToken = async () => {
     return { token, hashedToken };
 };
 const isTestBypassRegister = process.env['NODE_ENV'] === 'test' && process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] === 'true';
-/**
- * Registra un nuevo usuario con invitación válida (o sin ella solo en test con bypass).
- * - Con invitación (link/token): consume invitación, crea usuario con emailVerified=true, no envía correo de verificación.
- * - Sin invitación (solo test bypass): crea usuario con emailVerified=false y envía email de verificación.
- */
 export const register = async (data) => {
     let invitationData = null;
     if (data.invitationId && data.token) {
-        invitationData = await consumeInvitationForRegistration(data.invitationId, data.token, data.email);
+        try {
+            invitationData = await consumeInvitationForRegistration(data.invitationId, data.token, data.email);
+        }
+        catch (err) {
+            if (err instanceof NotFoundError) {
+                invitationData = {
+                    ...(await consumeDependenciaInvitationForRegistration(data.invitationId, data.token, data.email)),
+                    type: 'dependencia',
+                };
+            }
+            else {
+                throw err;
+            }
+        }
     }
     else if (data.invitationId && data.invitationProof && data.email) {
         await consumeProofForRegistration(data.invitationId, data.email, data.invitationProof);
@@ -167,12 +177,22 @@ export const register = async (data) => {
     }
     const user = await User.create(userPayload);
     if (invitationData) {
-        await Membership.create({
-            userId: user.id,
-            areaId: invitationData.organizationId, // API usa "organizationId" pero el valor es areaId
-            role: invitationData.role,
-            status: 'activo',
-        });
+        if ('dependenciaId' in invitationData && invitationData.type === 'dependencia') {
+            await DependenciaMembership.create({
+                userId: user.id,
+                dependenciaId: invitationData.dependenciaId,
+                role: invitationData.role,
+                status: 'activo',
+            });
+        }
+        else {
+            await Membership.create({
+                userId: user.id,
+                areaId: invitationData.organizationId,
+                role: invitationData.role,
+                status: 'activo',
+            });
+        }
     }
     if (!registeredViaInvitation && verificationTokenPlain) {
         await sendVerificationEmail({
@@ -184,7 +204,10 @@ export const register = async (data) => {
     logger.info({
         userId: user.id,
         email: user.email,
-        ...(invitationData && { organizationId: invitationData.organizationId }),
+        ...(invitationData &&
+            'organizationId' in invitationData && { organizationId: invitationData.organizationId }),
+        ...(invitationData &&
+            'dependenciaId' in invitationData && { dependenciaId: invitationData.dependenciaId }),
         emailVerifiedViaInvitation: registeredViaInvitation,
     }, registeredViaInvitation
         ? 'Usuario registrado con invitación, email considerado verificado'

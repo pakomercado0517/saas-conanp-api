@@ -13,7 +13,8 @@ import type { PaginationMeta } from '../../../shared/responses/types.js';
  */
 export declare const assertCanAccessOrganization: (userId: UUID, areaId: UUID) => Promise<void>;
 /**
- * Valida que el usuario tenga acceso a la dependencia (membresía activa en al menos un área de esa dependencia).
+ * Valida que el usuario tenga acceso a la dependencia.
+ * Primero comprueba DependenciaMembership (owner/admin en la dependencia); si no hay, comprueba membresía en al menos un área de esa dependencia.
  */
 export declare const assertCanAccessDependencia: (userId: UUID, dependenciaId: UUID) => Promise<void>;
 /**

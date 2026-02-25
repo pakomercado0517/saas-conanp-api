@@ -63,10 +63,14 @@ export const PaginationParamsSchema = z.object({
     sortOrder: z.enum(['asc', 'desc']).default('desc').describe('Orden de clasificación'),
 });
 /**
- * Schema de parámetro organizationId en URL
+ * Schema de parámetro organizationId/areaId en URL.
+ * En rutas bajo /api/v1/areas el parámetro se llama areaId; en /api/v1/organizations, organizationId. Mismo valor (UUID del área).
  */
 export const OrganizationIdParamSchema = z.object({
-    organizationId: z.string().uuid().describe('ID único de la organización (ANP)'),
+    organizationId: z
+        .string()
+        .uuid()
+        .describe('ID del área (ANP). En /api/v1/areas se usa el nombre areaId.'),
 });
 /**
  * Respuestas de error comunes reutilizables

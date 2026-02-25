@@ -140,7 +140,7 @@ export async function createTestOrganization(app, body) {
         return area.toJSON();
     }
     const res = await request(app)
-        .post(`${API_PREFIX}/organizations`)
+        .post(`${AREAS_API_PREFIX}`)
         .send({ name, ecosystem_type })
         .expect(201);
     const data = res.body.data;
@@ -202,7 +202,7 @@ export async function bootstrapOrganizationWithSubscription(userId, organization
  */
 export async function createMembership(app, accessToken, organizationId, body) {
     const res = await request(app)
-        .post(`${API_PREFIX}/organizations/${organizationId}/memberships`)
+        .post(`${AREAS_API_PREFIX}/${organizationId}/memberships`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
         userId: body.userId,
@@ -220,7 +220,7 @@ export async function createMembership(app, accessToken, organizationId, body) {
  */
 export async function createPrestadorProfile(app, accessToken, organizationId, body) {
     const res = await request(app)
-        .post(`${API_PREFIX}/organizations/${organizationId}/prestadores`)
+        .post(`${AREAS_API_PREFIX}/${organizationId}/prestadores`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
         userId: body.userId,
@@ -233,6 +233,10 @@ export async function createPrestadorProfile(app, accessToken, organizationId, b
         throw new Error('Create prestador profile failed');
     return data;
 }
+/** Prefijo de rutas de áreas (recomendado). Compatible también con /api/v1/organizations. */
+export const AREAS_API_PREFIX = `${API_PREFIX}/areas`;
+/** Prefijo de rutas de organizaciones (compatibilidad). */
+export const ORGANIZATIONS_API_PREFIX = `${API_PREFIX}/organizations`;
 /**
  * Helper para peticiones autenticadas.
  * request(app) devuelve un objeto con .get, .post, etc.; .set() está en la cadena de cada método.

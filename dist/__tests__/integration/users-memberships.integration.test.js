@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import app from '../../server.js';
-import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationWithSubscription, createMembership, authRequest, } from './helpers.js';
-const API_ORGS = '/api/v1/organizations';
+import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationWithSubscription, createMembership, authRequest, AREAS_API_PREFIX, } from './helpers.js';
 const API_USERS = '/api/v1/users';
 describe('Users endpoints (integration)', () => {
     let auth;
@@ -65,7 +64,7 @@ describe('Memberships endpoints (integration)', () => {
         org = await createTestOrganization(app, { name: 'Org Memberships' });
         await bootstrapOrganizationWithSubscription(adminAuth.user.id, org.id);
     });
-    describe('POST /organizations/:organizationId/memberships', () => {
+    describe('POST /areas/:areaId/memberships', () => {
         it('invita usuario y devuelve 201', async () => {
             const membership = await createMembership(app, adminAuth.accessToken, org.id, {
                 userId: memberAuth.user.id,
@@ -81,10 +80,10 @@ describe('Memberships endpoints (integration)', () => {
             expect(membership).toHaveProperty('id');
         });
     });
-    describe('GET /organizations/:organizationId/memberships', () => {
+    describe('GET /areas/:areaId/memberships', () => {
         it('lista memberships y devuelve 200', async () => {
             const res = await authRequest(app, adminAuth.accessToken)
-                .get(`${API_ORGS}/${org.id}/memberships`)
+                .get(`${AREAS_API_PREFIX}/${org.id}/memberships`)
                 .expect(200);
             expect(res.body.success).toBe(true);
             expect(res.body).toHaveProperty('data');
@@ -92,34 +91,34 @@ describe('Memberships endpoints (integration)', () => {
             expect(res.body).toHaveProperty('pagination');
         });
     });
-    describe('PATCH /organizations/:organizationId/memberships/:membershipId', () => {
+    describe('PATCH /areas/:areaId/memberships/:membershipId', () => {
         it('actualiza rol y devuelve 200', async () => {
             const listRes = await authRequest(app, adminAuth.accessToken)
-                .get(`${API_ORGS}/${org.id}/memberships`)
+                .get(`${AREAS_API_PREFIX}/${org.id}/memberships`)
                 .query({ limit: 10 });
             const membershipId = listRes.body.data?.find((m) => m.userId === memberAuth.user.id)?.id;
             if (!membershipId)
                 throw new Error('Membership not found');
             const res = await authRequest(app, adminAuth.accessToken)
-                .patch(`${API_ORGS}/${org.id}/memberships/${membershipId}`)
+                .patch(`${AREAS_API_PREFIX}/${org.id}/memberships/${membershipId}`)
                 .send({ role: 'observador' })
                 .expect(200);
             expect(res.body.success).toBe(true);
             expect(res.body.data.role).toBe('observador');
         });
     });
-    describe('DELETE /organizations/:organizationId/memberships/:membershipId', () => {
+    describe('DELETE /areas/:areaId/memberships/:membershipId', () => {
         it('elimina membership y devuelve 204', async () => {
             const invitee = await createTestUserAndToken(app, {
                 email: `invitee-${Date.now()}@example.com`,
             });
             const createRes = await authRequest(app, adminAuth.accessToken)
-                .post(`${API_ORGS}/${org.id}/memberships`)
+                .post(`${AREAS_API_PREFIX}/${org.id}/memberships`)
                 .send({ userId: invitee.user.id, role: 'observador' })
                 .expect(201);
             const membershipId = createRes.body.data.id;
             await authRequest(app, adminAuth.accessToken)
-                .delete(`${API_ORGS}/${org.id}/memberships/${membershipId}`)
+                .delete(`${AREAS_API_PREFIX}/${org.id}/memberships/${membershipId}`)
                 .expect(204);
         });
     });

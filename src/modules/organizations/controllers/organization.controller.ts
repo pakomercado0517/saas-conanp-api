@@ -13,14 +13,18 @@ import type {
 } from '../validators/organization.validator.js';
 
 /**
- * Crea una nueva organización
- *
- * POST /api/v1/organizations
+ * Crea una nueva organización (dependencia + primera área). Onboarding sin auth.
+ * POST /api/v1/areas o POST /api/v1/organizations
+ * @deprecated Usar POST /dependencias y POST /dependencias/:dependenciaId/areas para el nuevo flujo.
  */
 export const createOrganization = async (req: Request, res: Response): Promise<Response> => {
   const data = req.body as CreateOrganizationDTO;
   const result = await organizationService.createOrganization(data);
 
+  res.set(
+    'X-Deprecation-Warning',
+    'POST /areas (onboarding) está deprecado. Use POST /dependencias y POST /dependencias/:dependenciaId/areas.'
+  );
   return sendCreated(res, result, 'Organización creada exitosamente');
 };
 

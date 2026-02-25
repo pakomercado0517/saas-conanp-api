@@ -6,7 +6,9 @@ import { Dependencia } from '../../../modules/dependencias/models/dependencia.mo
 import { Area } from '../../../modules/areas/models/area.model.js';
 import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
 import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
-import { createFreeSubscriptionForOrganization } from '../../../modules/subscriptions/services/subscription.service.js';
+import { createFreeSubscriptionForOrganization, createFreeSubscriptionForDependencia, } from '../../../modules/subscriptions/services/subscription.service.js';
+import { DependenciaInvitation } from '../../../modules/dependencias/models/dependencia-invitation.model.js';
+import { DependenciaMembership } from '../../../modules/dependencias/models/dependencia-membership.model.js';
 import { Membership } from '../../../modules/users/models/membership.model.js';
 import { User } from '../../../modules/users/models/user.model.js';
 import { Invitation } from '../../../modules/users/models/invitation.model.js';
@@ -112,6 +114,91 @@ export const createOrganization = async (data, actor) => {
             adminEmail: normalizedAdminEmail,
             ...(membershipId && { membershipId }),
             ...(invitationId && { invitationId }),
+        };
+    });
+};
+/**
+ * Crea solo dependencia + invitación al primer admin (sin área). Super admin.
+ * El invitado al registrarse obtendrá DependenciaMembership.
+ */
+export const createDependenciaWithAdminInvitation = async (data, actor) => {
+    return sequelize.transaction(async (transaction) => {
+        const normalizedAdminEmail = data.admin_email.trim().toLowerCase();
+        const dependencia = await Dependencia.create({ name: data.name, settings: data.settings ?? {} }, { transaction });
+        const targetUser = await User.findOne({
+            where: { email: normalizedAdminEmail },
+            paranoid: false,
+            transaction,
+        });
+        if (targetUser?.deletedAt) {
+            throw new ValidationError('No se puede asignar como admin a un usuario eliminado. Usa otro email.', undefined, { admin_email: normalizedAdminEmail });
+        }
+        let adminAssignment;
+        let invitationId;
+        let membershipId;
+        if (targetUser) {
+            const existing = await DependenciaMembership.findOne({
+                where: { userId: targetUser.id, dependenciaId: dependencia.id },
+                transaction,
+            });
+            if (existing) {
+                throw new ConflictError('El usuario ya es miembro de esta dependencia', {
+                    userId: targetUser.id,
+                    dependenciaId: dependencia.id,
+                });
+            }
+            const membership = await DependenciaMembership.create({
+                userId: targetUser.id,
+                dependenciaId: dependencia.id,
+                role: 'admin',
+                status: 'activo',
+            }, { transaction });
+            adminAssignment = 'membership_created';
+            membershipId = membership.id;
+        }
+        else {
+            const token = randomBytes(32).toString('hex');
+            const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
+            const expiresAt = DateTime.now().plus({ days: INVITATION_EXPIRES_DAYS }).toJSDate();
+            const invitation = await DependenciaInvitation.create({
+                dependenciaId: dependencia.id,
+                email: normalizedAdminEmail,
+                role: 'admin',
+                tokenHash,
+                invitedBy: actor.userId,
+                status: 'pending',
+                expiresAt,
+            }, { transaction });
+            try {
+                await sendInvitationEmail({
+                    to: normalizedAdminEmail,
+                    organizationName: dependencia.name,
+                    role: 'admin',
+                    invitationId: invitation.id,
+                    token,
+                    invitedBy: actor.email,
+                });
+            }
+            catch {
+                throw new BadRequestError('No se pudo enviar la invitación del admin inicial. Intenta nuevamente.');
+            }
+            adminAssignment = 'invitation_created';
+            invitationId = invitation.id;
+        }
+        await createFreeSubscriptionForDependencia(dependencia.id, transaction);
+        logger.info({
+            dependenciaId: dependencia.id,
+            name: dependencia.name,
+            adminAssignment,
+            admin_email: normalizedAdminEmail,
+        }, 'Dependencia creada por super admin con invitación al primer admin (sin área)');
+        return {
+            dependenciaId: dependencia.id,
+            name: dependencia.name,
+            adminAssignment,
+            adminEmail: normalizedAdminEmail,
+            ...(invitationId && { invitationId }),
+            ...(membershipId && { membershipId }),
         };
     });
 };

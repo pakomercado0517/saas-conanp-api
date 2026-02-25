@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { Dependencia } from '../../../modules/dependencias/models/dependencia.model.js';
+import { DependenciaMembership } from '../../../modules/dependencias/models/dependencia-membership.model.js';
 import { Area } from '../../../modules/areas/models/area.model.js';
 import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
 import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
@@ -45,9 +46,15 @@ export const assertCanAccessOrganization = async (userId, areaId) => {
     }
 };
 /**
- * Valida que el usuario tenga acceso a la dependencia (membresía activa en al menos un área de esa dependencia).
+ * Valida que el usuario tenga acceso a la dependencia.
+ * Primero comprueba DependenciaMembership (owner/admin en la dependencia); si no hay, comprueba membresía en al menos un área de esa dependencia.
  */
 export const assertCanAccessDependencia = async (userId, dependenciaId) => {
+    const depMembership = await DependenciaMembership.findOne({
+        where: { userId, dependenciaId, status: 'activo' },
+    });
+    if (depMembership)
+        return;
     const areasOfDep = await Area.findAll({
         where: { dependenciaId },
         attributes: ['id'],

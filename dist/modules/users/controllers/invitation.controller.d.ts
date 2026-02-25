@@ -13,7 +13,8 @@ export declare const listInvitations: (req: Request, res: Response) => Promise<R
 export declare const revokeInvitation: (req: Request, res: Response) => Promise<Response>;
 /**
  * POST /api/v1/invitations/validate
- * Público: valida token para mostrar formulario de registro en frontend.
+ * Público: valida token (área o dependencia) para mostrar formulario de registro en frontend.
+ * Intenta primero invitación a área; si no existe, intenta invitación a dependencia.
  */
 export declare const validateInvitationToken: (req: Request, res: Response) => Promise<Response>;
 /**

@@ -16,6 +16,26 @@ export declare const createOrganization: (data: CreateOrganizationDTO, actor: {
     userId: UUID;
     email: string;
 }) => Promise<CreateOrganizationAdminResult>;
+export interface CreateDependenciaAdminResult extends Record<string, unknown> {
+    dependenciaId: UUID;
+    name: string;
+    adminAssignment: 'invitation_created' | 'membership_created';
+    adminEmail: string;
+    invitationId?: UUID;
+    membershipId?: UUID;
+}
+/**
+ * Crea solo dependencia + invitación al primer admin (sin área). Super admin.
+ * El invitado al registrarse obtendrá DependenciaMembership.
+ */
+export declare const createDependenciaWithAdminInvitation: (data: {
+    name: string;
+    admin_email: string;
+    settings?: Record<string, unknown>;
+}, actor: {
+    userId: UUID;
+    email: string;
+}) => Promise<CreateDependenciaAdminResult>;
 /**
  * Lista todas las áreas con paginación y filtros (super admin).
  * Incluye suscripción vía dependencia.

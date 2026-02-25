@@ -50,11 +50,12 @@ La mayoría de los endpoints requieren autenticación mediante JWT (JSON Web Tok
 2. Usa el \`accessToken\` recibido en el header \`Authorization: Bearer <token>\`
 3. Cuando el token expire, usa el \`refreshToken\` en \`/api/v1/auth/refresh\` para obtener uno nuevo
 
-## Organización Multi-Tenant
-- Cada ANP es una organización (\`organizationId\`)
-- Los usuarios pertenecen a organizaciones mediante memberships
-- Todos los datos están aislados por organización
-- Requiere suscripción activa para acceder a funcionalidades
+## Áreas y dependencias (multi-tenant)
+- Cada ANP se expone como área (\`areaId\`) y pertenece a una dependencia
+- Rutas recomendadas: \`/api/v1/areas\` y \`/api/v1/areas/{areaId}/...\`; también disponibles bajo \`/api/v1/organizations\`
+- Los usuarios pertenecen a áreas mediante memberships
+- Los datos están aislados por dependencia/área
+- Requiere suscripción activa (por dependencia) para acceder a funcionalidades
     `.trim(),
         contact: {
             name: 'Equipo CONANP',

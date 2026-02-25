@@ -5,15 +5,22 @@ import { DateTime } from 'luxon';
 import { randomBytes } from 'crypto';
 import { User, type UserCreationAttributes } from '@/modules/users/models/user.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
+import { DependenciaMembership } from '@/modules/dependencias/models/dependencia-membership.model.js';
 import { RefreshToken } from '@/modules/auth/models/refresh-token.model.js';
 import type { RegisterDTO, LoginDTO } from '../validators/auth.validator.js';
-import { ConflictError, UnauthorizedError, BadRequestError } from '@/shared/errors/index.js';
+import {
+  ConflictError,
+  UnauthorizedError,
+  BadRequestError,
+  NotFoundError,
+} from '@/shared/errors/index.js';
 import { logger } from '@/shared/logger/index.js';
 import {
   consumeInvitationForRegistration,
   consumeInvitationAfterProof,
   type ConsumeInvitationResult,
 } from '@/modules/users/services/invitation.service.js';
+import { consumeDependenciaInvitationForRegistration } from '@/modules/dependencias/services/dependencia-invitation.service.js';
 import { consumeProofForRegistration } from '@/modules/users/services/invitation-email-proof.service.js';
 import type {
   AuthResponse,
@@ -166,15 +173,36 @@ const isTestBypassRegister =
  * - Con invitación (link/token): consume invitación, crea usuario con emailVerified=true, no envía correo de verificación.
  * - Sin invitación (solo test bypass): crea usuario con emailVerified=false y envía email de verificación.
  */
+type InvitationConsumeResult =
+  | (ConsumeInvitationResult & { type?: 'area' })
+  | (import('@/modules/dependencias/services/dependencia-invitation.service.js').ConsumeDependenciaInvitationResult & {
+      type: 'dependencia';
+    });
+
 export const register = async (data: RegisterDTO): Promise<RegisterResponse> => {
-  let invitationData: ConsumeInvitationResult | null = null;
+  let invitationData: InvitationConsumeResult | null = null;
 
   if (data.invitationId && data.token) {
-    invitationData = await consumeInvitationForRegistration(
-      data.invitationId,
-      data.token,
-      data.email
-    );
+    try {
+      invitationData = await consumeInvitationForRegistration(
+        data.invitationId,
+        data.token,
+        data.email
+      );
+    } catch (err) {
+      if (err instanceof NotFoundError) {
+        invitationData = {
+          ...(await consumeDependenciaInvitationForRegistration(
+            data.invitationId,
+            data.token,
+            data.email
+          )),
+          type: 'dependencia',
+        };
+      } else {
+        throw err;
+      }
+    }
   } else if (data.invitationId && data.invitationProof && data.email) {
     await consumeProofForRegistration(data.invitationId, data.email, data.invitationProof);
     invitationData = await consumeInvitationAfterProof(data.invitationId, data.email);
@@ -220,12 +248,21 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
   const user = await User.create(userPayload);
 
   if (invitationData) {
-    await Membership.create({
-      userId: user.id,
-      areaId: invitationData.organizationId, // API usa "organizationId" pero el valor es areaId
-      role: invitationData.role,
-      status: 'activo',
-    });
+    if ('dependenciaId' in invitationData && invitationData.type === 'dependencia') {
+      await DependenciaMembership.create({
+        userId: user.id,
+        dependenciaId: invitationData.dependenciaId,
+        role: invitationData.role as 'owner' | 'admin' | 'gestor' | 'prestador' | 'observador',
+        status: 'activo',
+      });
+    } else {
+      await Membership.create({
+        userId: user.id,
+        areaId: (invitationData as ConsumeInvitationResult).organizationId,
+        role: (invitationData as ConsumeInvitationResult).role,
+        status: 'activo',
+      });
+    }
   }
 
   if (!registeredViaInvitation && verificationTokenPlain) {
@@ -240,7 +277,10 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
     {
       userId: user.id,
       email: user.email,
-      ...(invitationData && { organizationId: invitationData.organizationId }),
+      ...(invitationData &&
+        'organizationId' in invitationData && { organizationId: invitationData.organizationId }),
+      ...(invitationData &&
+        'dependenciaId' in invitationData && { dependenciaId: invitationData.dependenciaId }),
       emailVerifiedViaInvitation: registeredViaInvitation,
     },
     registeredViaInvitation

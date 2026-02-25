@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import bcrypt from 'bcrypt';
 import app from '../../server.js';
 import request from 'supertest';
-import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationWithSubscription, authRequest, } from './helpers.js';
+import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationWithSubscription, authRequest, AREAS_API_PREFIX, } from './helpers.js';
 import { DateTime } from 'luxon';
 import { Invitation } from '../../modules/users/models/invitation.model.js';
 import { InvitationEmailProof } from '../../modules/users/models/invitation-email-proof.model.js';
@@ -25,10 +25,10 @@ describe('Invitaciones y registro con invitación (integration)', () => {
     afterAll(() => {
         process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'true';
     });
-    describe('POST /organizations/:organizationId/invitations', () => {
+    describe('POST /areas/:areaId/invitations', () => {
         it('crea invitación y devuelve 201 (email puede fallar en test)', async () => {
             const res = await authRequest(app, adminAuth.accessToken)
-                .post(`${API}/organizations/${org.id}/invitations`)
+                .post(`${AREAS_API_PREFIX}/${org.id}/invitations`)
                 .send({ email: invitedEmail, role: 'prestador' });
             if (res.status === 201) {
                 expect(res.body.success).toBe(true);

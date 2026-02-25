@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, getConfigAcceso, } from '../controllers/organization.controller.js';
-import { validateUpdateOrganization, validateListOrganizations, } from '../middleware/validation.middleware.js';
+import { createOrganization, getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, getConfigAcceso, } from '../controllers/organization.controller.js';
+import { validateCreateOrganization, validateUpdateOrganization, validateListOrganizations, } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
 import membershipRouter from '../../../modules/users/routes/membership.routes.js';
 import invitationRouter from '../../../modules/users/routes/invitation.routes.js';
@@ -22,6 +22,13 @@ import movimientoStockAccesoRouter from '../../../modules/productos-acceso/route
  * Parámetro de ruta: areaId. Montado en /api/v1/areas y /api/v1/organizations (compatibilidad).
  */
 const organizationRouter = Router();
+/**
+ * POST /api/v1/areas (o /api/v1/organizations)
+ * Crea dependencia y primera área (onboarding). Sin auth.
+ * @deprecated Preferir flujo: POST /dependencias (auth) + POST /dependencias/:dependenciaId/areas.
+ * Se mantiene por compatibilidad; la respuesta incluye cabecera X-Deprecation-Warning.
+ */
+organizationRouter.post('/', validateCreateOrganization, createOrganization);
 /**
  * GET /api/v1/areas (o /api/v1/organizations)
  * Lista áreas con paginación y filtros (solo las que el usuario tiene acceso)

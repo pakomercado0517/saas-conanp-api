@@ -140,14 +140,14 @@ registry.registerPath({
   },
 });
 
-// GET /api/v1/organizations
+// GET /api/v1/areas y GET /api/v1/organizations (mismo contrato; parámetro de ruta: areaId)
 registry.registerPath({
   method: 'get',
   path: '/api/v1/organizations',
-  tags: ['Organizaciones'],
-  summary: 'Listar organizaciones',
+  tags: ['Organizaciones / Áreas'],
+  summary: 'Listar áreas (organizaciones)',
   description:
-    'Obtiene la lista de organizaciones a las que el usuario tiene acceso. Soporta paginación, ordenamiento y filtros.',
+    'Obtiene la lista de áreas (ANPs) a las que el usuario tiene acceso. También disponible como GET /api/v1/areas. Soporta paginación, ordenamiento y filtros.',
   security: [{ bearerAuth: [] }],
   request: {
     query: ListOrganizationsSchema,
@@ -202,18 +202,18 @@ registry.registerPath({
   },
 });
 
-// GET /api/v1/organizations/:organizationId
+// GET /api/v1/areas/:areaId y GET /api/v1/organizations/:areaId (parámetro: areaId)
 registry.registerPath({
   method: 'get',
   path: '/api/v1/organizations/{organizationId}',
-  tags: ['Organizaciones'],
-  summary: 'Obtener organización por ID',
+  tags: ['Organizaciones / Áreas'],
+  summary: 'Obtener área por ID',
   description:
-    'Obtiene los detalles completos de una organización específica. El usuario debe tener acceso a la organización.',
+    'Obtiene los detalles de un área (ANP). El usuario debe tener acceso. También disponible como GET /api/v1/areas/{areaId}. El parámetro es el UUID del área.',
   security: [{ bearerAuth: [] }],
   request: {
     params: z.object({
-      organizationId: z.string().uuid().describe('ID de la organización'),
+      organizationId: z.string().uuid().describe('ID del área (areaId)'),
     }),
   },
   responses: {
@@ -254,18 +254,18 @@ registry.registerPath({
   },
 });
 
-// PATCH /api/v1/organizations/:organizationId
+// PATCH /api/v1/areas/:areaId y PATCH /api/v1/organizations/:organizationId
 registry.registerPath({
   method: 'patch',
   path: '/api/v1/organizations/{organizationId}',
-  tags: ['Organizaciones'],
-  summary: 'Actualizar organización',
+  tags: ['Organizaciones / Áreas'],
+  summary: 'Actualizar área',
   description:
-    'Actualiza los datos de una organización. Solo usuarios con rol admin pueden actualizar organizaciones. Al menos un campo es requerido.',
+    'Actualiza los datos de un área (ANP). También disponible como PATCH /api/v1/areas/{areaId}. Solo usuarios con rol admin. Al menos un campo es requerido.',
   security: [{ bearerAuth: [] }],
   request: {
     params: z.object({
-      organizationId: z.string().uuid().describe('ID de la organización'),
+      organizationId: z.string().uuid().describe('ID del área (areaId)'),
     }),
     body: {
       content: {
@@ -337,18 +337,18 @@ registry.registerPath({
   },
 });
 
-// DELETE /api/v1/organizations/:organizationId
+// DELETE /api/v1/areas/:areaId y DELETE /api/v1/organizations/:organizationId
 registry.registerPath({
   method: 'delete',
   path: '/api/v1/organizations/{organizationId}',
-  tags: ['Organizaciones'],
-  summary: 'Eliminar organización',
+  tags: ['Organizaciones / Áreas'],
+  summary: 'Eliminar área',
   description:
-    'Elimina una organización (soft delete). Solo usuarios con rol admin pueden eliminar organizaciones. La organización se marca como eliminada pero no se borra de la base de datos.',
+    'Elimina un área (ANP) (soft delete). También disponible como DELETE /api/v1/areas/{areaId}. Solo usuarios con rol admin. Se marca como eliminada, no se borra de BD.',
   security: [{ bearerAuth: [] }],
   request: {
     params: z.object({
-      organizationId: z.string().uuid().describe('ID de la organización'),
+      organizationId: z.string().uuid().describe('ID del área (areaId)'),
     }),
   },
   responses: {

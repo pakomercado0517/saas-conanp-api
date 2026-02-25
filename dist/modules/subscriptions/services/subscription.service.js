@@ -278,6 +278,35 @@ export const createFreeSubscriptionForOrganization = async (areaId, transaction)
     return subscription;
 };
 /**
+ * Crea una suscripción FREE para una dependencia (sin Stripe, sin área).
+ * Usado al crear una dependencia sin área inicial (flujo CRUD dependencias).
+ *
+ * @param dependenciaId - ID de la dependencia
+ * @param transaction - Transacción opcional
+ * @returns Suscripción creada con plan "free"
+ */
+export const createFreeSubscriptionForDependencia = async (dependenciaId, transaction) => {
+    await assertNoExistingSubscription(dependenciaId);
+    const plan = await getFreePlan(transaction);
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    const subscription = await createSubscriptionInDatabase({
+        dependenciaId,
+        planId: plan.id,
+        status: 'active',
+        billingCycle: 'monthly',
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        stripeSubscriptionId: null,
+        stripeCustomerId: null,
+        stripePriceId: null,
+    }, transaction);
+    await invalidateSubscriptionCache(dependenciaId);
+    logger.info({ subscriptionId: subscription.id, dependenciaId, planId: plan.id }, 'Suscripción FREE creada para dependencia');
+    return subscription;
+};
+/**
  * Crea una suscripción completa: Stripe + base de datos.
  *
  * @param data - Datos para crear la suscripción
