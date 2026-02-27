@@ -31,4 +31,3 @@ export const requireOnboardingComplete = async (
 
   next();
 };
-

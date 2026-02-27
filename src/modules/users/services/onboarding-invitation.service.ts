@@ -175,5 +175,3 @@ export const consumeOnboardingInvitationForRegistration = async (
 
   return { type: 'onboarding' };
 };
-
-

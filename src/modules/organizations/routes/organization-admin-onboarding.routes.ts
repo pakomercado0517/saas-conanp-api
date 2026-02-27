@@ -11,7 +11,10 @@ const adminOnboardingRouter: ExpressRouter = Router();
 
 adminOnboardingRouter.use(authenticate, requireSuperAdmin);
 
-adminOnboardingRouter.post('/', validateCreateOnboardingInvitation, createOnboardingInvitationAdmin);
+adminOnboardingRouter.post(
+  '/',
+  validateCreateOnboardingInvitation,
+  createOnboardingInvitationAdmin
+);
 
 export default adminOnboardingRouter;
-

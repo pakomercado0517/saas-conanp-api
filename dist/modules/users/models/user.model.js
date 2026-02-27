@@ -69,6 +69,11 @@ User.init({
         type: DataTypes.DATE,
         allowNull: true,
     },
+    onboardingStatus: {
+        type: DataTypes.ENUM('pending_setup', 'completed'),
+        allowNull: false,
+        defaultValue: 'completed',
+    },
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,

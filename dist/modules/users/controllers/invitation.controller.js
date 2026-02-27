@@ -1,6 +1,7 @@
 import * as invitationService from '../services/invitation.service.js';
 import * as invitationEmailProofService from '../services/invitation-email-proof.service.js';
 import { validateDependenciaInvitationToken } from '../../../modules/dependencias/services/dependencia-invitation.service.js';
+import { validateOnboardingInvitationToken } from '../../../modules/users/services/onboarding-invitation.service.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { sendSuccess, sendCreated, sendPaginated, sendNoContent, } from '../../../shared/responses/helpers.js';
 const getOrganizationId = (req) => {
@@ -55,8 +56,17 @@ export const validateInvitationToken = async (req, res) => {
     }
     catch (err) {
         if (err instanceof NotFoundError) {
-            const depResult = await validateDependenciaInvitationToken(invitationId, token);
-            return sendSuccess(res, depResult, 'Invitación válida');
+            try {
+                const depResult = await validateDependenciaInvitationToken(invitationId, token);
+                return sendSuccess(res, depResult, 'Invitación válida');
+            }
+            catch (errDep) {
+                if (errDep instanceof NotFoundError) {
+                    const onboardingResult = await validateOnboardingInvitationToken(invitationId, token);
+                    return sendSuccess(res, onboardingResult, 'Invitación válida');
+                }
+                throw errDep;
+            }
         }
         throw err;
     }

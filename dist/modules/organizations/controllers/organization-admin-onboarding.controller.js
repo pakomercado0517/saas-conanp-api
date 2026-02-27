@@ -1,0 +1,21 @@
+import { sendCreated } from '../../../shared/responses/helpers.js';
+import { createOnboardingInvitation } from '../../../modules/users/services/onboarding-invitation.service.js';
+/**
+ * POST /api/v1/admin/onboarding-invitations
+ * Super admin: crea invitación de onboarding para primer admin (sin dependencia ni área).
+ */
+export const createOnboardingInvitationAdmin = async (req, res) => {
+    const data = req.body;
+    const userId = req.user?.userId;
+    const email = req.user?.email;
+    if (!userId || !email) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const result = await createOnboardingInvitation(data.email, userId, email);
+    return sendCreated(res, result, 'Invitación de onboarding creada y enviada por correo');
+};
+//# sourceMappingURL=organization-admin-onboarding.controller.js.map

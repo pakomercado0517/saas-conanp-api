@@ -18,11 +18,10 @@ export interface OnboardingInvitationAttributes {
   updatedAt: Date;
 }
 
-export interface OnboardingInvitationCreationAttributes
-  extends Optional<
-    OnboardingInvitationAttributes,
-    'id' | 'status' | 'usedAt' | 'revokedAt' | 'createdAt' | 'updatedAt'
-  > {}
+export interface OnboardingInvitationCreationAttributes extends Optional<
+  OnboardingInvitationAttributes,
+  'id' | 'status' | 'usedAt' | 'revokedAt' | 'createdAt' | 'updatedAt'
+> {}
 
 export class OnboardingInvitation
   extends Model<OnboardingInvitationAttributes, OnboardingInvitationCreationAttributes>
@@ -135,4 +134,3 @@ OnboardingInvitation.init(
 
 OnboardingInvitation.belongsTo(User, { foreignKey: 'invitedBy', as: 'InvitedByUser' });
 User.hasMany(OnboardingInvitation, { foreignKey: 'invitedBy', as: 'OnboardingInvitationsSent' });
-

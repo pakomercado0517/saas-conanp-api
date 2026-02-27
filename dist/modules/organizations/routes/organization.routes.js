@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createOrganization, getOrganizationById, listOrganizations, updateOrganization, deleteOrganization, getConfigAcceso, } from '../controllers/organization.controller.js';
 import { validateCreateOrganization, validateUpdateOrganization, validateListOrganizations, } from '../middleware/validation.middleware.js';
-import { authenticate, requireOrganizationAccess } from '../../../shared/middleware/index.js';
+import { authenticate, requireOrganizationAccess, requireOnboardingComplete, } from '../../../shared/middleware/index.js';
 import membershipRouter from '../../../modules/users/routes/membership.routes.js';
 import invitationRouter from '../../../modules/users/routes/invitation.routes.js';
 import actividadRouter from '../../../modules/actividades/routes/actividad.routes.js';
@@ -52,7 +52,7 @@ organizationRouter.post('/', validateCreateOrganization, createOrganization);
  *   message: "Organizaciones obtenidas exitosamente"
  * }
  */
-organizationRouter.get('/', authenticate, validateListOrganizations, listOrganizations);
+organizationRouter.get('/', authenticate, requireOnboardingComplete, validateListOrganizations, listOrganizations);
 /**
  * GET /api/v1/areas/:areaId (o /api/v1/organizations/:areaId)
  * Obtiene un área por ID. Params: areaId (UUID).
@@ -61,18 +61,18 @@ organizationRouter.get('/', authenticate, validateListOrganizations, listOrganiz
  * GET /api/v1/areas/:areaId/config-acceso
  * Configuración de acceso (brazaletes/pasaporte). Ruta más específica primero.
  */
-organizationRouter.get('/:areaId/config-acceso', authenticate, requireOrganizationAccess, getConfigAcceso);
-organizationRouter.get('/:areaId', authenticate, requireOrganizationAccess, getOrganizationById);
+organizationRouter.get('/:areaId/config-acceso', authenticate, requireOnboardingComplete, requireOrganizationAccess, getConfigAcceso);
+organizationRouter.get('/:areaId', authenticate, requireOnboardingComplete, requireOrganizationAccess, getOrganizationById);
 /**
  * PATCH /api/v1/areas/:areaId
  * Actualiza un área. Params: areaId. Body: name, ecosystem_type, settings (opcionales).
  */
-organizationRouter.patch('/:areaId', authenticate, requireOrganizationAccess, validateUpdateOrganization, updateOrganization);
+organizationRouter.patch('/:areaId', authenticate, requireOnboardingComplete, requireOrganizationAccess, validateUpdateOrganization, updateOrganization);
 /**
  * DELETE /api/v1/areas/:areaId
  * Elimina un área (soft delete). Params: areaId.
  */
-organizationRouter.delete('/:areaId', authenticate, requireOrganizationAccess, deleteOrganization);
+organizationRouter.delete('/:areaId', authenticate, requireOnboardingComplete, requireOrganizationAccess, deleteOrganization);
 organizationRouter.use('/:areaId/memberships', membershipRouter);
 organizationRouter.use('/:areaId/invitations', invitationRouter);
 organizationRouter.use('/:areaId/actividades', actividadRouter);

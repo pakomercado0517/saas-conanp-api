@@ -9,4 +9,3 @@ export const validateCreateOnboardingInvitation = (
   req.body = CreateOnboardingInvitationSchema.parse(req.body);
   next();
 };
-
