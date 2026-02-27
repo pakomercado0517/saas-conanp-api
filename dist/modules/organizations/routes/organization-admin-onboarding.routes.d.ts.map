@@ -1,0 +1,1 @@
+{"version":3,"file":"organization-admin-onboarding.routes.d.ts","sourceRoot":"","sources":["../../../../src/modules/organizations/routes/organization-admin-onboarding.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAU,KAAK,MAAM,IAAI,aAAa,EAAE,MAAM,SAAS,CAAC;AAK/D;;;GAGG;AACH,QAAA,MAAM,qBAAqB,EAAE,aAAwB,CAAC;AAUtD,eAAe,qBAAqB,CAAC"}

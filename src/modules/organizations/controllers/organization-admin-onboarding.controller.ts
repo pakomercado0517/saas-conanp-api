@@ -26,4 +26,3 @@ export const createOnboardingInvitationAdmin = async (
   const result = await createOnboardingInvitation(data.email, userId, email);
   return sendCreated(res, result, 'Invitación de onboarding creada y enviada por correo');
 };
-

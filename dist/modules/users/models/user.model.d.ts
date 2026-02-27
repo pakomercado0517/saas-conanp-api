@@ -10,11 +10,12 @@ export interface UserAttributes {
     emailVerificationExpiresAt: Date | null;
     passwordResetToken: string | null;
     passwordResetExpiresAt: Date | null;
+    onboardingStatus: 'pending_setup' | 'completed';
     createdAt: Date;
     updatedAt: Date;
     deletedAt: Date | null;
 }
-export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'emailVerified' | 'emailVerificationToken' | 'emailVerificationExpiresAt' | 'passwordResetToken' | 'passwordResetExpiresAt' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
+export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'emailVerified' | 'emailVerificationToken' | 'emailVerificationExpiresAt' | 'passwordResetToken' | 'passwordResetExpiresAt' | 'onboardingStatus' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
 }
 export declare class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
     id: UUID;
@@ -26,6 +27,7 @@ export declare class User extends Model<UserAttributes, UserCreationAttributes> 
     emailVerificationExpiresAt: Date | null;
     passwordResetToken: string | null;
     passwordResetExpiresAt: Date | null;
+    onboardingStatus: 'pending_setup' | 'completed';
     readonly createdAt: Date;
     readonly updatedAt: Date;
     deletedAt: Date | null;
