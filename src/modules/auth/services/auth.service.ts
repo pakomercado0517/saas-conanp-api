@@ -20,6 +20,7 @@ import {
   consumeInvitationAfterProof,
   type ConsumeInvitationResult,
 } from '@/modules/users/services/invitation.service.js';
+import { consumeOnboardingInvitationForRegistration } from '@/modules/users/services/onboarding-invitation.service.js';
 import { consumeDependenciaInvitationForRegistration } from '@/modules/dependencias/services/dependencia-invitation.service.js';
 import { consumeProofForRegistration } from '@/modules/users/services/invitation-email-proof.service.js';
 import type {
@@ -177,7 +178,8 @@ type InvitationConsumeResult =
   | (ConsumeInvitationResult & { type?: 'area' })
   | (import('@/modules/dependencias/services/dependencia-invitation.service.js').ConsumeDependenciaInvitationResult & {
       type: 'dependencia';
-    });
+    })
+  | { type: 'onboarding' };
 
 export const register = async (data: RegisterDTO): Promise<RegisterResponse> => {
   let invitationData: InvitationConsumeResult | null = null;
@@ -191,14 +193,26 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
       );
     } catch (err) {
       if (err instanceof NotFoundError) {
-        invitationData = {
-          ...(await consumeDependenciaInvitationForRegistration(
-            data.invitationId,
-            data.token,
-            data.email
-          )),
-          type: 'dependencia',
-        };
+        try {
+          invitationData = {
+            ...(await consumeDependenciaInvitationForRegistration(
+              data.invitationId,
+              data.token,
+              data.email
+            )),
+            type: 'dependencia',
+          };
+        } catch (errDep) {
+          if (errDep instanceof NotFoundError) {
+            invitationData = await consumeOnboardingInvitationForRegistration(
+              data.invitationId,
+              data.token,
+              data.email
+            );
+          } else {
+            throw errDep;
+          }
+        }
       } else {
         throw err;
       }
@@ -227,6 +241,11 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
   const registeredViaInvitation = invitationData != null;
 
   let verificationTokenPlain: string | null = null;
+  const onboardingStatus: 'pending_setup' | 'completed' =
+    invitationData && 'type' in invitationData && invitationData.type === 'onboarding'
+      ? 'pending_setup'
+      : 'completed';
+
   const userPayload: UserCreationAttributes = {
     email: data.email,
     password: hashedPassword,
@@ -234,6 +253,7 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
     emailVerified: registeredViaInvitation,
     emailVerificationToken: null,
     emailVerificationExpiresAt: null,
+    onboardingStatus,
   };
 
   if (!registeredViaInvitation) {

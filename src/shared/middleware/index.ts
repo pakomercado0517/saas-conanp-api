@@ -14,6 +14,7 @@ export {
   subscriptionChangePlanLimiter,
 } from './rate-limiter.js';
 export { authenticate, optionalAuthenticate } from './auth.middleware.js';
+export { requireOnboardingComplete } from './onboarding.middleware.js';
 export {
   requireOrganizationAccess,
   requireOrganizationAccessOnly,
