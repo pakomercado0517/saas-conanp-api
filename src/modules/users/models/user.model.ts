@@ -12,6 +12,7 @@ export interface UserAttributes {
   emailVerificationExpiresAt: Date | null;
   passwordResetToken: string | null;
   passwordResetExpiresAt: Date | null;
+  onboardingStatus: 'pending_setup' | 'completed';
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -25,6 +26,7 @@ export interface UserCreationAttributes extends Optional<
   | 'emailVerificationExpiresAt'
   | 'passwordResetToken'
   | 'passwordResetExpiresAt'
+  | 'onboardingStatus'
   | 'createdAt'
   | 'updatedAt'
   | 'deletedAt'
@@ -40,6 +42,7 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare emailVerificationExpiresAt: Date | null;
   declare passwordResetToken: string | null;
   declare passwordResetExpiresAt: Date | null;
+  declare onboardingStatus: 'pending_setup' | 'completed';
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
@@ -112,6 +115,11 @@ User.init(
     passwordResetExpiresAt: {
       type: DataTypes.DATE,
       allowNull: true,
+    },
+    onboardingStatus: {
+      type: DataTypes.ENUM('pending_setup', 'completed'),
+      allowNull: false,
+      defaultValue: 'completed',
     },
     createdAt: {
       type: DataTypes.DATE,

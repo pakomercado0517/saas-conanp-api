@@ -16,6 +16,7 @@ import { Invitation } from '@/modules/users/models/invitation.model.js';
 import { InvitationEmailProof } from '@/modules/users/models/invitation-email-proof.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
 import { User } from '@/modules/users/models/user.model.js';
+import { OnboardingInvitation } from '@/modules/users/models/onboarding-invitation.model.js';
 
 const API = '/api/v1';
 const BCRYPT_ROUNDS = 10;
@@ -278,6 +279,66 @@ describe('Invitaciones y registro con invitación (integration)', () => {
         .expect(400);
 
       expect(res.body.success).toBe(false);
+
+      process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'true';
+    });
+  });
+
+  describe('Flujo onboarding: invitación sin dependencia', () => {
+    it('valida invitación onboarding y registra usuario con onboardingStatus pending_setup', async () => {
+      const emailOnboarding = `onboarding-${Date.now()}@example.com`;
+      const crypto = await import('node:crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const onboardingInvitation = await OnboardingInvitation.create({
+        email: emailOnboarding,
+        tokenHash,
+        invitedBy: adminAuth.user.id,
+        status: 'pending',
+        expiresAt,
+      });
+
+      const validateRes = await request(app)
+        .post(`${API}/invitations/validate`)
+        .send({ invitationId: onboardingInvitation.id, token })
+        .expect(200);
+
+      expect(validateRes.body.data).toMatchObject({
+        valid: true,
+        email: emailOnboarding,
+        type: 'onboarding',
+      });
+
+      process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'false';
+
+      const registerRes = await request(app)
+        .post(`${API}/auth/register`)
+        .send({
+          email: emailOnboarding,
+          password: 'password123',
+          name: 'Usuario Onboarding',
+          invitationId: onboardingInvitation.id,
+          token,
+        })
+        .expect(201);
+
+      expect(registerRes.body.success).toBe(true);
+
+      const user = await User.findOne({ where: { email: emailOnboarding } });
+      expect(user).not.toBeNull();
+      expect(user?.emailVerified).toBe(true);
+      expect(user?.onboardingStatus).toBe('pending_setup');
+
+      const loginRes = await request(app)
+        .post(`${API}/auth/login`)
+        .send({ email: emailOnboarding, password: 'password123' })
+        .expect(200);
+
+      expect(loginRes.body.success).toBe(true);
+      expect(loginRes.body.data).toHaveProperty('accessToken');
 
       process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] = 'true';
     });
