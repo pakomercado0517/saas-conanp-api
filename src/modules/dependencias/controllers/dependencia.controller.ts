@@ -22,7 +22,9 @@ export const createDependencia = async (req: Request, res: Response): Promise<Re
 
 export const listDependencias = async (req: Request, res: Response): Promise<Response> => {
   const userId = req.user!.userId;
-  const filters = req.query as unknown as ListDependenciasDTO;
+  const requestWithValidatedQuery = req as Request & { validatedQuery?: ListDependenciasDTO };
+  const filters =
+    requestWithValidatedQuery.validatedQuery ?? (req.query as unknown as ListDependenciasDTO);
   const { data, pagination } = await dependenciaService.listDependencias(filters, userId);
   return sendPaginated(res, data, pagination, 'Dependencias obtenidas exitosamente');
 };

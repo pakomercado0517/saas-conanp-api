@@ -5,6 +5,7 @@ dotenv.config();
 
 const isTest = process.env['NODE_ENV'] === 'test';
 const databaseUrl = isTest ? process.env['DATABASE_TEST_URL'] : process.env['DATABASE_PUBLIC_URL'];
+const sqlLogsEnabled = process.env['SQL_LOGS'] === 'true';
 
 const requiredEnvVar = isTest ? 'DATABASE_TEST_URL' : 'DATABASE_PUBLIC_URL';
 if (!databaseUrl) {
@@ -35,7 +36,7 @@ const sequelize = new Sequelize(databaseUrl, {
   },
   // Timezone de la aplicación (México)
   timezone: '-06:00', // America/Mexico_City (UTC-6, puede variar con DST)
-  logging: process.env['NODE_ENV'] === 'development' ? console.log : false,
+  logging: sqlLogsEnabled ? console.log : false,
   define: {
     timestamps: true,
     underscored: false,

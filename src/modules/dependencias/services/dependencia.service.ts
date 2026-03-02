@@ -3,6 +3,8 @@ import type { UUID } from '@/shared/database/types.js';
 import { Dependencia } from '@/modules/dependencias/models/dependencia.model.js';
 import { DependenciaMembership } from '@/modules/dependencias/models/dependencia-membership.model.js';
 import { Area } from '@/modules/areas/models/area.model.js';
+import { Membership } from '@/modules/users/models/membership.model.js';
+import { User } from '@/modules/users/models/user.model.js';
 import { createFreeSubscriptionForDependencia } from '@/modules/subscriptions/services/subscription.service.js';
 import {
   checkAreasLimitForDependencia,
@@ -182,6 +184,30 @@ export const createAreaUnderDependencia = async (
     ecosystem_type: data.ecosystem_type,
     settings: data.settings ?? {},
   });
+
+  // Garantiza acceso inmediato al área recién creada para el creador.
+  await Membership.findOrCreate({
+    where: {
+      userId,
+      areaId: area.id,
+    },
+    defaults: {
+      userId,
+      areaId: area.id,
+      role: 'admin',
+      status: 'activo',
+    },
+  });
+
+  await User.update(
+    { onboardingStatus: 'completed' },
+    {
+      where: {
+        id: userId,
+        onboardingStatus: 'pending_setup',
+      },
+    }
+  );
 
   logger.info(
     { areaId: area.id, dependenciaId, name: area.name, userId },

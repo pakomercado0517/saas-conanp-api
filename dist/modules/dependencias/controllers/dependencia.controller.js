@@ -8,7 +8,8 @@ export const createDependencia = async (req, res) => {
 };
 export const listDependencias = async (req, res) => {
     const userId = req.user.userId;
-    const filters = req.query;
+    const requestWithValidatedQuery = req;
+    const filters = requestWithValidatedQuery.validatedQuery ?? req.query;
     const { data, pagination } = await dependenciaService.listDependencias(filters, userId);
     return sendPaginated(res, data, pagination, 'Dependencias obtenidas exitosamente');
 };

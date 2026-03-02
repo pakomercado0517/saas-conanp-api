@@ -306,9 +306,6 @@ module.exports = {
     await queryInterface.addIndex('invitations', ['areaId', 'email', 'status'], {
       name: 'idx_invitations_area_email_status',
     });
-    await queryInterface.addIndex('invitations', ['areaId'], {
-      name: 'idx_invitations_area_id',
-    });
     await queryInterface.sequelize.query(
       'DROP INDEX IF EXISTS idx_invitations_organization_id; CREATE INDEX idx_invitations_area_id ON invitations("areaId");'
     );

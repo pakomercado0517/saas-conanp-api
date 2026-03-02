@@ -124,6 +124,8 @@ const generateVerificationToken = async () => {
     return { token, hashedToken };
 };
 const isTestBypassRegister = process.env['NODE_ENV'] === 'test' && process.env['ALLOW_REGISTER_WITHOUT_INVITATION'] === 'true';
+const isOnboardingInvitation = (invitation) => invitation.type === 'onboarding';
+const isDependenciaInvitation = (invitation) => invitation.type === 'dependencia' && 'dependenciaId' in invitation;
 export const register = async (data) => {
     let invitationData = null;
     if (data.invitationId && data.token) {
@@ -192,7 +194,10 @@ export const register = async (data) => {
     }
     const user = await User.create(userPayload);
     if (invitationData) {
-        if ('dependenciaId' in invitationData && invitationData.type === 'dependencia') {
+        if (isOnboardingInvitation(invitationData)) {
+            // Onboarding sin dependencia/área previa: solo crear usuario y continuar a setup wizard.
+        }
+        else if (isDependenciaInvitation(invitationData)) {
             await DependenciaMembership.create({
                 userId: user.id,
                 dependenciaId: invitationData.dependenciaId,

@@ -26,7 +26,8 @@ const validate = (schema) => (req, res, next) => {
 };
 const validateQuery = (schema) => (req, res, next) => {
     try {
-        req.query = schema.parse(req.query);
+        const parsedQuery = schema.parse(req.query);
+        req.validatedQuery = parsedQuery;
         next();
     }
     catch (error) {

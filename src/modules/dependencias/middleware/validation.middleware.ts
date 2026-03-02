@@ -38,7 +38,8 @@ const validateQuery =
   (schema: z.ZodType) =>
   (req: Request, res: Response, next: NextFunction): void => {
     try {
-      req.query = schema.parse(req.query) as Request['query'];
+      const parsedQuery = schema.parse(req.query);
+      (req as Request & { validatedQuery?: unknown }).validatedQuery = parsedQuery;
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {

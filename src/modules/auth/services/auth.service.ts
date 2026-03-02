@@ -181,6 +181,16 @@ type InvitationConsumeResult =
     })
   | { type: 'onboarding' };
 
+const isOnboardingInvitation = (
+  invitation: InvitationConsumeResult
+): invitation is { type: 'onboarding' } => invitation.type === 'onboarding';
+
+const isDependenciaInvitation = (
+  invitation: InvitationConsumeResult
+): invitation is import('@/modules/dependencias/services/dependencia-invitation.service.js').ConsumeDependenciaInvitationResult & {
+  type: 'dependencia';
+} => invitation.type === 'dependencia' && 'dependenciaId' in invitation;
+
 export const register = async (data: RegisterDTO): Promise<RegisterResponse> => {
   let invitationData: InvitationConsumeResult | null = null;
 
@@ -268,7 +278,9 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
   const user = await User.create(userPayload);
 
   if (invitationData) {
-    if ('dependenciaId' in invitationData && invitationData.type === 'dependencia') {
+    if (isOnboardingInvitation(invitationData)) {
+      // Onboarding sin dependencia/área previa: solo crear usuario y continuar a setup wizard.
+    } else if (isDependenciaInvitation(invitationData)) {
       await DependenciaMembership.create({
         userId: user.id,
         dependenciaId: invitationData.dependenciaId,
