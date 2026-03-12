@@ -44,6 +44,7 @@ export const requireSuperAdmin = async (req, _res, next) => {
             email: req.user.email,
         });
     }
+    req.isSuperAdmin = true;
     next();
 };
 //# sourceMappingURL=super-admin.middleware.js.map

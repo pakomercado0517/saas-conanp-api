@@ -1,7 +1,7 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import { createDependenciaWithAdminInvitation } from '../controllers/organization-admin-dependencia.controller.js';
 import { validateCreateDependenciaAdmin } from '@/modules/dependencias/middleware/validation.middleware.js';
-import { authenticate, requireSuperAdmin } from '@/shared/middleware/index.js';
+import { authenticate, requireSuperAdmin, setTenantContext } from '@/shared/middleware/index.js';
 
 /**
  * Router de administración: crear dependencia solo con invitación (sin área).
@@ -9,7 +9,7 @@ import { authenticate, requireSuperAdmin } from '@/shared/middleware/index.js';
  */
 const adminDependenciaRouter: ExpressRouter = Router();
 
-adminDependenciaRouter.use(authenticate, requireSuperAdmin);
+adminDependenciaRouter.use(authenticate, requireSuperAdmin, setTenantContext);
 
 adminDependenciaRouter.post(
   '/',

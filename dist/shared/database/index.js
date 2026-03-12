@@ -1,6 +1,9 @@
 import { Sequelize } from 'sequelize';
+import { createNamespace } from 'cls-hooked';
 import dotenv from 'dotenv';
 dotenv.config();
+const clsNamespace = createNamespace('conanp-rls');
+Sequelize.useCLS(clsNamespace);
 const isTest = process.env['NODE_ENV'] === 'test';
 const databaseUrl = isTest ? process.env['DATABASE_TEST_URL'] : process.env['DATABASE_PUBLIC_URL'];
 const sqlLogsEnabled = process.env['SQL_LOGS'] === 'true';

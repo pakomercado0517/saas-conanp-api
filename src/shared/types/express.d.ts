@@ -24,6 +24,10 @@ declare global {
        */
       dependenciaId?: string;
       /**
+       * true when requireSuperAdmin middleware has validated the user (used by RLS middleware).
+       */
+      isSuperAdmin?: boolean;
+      /**
        * Query params validados por middleware (ej. listar organizaciones)
        */
       validatedQuery?: unknown;

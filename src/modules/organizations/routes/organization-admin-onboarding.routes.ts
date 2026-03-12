@@ -1,6 +1,6 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import { createOnboardingInvitationAdmin } from '../controllers/organization-admin-onboarding.controller.js';
-import { authenticate, requireSuperAdmin } from '@/shared/middleware/index.js';
+import { authenticate, requireSuperAdmin, setTenantContext } from '@/shared/middleware/index.js';
 import { validateCreateOnboardingInvitation } from '@/modules/users/middleware/onboarding-invitation-validation.middleware.js';
 
 /**
@@ -9,7 +9,7 @@ import { validateCreateOnboardingInvitation } from '@/modules/users/middleware/o
  */
 const adminOnboardingRouter: ExpressRouter = Router();
 
-adminOnboardingRouter.use(authenticate, requireSuperAdmin);
+adminOnboardingRouter.use(authenticate, requireSuperAdmin, setTenantContext);
 
 adminOnboardingRouter.post(
   '/',

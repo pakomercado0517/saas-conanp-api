@@ -56,5 +56,6 @@ export const requireSuperAdmin = async (
     });
   }
 
+  req.isSuperAdmin = true;
   next();
 };
