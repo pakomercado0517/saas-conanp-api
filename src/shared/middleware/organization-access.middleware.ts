@@ -5,27 +5,33 @@ import {
   assertCanAccessDependencia,
   assertActiveSubscription,
 } from '@/modules/organizations/services/organization.service.js';
+import { setTenantContext } from './rls.middleware.js';
+
+/**
+ * Extracts areaId from params or body (supports both areaId and legacy organizationId).
+ */
+const extractAreaId = (req: Request): string | undefined =>
+  (req.params['areaId'] as string | undefined) ||
+  (req.params['organizationId'] as string | undefined) ||
+  (typeof req.body?.areaId === 'string' ? req.body.areaId : undefined) ||
+  (typeof req.body?.organizationId === 'string' ? req.body.organizationId : undefined);
 
 /**
  * Multi-tenant: valida acceso al área (membresía activa) y suscripción activa de la dependencia.
- * Lee el id de área de params.organizationId o params.areaId o body; lo expone en req.organizationId y req.areaId.
+ * After validation, starts an RLS-scoped transaction (via setTenantContext) so all subsequent
+ * queries are automatically filtered by PostgreSQL RLS policies.
  * Requiere authenticate previo.
  */
 export const requireOrganizationAccess = async (
   req: Request,
-  _res: Response,
+  res: Response,
   next: NextFunction
 ): Promise<void> => {
   if (!req.user) {
     throw new UnauthorizedError('Token de autenticación requerido');
   }
 
-  const areaId =
-    (req.params['areaId'] as string | undefined) ||
-    (req.params['organizationId'] as string | undefined) ||
-    (typeof req.body?.areaId === 'string' ? req.body.areaId : undefined) ||
-    (typeof req.body?.organizationId === 'string' ? req.body.organizationId : undefined);
-
+  const areaId = extractAreaId(req);
   if (!areaId) {
     throw new BadRequestError('areaId u organizationId es requerido');
   }
@@ -35,28 +41,25 @@ export const requireOrganizationAccess = async (
 
   req.organizationId = areaId;
   req.areaId = areaId;
-  next();
+
+  setTenantContext(req, res, next);
 };
 
 /**
  * Multi-tenant: valida solo acceso al área (membresía activa). No valida suscripción.
  * Úsalo en rutas que no requieren suscripción activa (ej. suscripciones, onboarding).
+ * Starts RLS context after validation.
  */
 export const requireOrganizationAccessOnly = async (
   req: Request,
-  _res: Response,
+  res: Response,
   next: NextFunction
 ): Promise<void> => {
   if (!req.user) {
     throw new UnauthorizedError('Token de autenticación requerido');
   }
 
-  const areaId =
-    (req.params['areaId'] as string | undefined) ||
-    (req.params['organizationId'] as string | undefined) ||
-    (typeof req.body?.areaId === 'string' ? req.body.areaId : undefined) ||
-    (typeof req.body?.organizationId === 'string' ? req.body.organizationId : undefined);
-
+  const areaId = extractAreaId(req);
   if (!areaId) {
     throw new BadRequestError('areaId u organizationId es requerido');
   }
@@ -65,17 +68,18 @@ export const requireOrganizationAccessOnly = async (
 
   req.organizationId = areaId;
   req.areaId = areaId;
-  next();
+
+  setTenantContext(req, res, next);
 };
 
 /**
  * Multi-tenant: valida acceso a la dependencia (membresía en al menos un área de esa dependencia).
- * Lee dependenciaId de params.dependenciaId o body; lo expone en req.dependenciaId.
+ * Starts RLS context after validation.
  * Requiere authenticate previo.
  */
 export const requireDependenciaAccess = async (
   req: Request,
-  _res: Response,
+  res: Response,
   next: NextFunction
 ): Promise<void> => {
   if (!req.user) {
@@ -93,5 +97,6 @@ export const requireDependenciaAccess = async (
   await assertCanAccessDependencia(req.user.userId, dependenciaId);
 
   req.dependenciaId = dependenciaId;
-  next();
+
+  setTenantContext(req, res, next);
 };

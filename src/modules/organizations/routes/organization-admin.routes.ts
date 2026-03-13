@@ -11,7 +11,7 @@ import {
   validateUpdateOrganization,
   validateListOrganizations,
 } from '../middleware/validation.middleware.js';
-import { authenticate, requireSuperAdmin } from '@/shared/middleware/index.js';
+import { authenticate, requireSuperAdmin, setTenantContext } from '@/shared/middleware/index.js';
 
 /**
  * Router de administración de organizaciones (super admin)
@@ -21,7 +21,7 @@ import { authenticate, requireSuperAdmin } from '@/shared/middleware/index.js';
  */
 const adminOrganizationRouter: ExpressRouter = Router();
 
-adminOrganizationRouter.use(authenticate, requireSuperAdmin);
+adminOrganizationRouter.use(authenticate, requireSuperAdmin, setTenantContext);
 
 adminOrganizationRouter.post('/', validateCreateOrganization, createOrganization);
 adminOrganizationRouter.get('/', validateListOrganizations, listOrganizations);

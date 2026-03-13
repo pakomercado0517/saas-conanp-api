@@ -4,6 +4,7 @@ import {
   validateWebhookSignature,
   processWebhookEvent,
 } from '../services/stripe-webhook.service.js';
+import { withRlsBypass } from '@/shared/middleware/index.js';
 
 /**
  * Router del webhook de Stripe
@@ -51,7 +52,7 @@ stripeWebhookRouter.post('/', async (req: Request, res: Response): Promise<Respo
   }
 
   try {
-    await processWebhookEvent(event);
+    await withRlsBypass(() => processWebhookEvent(event));
   } catch (err) {
     logger.error(
       {

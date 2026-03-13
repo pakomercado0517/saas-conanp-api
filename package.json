@@ -39,6 +39,7 @@
     "@aws-sdk/s3-request-presigner": "^3.975.0",
     "@getbrevo/brevo": "^3.0.1",
     "bcrypt": "^6.0.0",
+    "cls-hooked": "^4.2.2",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
@@ -62,6 +63,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/bcrypt": "^6.0.0",
+    "@types/cls-hooked": "^4.3.9",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/express-rate-limit": "^6.0.2",
