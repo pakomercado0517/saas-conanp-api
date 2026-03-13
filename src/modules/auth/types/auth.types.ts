@@ -12,7 +12,8 @@ export interface JWTPayload {
 }
 
 /**
- * Respuesta de autenticación (login)
+ * Respuesta de autenticación (login) enviada al cliente.
+ * El refresh token se envía en cookie httpOnly, no en el body.
  */
 export interface AuthResponse {
   user: {
@@ -21,8 +22,15 @@ export interface AuthResponse {
     name: string;
   };
   accessToken: string;
-  refreshToken: string;
   expiresIn: number; // Segundos hasta expiración
+}
+
+/**
+ * Resultado interno de login: incluye el refresh token en texto plano
+ * para que el controller lo setee en la cookie (no se serializa al cliente).
+ */
+export interface AuthResponseWithRefreshCookie extends AuthResponse {
+  _refreshTokenPlain: string;
 }
 
 /**

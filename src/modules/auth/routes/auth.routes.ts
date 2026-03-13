@@ -69,11 +69,11 @@ authRouter.post('/register', authLimiter, validateRegister, register);
  *   data: {
  *     user: { id, email, name },
  *     accessToken: string,
- *     refreshToken: string,
  *     expiresIn: number
  *   },
  *   message: "Inicio de sesión exitoso"
  * }
+ * Set-Cookie: refresh_token (httpOnly, path=/api/v1/auth)
  */
 authRouter.post('/login', authLimiter, validateLogin, login);
 
@@ -149,18 +149,13 @@ authRouter.post('/reset-password', validateResetPassword, resetPassword);
 
 /**
  * POST /api/v1/auth/refresh
- * Renueva un access token usando un refresh token
- *
- * Body:
- * - refreshToken: string (no vacío)
+ * Renueva un access token. El refresh token se envía en la cookie refresh_token (httpOnly).
+ * No requiere body; el cliente debe enviar credentials: 'include' para que se envíe la cookie.
  *
  * Respuesta 200:
  * {
  *   success: true,
- *   data: {
- *     accessToken: string,
- *     expiresIn: number
- *   },
+ *   data: { accessToken: string, expiresIn: number },
  *   message: "Token renovado exitosamente"
  * }
  */
@@ -168,10 +163,8 @@ authRouter.post('/refresh', validateRefreshToken, refresh);
 
 /**
  * POST /api/v1/auth/logout
- * Revoca un refresh token (logout)
- *
- * Body:
- * - refreshToken: string (no vacío)
+ * Revoca el refresh token y limpia la cookie. El refresh token se lee de la cookie refresh_token.
+ * No requiere body; el cliente debe enviar credentials: 'include'.
  *
  * Respuesta 204: No Content
  */

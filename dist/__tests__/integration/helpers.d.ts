@@ -22,7 +22,7 @@ export declare function createTestUserAndToken(app: Application, overrides?: {
     name?: string;
 }): Promise<AuthResult>;
 /**
- * Inicia sesión y devuelve tokens.
+ * Inicia sesión y devuelve tokens. El refresh token viene en cookie; se extrae para usarlo en refresh/logout.
  */
 export declare function loginAs(app: Application, email: string, password: string): Promise<AuthResult>;
 export interface OrganizationData {

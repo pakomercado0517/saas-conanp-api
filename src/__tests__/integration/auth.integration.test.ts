@@ -40,7 +40,7 @@ describe('Auth endpoints (integration)', () => {
   });
 
   describe('POST /login', () => {
-    it('devuelve 200 y tokens con credenciales correctas', async () => {
+    it('devuelve 200, accessToken en body y refresh_token en cookie httpOnly', async () => {
       const res = await request(app)
         .post(`${API}/login`)
         .send({ email: auth.user.email, password: 'password123' })
@@ -48,8 +48,17 @@ describe('Auth endpoints (integration)', () => {
 
       expect(res.body.success).toBe(true);
       expect(res.body.data).toHaveProperty('accessToken');
-      expect(res.body.data).toHaveProperty('refreshToken');
+      expect(res.body.data).not.toHaveProperty('refreshToken');
       expect(res.body.data.user.email).toBe(auth.user.email);
+      const setCookie = res.headers['set-cookie'];
+      const cookieArr = Array.isArray(setCookie)
+        ? setCookie
+        : typeof setCookie === 'string'
+          ? [setCookie]
+          : [];
+      expect(cookieArr.length).toBeGreaterThan(0);
+      expect(cookieArr.some((c: string) => c.startsWith('refresh_token='))).toBe(true);
+      expect(cookieArr.some((c: string) => c.includes('HttpOnly'))).toBe(true);
     });
 
     it('devuelve 401 con contraseña incorrecta', async () => {
@@ -76,10 +85,10 @@ describe('Auth endpoints (integration)', () => {
   });
 
   describe('POST /refresh', () => {
-    it('devuelve 200 y nuevo accessToken con refreshToken válido', async () => {
+    it('devuelve 200 y nuevo accessToken cuando se envía la cookie refresh_token', async () => {
       const res = await request(app)
         .post(`${API}/refresh`)
-        .send({ refreshToken: auth.refreshToken })
+        .set('Cookie', `refresh_token=${auth.refreshToken}`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -87,8 +96,8 @@ describe('Auth endpoints (integration)', () => {
       expect(res.body.data).toHaveProperty('expiresIn');
     });
 
-    it('devuelve 401 con refreshToken inválido', async () => {
-      await request(app).post(`${API}/refresh`).send({ refreshToken: 'invalid-token' }).expect(401);
+    it('devuelve 401 sin cookie refresh_token', async () => {
+      await request(app).post(`${API}/refresh`).expect(401);
     });
   });
 
@@ -168,12 +177,20 @@ describe('Auth endpoints (integration)', () => {
   });
 
   describe('POST /logout', () => {
-    it('devuelve 204 con refreshToken válido', async () => {
+    it('devuelve 204 y limpia la cookie cuando se envía la cookie refresh_token', async () => {
       const loggedIn = await loginAs(app, auth.user.email, 'password123');
-      await request(app)
+      const res = await request(app)
         .post(`${API}/logout`)
-        .send({ refreshToken: loggedIn.refreshToken })
+        .set('Cookie', `refresh_token=${loggedIn.refreshToken}`)
         .expect(204);
+      const setCookie = res.headers['set-cookie'];
+      const cookieArr = Array.isArray(setCookie)
+        ? setCookie
+        : typeof setCookie === 'string'
+          ? [setCookie]
+          : [];
+      expect(cookieArr.length).toBeGreaterThan(0);
+      expect(cookieArr[0]?.toLowerCase().includes('max-age=0') ?? false).toBe(true);
     });
   });
 });

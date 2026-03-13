@@ -1,4 +1,5 @@
 import * as authService from '../services/auth.service.js';
+import { getRefreshTokenCookieOptions, REFRESH_TOKEN_COOKIE_NAME, } from '../services/auth.service.js';
 import { sendSuccess, sendCreated, sendNoContent } from '../../../shared/responses/helpers.js';
 /**
  * Registra un nuevo usuario
@@ -12,32 +13,40 @@ export const register = async (req, res) => {
 };
 /**
  * Inicia sesión con email y contraseña
+ * El refresh token se envía en cookie httpOnly; el body solo incluye user, accessToken y expiresIn.
  *
  * POST /api/v1/auth/login
  */
 export const login = async (req, res) => {
     const data = req.body;
     const result = await authService.login(data);
-    return sendSuccess(res, result, 'Inicio de sesión exitoso');
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, result._refreshTokenPlain, {
+        ...getRefreshTokenCookieOptions(),
+    });
+    const { _refreshTokenPlain: _, ...publicResult } = result;
+    return sendSuccess(res, publicResult, 'Inicio de sesión exitoso');
 };
 /**
- * Renueva un access token usando un refresh token
+ * Renueva un access token usando el refresh token enviado en cookie httpOnly
  *
  * POST /api/v1/auth/refresh
  */
 export const refresh = async (req, res) => {
-    const data = req.body;
-    const result = await authService.refreshAccessToken(data.refreshToken);
+    const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
+    const result = await authService.refreshAccessToken(refreshToken ?? '');
     return sendSuccess(res, result, 'Token renovado exitosamente');
 };
 /**
- * Revoca un refresh token (logout)
+ * Revoca el refresh token (logout) y limpia la cookie
  *
  * POST /api/v1/auth/logout
  */
 export const logout = async (req, res) => {
-    const data = req.body;
-    await authService.revokeRefreshToken(data.refreshToken);
+    const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
+    if (refreshToken) {
+        await authService.revokeRefreshToken(refreshToken);
+    }
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, getRefreshTokenCookieOptions());
     return sendNoContent(res);
 };
 /**

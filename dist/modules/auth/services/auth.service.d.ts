@@ -1,21 +1,34 @@
 import type { RegisterDTO, LoginDTO } from '../validators/auth.validator.js';
-import type { AuthResponse, RegisterResponse, RefreshTokenResponse, JWTPayload } from '../types/auth.types.js';
+import type { AuthResponseWithRefreshCookie, RegisterResponse, RefreshTokenResponse, JWTPayload } from '../types/auth.types.js';
 import type { UUID } from '../../../shared/database/types.js';
+/** Nombre de la cookie donde se envía el refresh token */
+export declare const REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
+/**
+ * Opciones para la cookie del refresh token (httpOnly, Secure, SameSite).
+ * Usado en login/refresh para setear y en logout para clearCookie con las mismas opciones.
+ */
+export declare const getRefreshTokenCookieOptions: () => {
+    httpOnly: true;
+    secure: boolean;
+    sameSite: "strict";
+    path: string;
+    maxAge: number;
+};
 export declare const register: (data: RegisterDTO) => Promise<RegisterResponse>;
 /**
  * Inicia sesión con email y contraseña
  */
-export declare const login: (data: LoginDTO) => Promise<AuthResponse>;
+export declare const login: (data: LoginDTO) => Promise<AuthResponseWithRefreshCookie>;
 /**
  * Valida un access token JWT
  */
 export declare const validateToken: (token: string) => JWTPayload;
 /**
- * Renueva un access token usando un refresh token
+ * Renueva un access token usando un refresh token (lookup O(1) por tokenId)
  */
 export declare const refreshAccessToken: (refreshToken: string) => Promise<RefreshTokenResponse>;
 /**
- * Revoca un refresh token
+ * Revoca un refresh token (lookup O(1) por tokenId)
  */
 export declare const revokeRefreshToken: (refreshToken: string) => Promise<void>;
 /**

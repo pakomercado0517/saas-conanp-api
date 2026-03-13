@@ -24,11 +24,10 @@ export declare const validateRegister: (req: Request, res: Response, next: NextF
  */
 export declare const validateLogin: (req: Request, res: Response, next: NextFunction) => void;
 /**
- * Middleware de validación para refresh token
+ * Middleware de validación para refresh token (cookie httpOnly)
  *
- * Valida el body de la request usando RefreshTokenSchema de Zod.
- * Si la validación es exitosa, actualiza req.body con los datos validados y transformados.
- * Si falla, retorna un error 400 con los detalles de validación en español.
+ * Valida que la cookie refresh_token esté presente y no vacía.
+ * Usado en POST /refresh y POST /logout.
  *
  * @param req - Request de Express
  * @param res - Response de Express

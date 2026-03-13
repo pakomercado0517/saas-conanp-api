@@ -3,6 +3,7 @@ import type { UUID } from '../../../shared/database/types';
 export interface RefreshTokenAttributes {
     id: UUID;
     userId: UUID;
+    tokenId: string;
     token: string;
     expiresAt: Date;
     revokedAt: Date | null;
@@ -14,6 +15,7 @@ export interface RefreshTokenCreationAttributes extends Optional<RefreshTokenAtt
 export declare class RefreshToken extends Model<RefreshTokenAttributes, RefreshTokenCreationAttributes> implements RefreshTokenAttributes {
     id: UUID;
     userId: UUID;
+    tokenId: string;
     token: string;
     expiresAt: Date;
     revokedAt: Date | null;

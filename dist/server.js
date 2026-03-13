@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { pinoHttp } from 'pino-http';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
@@ -19,6 +20,7 @@ const corsOptions = {
     optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
+app.use(cookieParser());
 // Rate limiting: Solo se aplica en producción
 app.use(apiLimiter);
 // Logging HTTP con Pino: Diferente formato según entorno
