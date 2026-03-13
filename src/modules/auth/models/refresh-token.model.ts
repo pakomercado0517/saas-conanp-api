@@ -5,6 +5,7 @@ import type { UUID } from '@/shared/database/types';
 export interface RefreshTokenAttributes {
   id: UUID;
   userId: UUID;
+  tokenId: string; // Primeros 16 chars del token (plain) para lookup O(1)
   token: string; // Token hasheado
   expiresAt: Date;
   revokedAt: Date | null;
@@ -23,6 +24,7 @@ export class RefreshToken
 {
   declare id: UUID;
   declare userId: UUID;
+  declare tokenId: string;
   declare token: string;
   declare expiresAt: Date;
   declare revokedAt: Date | null;
@@ -48,6 +50,12 @@ RefreshToken.init(
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
       comment: 'Usuario propietario del token',
+    },
+    tokenId: {
+      type: DataTypes.STRING(16),
+      allowNull: false,
+      unique: true,
+      comment: 'Primeros 16 caracteres del token (plain) para lookup O(1)',
     },
     token: {
       type: DataTypes.STRING(500),
@@ -87,6 +95,11 @@ RefreshToken.init(
       {
         name: 'idx_refresh_tokens_user_id',
         fields: ['userId'],
+      },
+      {
+        name: 'idx_refresh_tokens_token_id',
+        unique: true,
+        fields: ['tokenId'],
       },
       {
         name: 'idx_refresh_tokens_token_unique',

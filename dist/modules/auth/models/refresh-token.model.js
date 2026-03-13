@@ -20,6 +20,12 @@ RefreshToken.init({
         onUpdate: 'CASCADE',
         comment: 'Usuario propietario del token',
     },
+    tokenId: {
+        type: DataTypes.STRING(16),
+        allowNull: false,
+        unique: true,
+        comment: 'Primeros 16 caracteres del token (plain) para lookup O(1)',
+    },
     token: {
         type: DataTypes.STRING(500),
         allowNull: false,
@@ -57,6 +63,11 @@ RefreshToken.init({
         {
             name: 'idx_refresh_tokens_user_id',
             fields: ['userId'],
+        },
+        {
+            name: 'idx_refresh_tokens_token_id',
+            unique: true,
+            fields: ['tokenId'],
         },
         {
             name: 'idx_refresh_tokens_token_unique',

@@ -150,7 +150,27 @@ async function getRegisterPayloadWithInvitation(
 }
 
 /**
- * Inicia sesión y devuelve tokens.
+ * Extrae el valor de una cookie del header Set-Cookie
+ */
+function getCookieValue(
+  setCookieHeader: string[] | string | undefined,
+  name: string
+): string | undefined {
+  const arr = Array.isArray(setCookieHeader)
+    ? setCookieHeader
+    : typeof setCookieHeader === 'string'
+      ? [setCookieHeader]
+      : [];
+  const line = arr.find((s) => s.startsWith(`${name}=`));
+  if (!line) return undefined;
+  const part = line.split(';')[0];
+  if (!part) return undefined;
+  const eq = part.indexOf('=');
+  return eq === -1 ? undefined : part.slice(eq + 1);
+}
+
+/**
+ * Inicia sesión y devuelve tokens. El refresh token viene en cookie; se extrae para usarlo en refresh/logout.
  */
 export async function loginAs(
   app: Application,
@@ -161,9 +181,24 @@ export async function loginAs(
     .post(`${API_PREFIX}/auth/login`)
     .send({ email, password })
     .expect(200);
-  const body = res.body as { success: boolean; data: AuthResult; message: string };
+  const body = res.body as {
+    success: boolean;
+    data: { user: AuthResult['user']; accessToken: string; expiresIn: number };
+    message: string;
+  };
   if (!body.success || !body.data) throw new Error('Login failed');
-  return body.data;
+  const setCookie = res.headers['set-cookie'];
+  const refreshToken = getCookieValue(
+    Array.isArray(setCookie) ? setCookie : typeof setCookie === 'string' ? [setCookie] : undefined,
+    'refresh_token'
+  );
+  if (!refreshToken) throw new Error('Login response missing refresh_token cookie');
+  return {
+    user: body.data.user,
+    accessToken: body.data.accessToken,
+    refreshToken,
+    expiresIn: body.data.expiresIn,
+  };
 }
 
 export interface OrganizationData {

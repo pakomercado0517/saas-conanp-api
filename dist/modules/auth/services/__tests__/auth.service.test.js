@@ -9,6 +9,7 @@ const HASHED_PASSWORD = '$2b$10$hashedpassword';
 const mockUserFindOne = vi.fn();
 const mockUserCreate = vi.fn();
 const mockUserFindByPk = vi.fn();
+const mockRefreshTokenFindOne = vi.fn();
 const mockRefreshTokenFindAll = vi.fn();
 const mockRefreshTokenCreate = vi.fn();
 const mockRefreshTokenUpdate = vi.fn();
@@ -24,6 +25,7 @@ vi.mock('@/modules/users/models/user.model.js', () => ({
 }));
 vi.mock('@/modules/auth/models/refresh-token.model.js', () => ({
     RefreshToken: {
+        findOne: (...args) => mockRefreshTokenFindOne(...args),
         findAll: (...args) => mockRefreshTokenFindAll(...args),
         create: (...args) => mockRefreshTokenCreate(...args),
         update: (...args) => mockRefreshTokenUpdate(...args),
@@ -129,7 +131,7 @@ describe('auth.service', () => {
             })).rejects.toThrow(UnauthorizedError);
             expect(mockBcryptCompare).toHaveBeenCalledWith('wrongpassword', HASHED_PASSWORD);
         });
-        it('returns AuthResponse with tokens on success', async () => {
+        it('returns AuthResponseWithRefreshCookie (accessToken + _refreshTokenPlain) on success', async () => {
             const user = {
                 id: USER_ID,
                 email: USER_EMAIL,
@@ -145,8 +147,15 @@ describe('auth.service', () => {
             });
             expect(result.user).toEqual({ id: USER_ID, email: USER_EMAIL, name: USER_NAME });
             expect(result.accessToken).toBeDefined();
-            expect(result.refreshToken).toBeDefined();
+            expect(result._refreshTokenPlain).toBeDefined();
             expect(result.expiresIn).toBeDefined();
+            expect(result).not.toHaveProperty('refreshToken');
+            expect(mockRefreshTokenCreate).toHaveBeenCalledWith(expect.objectContaining({
+                userId: USER_ID,
+                tokenId: expect.any(String),
+                token: expect.any(String),
+                expiresAt: expect.any(Date),
+            }));
         });
     });
     describe('validateToken', () => {
@@ -168,19 +177,23 @@ describe('auth.service', () => {
         });
     });
     describe('refreshAccessToken', () => {
-        it('throws UnauthorizedError when no valid refresh token found', async () => {
-            mockRefreshTokenFindAll.mockResolvedValueOnce([]);
+        it('throws UnauthorizedError when no refresh token found by tokenId', async () => {
+            mockRefreshTokenFindOne.mockResolvedValueOnce(null);
             await expect(authService.refreshAccessToken('some-refresh-token')).rejects.toThrow(UnauthorizedError);
+            expect(mockRefreshTokenFindOne).toHaveBeenCalledWith({
+                where: { tokenId: 'some-refresh-tok', revokedAt: null },
+            });
         });
         it('throws UnauthorizedError when refresh token is expired', async () => {
             const expiredTokenRecord = {
                 id: 'rt-id',
                 userId: USER_ID,
+                tokenId: 'raw-refresh-token'.substring(0, 16),
                 token: HASHED_PASSWORD,
                 expiresAt: new Date(Date.now() - 86400000),
                 update: vi.fn().mockResolvedValue(undefined),
             };
-            mockRefreshTokenFindAll.mockResolvedValueOnce([expiredTokenRecord]);
+            mockRefreshTokenFindOne.mockResolvedValueOnce(expiredTokenRecord);
             mockBcryptCompare.mockResolvedValueOnce(true);
             await expect(authService.refreshAccessToken('raw-refresh-token')).rejects.toThrow(UnauthorizedError);
             expect(expiredTokenRecord.update).toHaveBeenCalledWith(expect.objectContaining({ revokedAt: expect.any(Date) }));
@@ -190,11 +203,12 @@ describe('auth.service', () => {
             const tokenRecord = {
                 id: 'rt-id',
                 userId: USER_ID,
+                tokenId: 'raw-refresh-token'.substring(0, 16),
                 token: HASHED_PASSWORD,
                 expiresAt: futureExpiry,
                 update: vi.fn().mockResolvedValue(undefined),
             };
-            mockRefreshTokenFindAll.mockResolvedValueOnce([tokenRecord]);
+            mockRefreshTokenFindOne.mockResolvedValueOnce(tokenRecord);
             mockBcryptCompare.mockResolvedValueOnce(true);
             mockUserFindByPk.mockResolvedValueOnce({
                 id: USER_ID,
@@ -204,6 +218,9 @@ describe('auth.service', () => {
             const result = await authService.refreshAccessToken('raw-refresh-token');
             expect(result).toHaveProperty('accessToken');
             expect(result).toHaveProperty('expiresIn');
+            expect(mockRefreshTokenFindOne).toHaveBeenCalledWith({
+                where: { tokenId: 'raw-refresh-token'.substring(0, 16), revokedAt: null },
+            });
             expect(mockUserFindByPk).toHaveBeenCalledWith(USER_ID);
         });
         it('throws UnauthorizedError when user not found for valid refresh token', async () => {
@@ -211,32 +228,33 @@ describe('auth.service', () => {
             const tokenRecord = {
                 id: 'rt-id',
                 userId: USER_ID,
+                tokenId: 'raw-refresh-token'.substring(0, 16),
                 token: HASHED_PASSWORD,
                 expiresAt: futureExpiry,
                 update: vi.fn().mockResolvedValue(undefined),
             };
-            mockRefreshTokenFindAll.mockResolvedValueOnce([tokenRecord]);
+            mockRefreshTokenFindOne.mockResolvedValueOnce(tokenRecord);
             mockBcryptCompare.mockResolvedValueOnce(true);
             mockUserFindByPk.mockResolvedValueOnce(null);
             await expect(authService.refreshAccessToken('raw-refresh-token')).rejects.toThrow(UnauthorizedError);
         });
     });
     describe('revokeRefreshToken', () => {
-        it('does nothing when token not found (idempotent)', async () => {
-            mockRefreshTokenFindAll.mockResolvedValueOnce([]);
-            mockBcryptCompare.mockResolvedValue(false);
+        it('does nothing when token not found by tokenId (idempotent)', async () => {
+            mockRefreshTokenFindOne.mockResolvedValueOnce(null);
             await expect(authService.revokeRefreshToken('unknown-token')).resolves.toBeUndefined();
             expect(mockRefreshTokenUpdate).not.toHaveBeenCalled();
         });
-        it('revokes token when valid token found', async () => {
+        it('revokes token when valid token found by tokenId', async () => {
             const tokenRecord = {
                 id: 'rt-id',
                 userId: USER_ID,
+                tokenId: 'raw-refresh-token'.substring(0, 16),
                 token: HASHED_PASSWORD,
                 expiresAt: new Date(Date.now() + 86400000),
                 update: vi.fn().mockResolvedValue(undefined),
             };
-            mockRefreshTokenFindAll.mockResolvedValueOnce([tokenRecord]);
+            mockRefreshTokenFindOne.mockResolvedValueOnce(tokenRecord);
             mockBcryptCompare.mockResolvedValueOnce(true);
             await authService.revokeRefreshToken('raw-refresh-token');
             expect(tokenRecord.update).toHaveBeenCalledWith(expect.objectContaining({ revokedAt: expect.any(Date) }));

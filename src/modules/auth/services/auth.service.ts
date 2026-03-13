@@ -24,7 +24,7 @@ import { consumeOnboardingInvitationForRegistration } from '@/modules/users/serv
 import { consumeDependenciaInvitationForRegistration } from '@/modules/dependencias/services/dependencia-invitation.service.js';
 import { consumeProofForRegistration } from '@/modules/users/services/invitation-email-proof.service.js';
 import type {
-  AuthResponse,
+  AuthResponseWithRefreshCookie,
   RegisterResponse,
   RefreshTokenResponse,
   JWTPayload,
@@ -100,12 +100,17 @@ const generateAccessToken = (userId: UUID, email: string): string => {
 };
 
 /**
- * Genera un refresh token aleatorio y lo hashea
+ * Genera un refresh token aleatorio, su tokenId (primeros 16 chars) y lo hashea
  */
-const generateRefreshToken = async (): Promise<{ token: string; hashedToken: string }> => {
+const generateRefreshToken = async (): Promise<{
+  token: string;
+  tokenId: string;
+  hashedToken: string;
+}> => {
   const token = randomBytes(32).toString('hex');
+  const tokenId = token.substring(0, 16);
   const hashedToken = await bcrypt.hash(token, BCRYPT_ROUNDS);
-  return { token, hashedToken };
+  return { token, tokenId, hashedToken };
 };
 
 /**
@@ -147,6 +152,27 @@ const getRefreshTokenExpiration = (): Date => {
 
   return expiration.toJSDate();
 };
+
+/** Nombre de la cookie donde se envía el refresh token */
+export const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token';
+
+/**
+ * Opciones para la cookie del refresh token (httpOnly, Secure, SameSite).
+ * Usado en login/refresh para setear y en logout para clearCookie con las mismas opciones.
+ */
+export const getRefreshTokenCookieOptions = (): {
+  httpOnly: true;
+  secure: boolean;
+  sameSite: 'strict';
+  path: string;
+  maxAge: number;
+} => ({
+  httpOnly: true,
+  secure: process.env['NODE_ENV'] === 'production',
+  sameSite: 'strict',
+  path: '/api/v1/auth',
+  maxAge: getExpiresInSeconds(JWT_REFRESH_EXPIRES_IN) * 1000, // Express maxAge en ms
+});
 
 /** Expiración del token de verificación de email: 24 horas */
 const EMAIL_VERIFICATION_EXPIRES_HOURS = 24;
@@ -335,7 +361,7 @@ export const register = async (data: RegisterDTO): Promise<RegisterResponse> => 
 /**
  * Inicia sesión con email y contraseña
  */
-export const login = async (data: LoginDTO): Promise<AuthResponse> => {
+export const login = async (data: LoginDTO): Promise<AuthResponseWithRefreshCookie> => {
   // Buscar usuario por email
   const user = await User.findOne({
     where: { email: data.email },
@@ -359,12 +385,13 @@ export const login = async (data: LoginDTO): Promise<AuthResponse> => {
 
   // Generar tokens
   const accessToken = generateAccessToken(user.id, user.email);
-  const { token: refreshToken, hashedToken } = await generateRefreshToken();
+  const { token: refreshTokenPlain, tokenId, hashedToken } = await generateRefreshToken();
   const expiresAt = getRefreshTokenExpiration();
 
-  // Guardar refresh token
+  // Guardar refresh token (con tokenId para lookup O(1))
   await RefreshToken.create({
     userId: user.id,
+    tokenId,
     token: hashedToken,
     expiresAt,
   });
@@ -384,8 +411,8 @@ export const login = async (data: LoginDTO): Promise<AuthResponse> => {
       name: user.name,
     },
     accessToken,
-    refreshToken,
     expiresIn: getExpiresInSeconds(JWT_ACCESS_EXPIRES_IN),
+    _refreshTokenPlain: refreshTokenPlain,
   };
 };
 
@@ -414,29 +441,25 @@ export const validateToken = (token: string): JWTPayload => {
 };
 
 /**
- * Renueva un access token usando un refresh token
+ * Renueva un access token usando un refresh token (lookup O(1) por tokenId)
  */
 export const refreshAccessToken = async (refreshToken: string): Promise<RefreshTokenResponse> => {
-  // Buscar el refresh token en la base de datos
-  const refreshTokens = await RefreshToken.findAll({
-    where: {
-      revokedAt: null,
-    },
+  const tokenId = refreshToken.length >= 16 ? refreshToken.substring(0, 16) : refreshToken;
+
+  const tokenRecord = await RefreshToken.findOne({
+    where: { tokenId, revokedAt: null },
   });
 
-  // Verificar cada token hasheado
-  let validRefreshToken: RefreshToken | null = null;
-  for (const tokenRecord of refreshTokens) {
-    const isMatch = await bcrypt.compare(refreshToken, tokenRecord.token);
-    if (isMatch) {
-      validRefreshToken = tokenRecord;
-      break;
-    }
-  }
-
-  if (!validRefreshToken) {
+  if (!tokenRecord) {
     throw new UnauthorizedError('Refresh token inválido o revocado');
   }
+
+  const isMatch = await bcrypt.compare(refreshToken, tokenRecord.token);
+  if (!isMatch) {
+    throw new UnauthorizedError('Refresh token inválido o revocado');
+  }
+
+  const validRefreshToken = tokenRecord;
 
   // Verificar que no esté expirado
   const now = DateTime.now();
@@ -473,30 +496,25 @@ export const refreshAccessToken = async (refreshToken: string): Promise<RefreshT
 };
 
 /**
- * Revoca un refresh token
+ * Revoca un refresh token (lookup O(1) por tokenId)
  */
 export const revokeRefreshToken = async (refreshToken: string): Promise<void> => {
-  // Buscar el refresh token en la base de datos
-  const refreshTokens = await RefreshToken.findAll({
-    where: {
-      revokedAt: null,
-    },
+  const tokenId = refreshToken.length >= 16 ? refreshToken.substring(0, 16) : refreshToken;
+
+  const tokenRecord = await RefreshToken.findOne({
+    where: { tokenId, revokedAt: null },
   });
 
-  // Verificar cada token hasheado
-  let validRefreshToken: RefreshToken | null = null;
-  for (const tokenRecord of refreshTokens) {
-    const isMatch = await bcrypt.compare(refreshToken, tokenRecord.token);
-    if (isMatch) {
-      validRefreshToken = tokenRecord;
-      break;
-    }
+  if (!tokenRecord) {
+    return; // Idempotente
   }
 
-  if (!validRefreshToken) {
-    // Si no se encuentra, no hacer nada (idempotente)
+  const isMatch = await bcrypt.compare(refreshToken, tokenRecord.token);
+  if (!isMatch) {
     return;
   }
+
+  const validRefreshToken = tokenRecord;
 
   // Marcar como revocado
   await validRefreshToken.update({

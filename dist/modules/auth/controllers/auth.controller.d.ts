@@ -7,18 +7,19 @@ import type { Request, Response } from 'express';
 export declare const register: (req: Request, res: Response) => Promise<Response>;
 /**
  * Inicia sesión con email y contraseña
+ * El refresh token se envía en cookie httpOnly; el body solo incluye user, accessToken y expiresIn.
  *
  * POST /api/v1/auth/login
  */
 export declare const login: (req: Request, res: Response) => Promise<Response>;
 /**
- * Renueva un access token usando un refresh token
+ * Renueva un access token usando el refresh token enviado en cookie httpOnly
  *
  * POST /api/v1/auth/refresh
  */
 export declare const refresh: (req: Request, res: Response) => Promise<Response>;
 /**
- * Revoca un refresh token (logout)
+ * Revoca el refresh token (logout) y limpia la cookie
  *
  * POST /api/v1/auth/logout
  */
