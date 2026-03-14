@@ -245,6 +245,42 @@ export const createBloque = async (data: CreateBloqueDTO, userId: UUID): Promise
 };
 
 /**
+ * Materializa un bloque concreto desde una plantilla para una fecha dada.
+ * Función interna: no valida permisos de admin (usada por createBloqueFromTemplate y listBloquesByActividad).
+ *
+ * @param template - Bloque plantilla (isTemplate: true)
+ * @param dateStr - Fecha en formato YYYY-MM-DD
+ * @param organizationId - ID de la organización (multi-tenant)
+ * @param capacityOverride - Capacidad opcional; si no se pasa, se usa la de la plantilla
+ * @returns Bloque creado
+ * @throws {ValidationError} Si hay solapamiento
+ */
+const materializeBloqueFromTemplate = async (
+  template: Bloque,
+  dateStr: string,
+  organizationId: UUID,
+  capacityOverride?: number
+): Promise<Bloque> => {
+  await validateNoTimeOverlap(
+    template.actividadId,
+    dateStr,
+    template.startTime,
+    template.endTime,
+    organizationId
+  );
+
+  return await Bloque.create({
+    areaId: template.areaId,
+    actividadId: template.actividadId,
+    date: dateStr,
+    startTime: template.startTime,
+    endTime: template.endTime,
+    capacity: capacityOverride ?? template.capacity,
+    isTemplate: false,
+  });
+};
+
+/**
  * Crea un bloque desde una plantilla.
  * Solo los administradores pueden crear bloques desde plantillas.
  *
@@ -305,25 +341,12 @@ export const createBloqueFromTemplate = async (
     throw new ValidationError('La fecha proporcionada no es válida');
   }
 
-  // Validar que no haya solapamiento
-  await validateNoTimeOverlap(
-    template.actividadId,
+  const bloque = await materializeBloqueFromTemplate(
+    template,
     dateStr,
-    template.startTime,
-    template.endTime,
-    organizationId
+    organizationId,
+    data.capacity
   );
-
-  // Crear el bloque desde la plantilla
-  const bloque = await Bloque.create({
-    areaId: template.areaId,
-    actividadId: template.actividadId,
-    date: dateStr,
-    startTime: template.startTime,
-    endTime: template.endTime,
-    capacity: data.capacity ?? template.capacity,
-    isTemplate: false,
-  });
 
   logger.info(
     {
@@ -414,6 +437,34 @@ export const listBloquesByActividad = async (
     throw new NotFoundError('Actividad', { actividadId, organizationId });
   }
 
+  // Normalizar fecha del filtro (reutilizada para materialización y where)
+  const dateStr =
+    filters['date'] !== undefined && filters['date'] !== null
+      ? typeof filters['date'] === 'string'
+        ? filters['date']
+        : toDateOnlyDB(filters['date'])
+      : null;
+
+  // Materialización bajo demanda: si hay fecha, actividad es BLOQUES y tiene plantillas pero no bloques para esa fecha, crearlos
+  if (dateStr && actividad.agendaType === 'BLOQUES') {
+    const templates = await getBloquesTemplates(actividadId, organizationId);
+    if (templates.length > 0) {
+      const existingCount = await Bloque.count({
+        where: {
+          actividadId,
+          areaId: organizationId,
+          date: dateStr,
+          isTemplate: false,
+        },
+      });
+      if (existingCount === 0) {
+        for (const template of templates) {
+          await materializeBloqueFromTemplate(template, dateStr, organizationId);
+        }
+      }
+    }
+  }
+
   // Construir query con filtros multi-tenant obligatorio
   const where: Record<string, unknown> = {
     actividadId,
@@ -421,12 +472,8 @@ export const listBloquesByActividad = async (
   };
 
   // Aplicar filtros opcionales
-  if (filters['date']) {
-    const dateStr =
-      typeof filters['date'] === 'string' ? filters['date'] : toDateOnlyDB(filters['date']);
-    if (dateStr) {
-      where['date'] = dateStr;
-    }
+  if (dateStr) {
+    where['date'] = dateStr;
   }
   if (filters['isTemplate'] !== undefined) {
     where['isTemplate'] = filters['isTemplate'];
