@@ -7,18 +7,20 @@ export const CreateBloqueSchema = z
     .object({
     organizationId: z
         .string({
-        message: 'El ID de organización es requerido y debe ser un texto',
+        message: 'El ID de organización debe ser un texto',
     })
         .uuid({
         message: 'El ID de organización debe ser un UUID válido',
-    }),
+    })
+        .optional(),
     actividadId: z
         .string({
-        message: 'El ID de actividad es requerido y debe ser un texto',
+        message: 'El ID de actividad debe ser un texto',
     })
         .uuid({
         message: 'El ID de actividad debe ser un UUID válido',
-    }),
+    })
+        .optional(),
     date: dateOnlySchema.nullable(),
     startTime: timeOnlySchema,
     endTime: timeOnlySchema,

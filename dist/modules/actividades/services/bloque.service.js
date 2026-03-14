@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
 import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors/index.js';
+import { BadRequestError, NotFoundError, ValidationError } from '../../../shared/errors/index.js';
 import { logger } from '../../../shared/logger/index.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { assertIsAdmin } from '../../../modules/users/services/membership.service.js';
@@ -128,12 +128,17 @@ export const getBloquesTemplates = async (actividadId, organizationId) => {
  * @throws {ValidationError} Si la actividad no tiene tipo BLOQUES o hay solapamiento
  */
 export const createBloque = async (data, userId) => {
+    const organizationId = data.organizationId;
+    const actividadId = data.actividadId;
+    if (!organizationId || !actividadId) {
+        throw new BadRequestError('organizationId y actividadId son requeridos');
+    }
     // Validar que el usuario sea admin
-    await assertIsAdmin(userId, data.organizationId);
+    await assertIsAdmin(userId, organizationId);
     // Validar acceso a la organización
-    await assertCanAccessOrganization(userId, data.organizationId);
+    await assertCanAccessOrganization(userId, organizationId);
     // Validar que la actividad tenga tipo BLOQUES
-    await validateActividadHasBloquesType(data.actividadId, data.organizationId);
+    await validateActividadHasBloquesType(actividadId, organizationId);
     // Convertir fechas/horas de DateTime a strings para BD
     const dateStr = data['date'] ? toDateOnlyDB(data['date']) : null;
     const startTimeStr = toTimeOnly(data['startTime']);
@@ -143,12 +148,12 @@ export const createBloque = async (data, userId) => {
     }
     // Validar que no haya solapamiento (solo para bloques no plantilla)
     if (!data['isTemplate'] && dateStr) {
-        await validateNoTimeOverlap(data.actividadId, dateStr, startTimeStr, endTimeStr, data.organizationId);
+        await validateNoTimeOverlap(actividadId, dateStr, startTimeStr, endTimeStr, organizationId);
     }
     // Crear el bloque
     const bloque = await Bloque.create({
-        areaId: data.organizationId,
-        actividadId: data.actividadId,
+        areaId: organizationId,
+        actividadId,
         date: dateStr,
         startTime: startTimeStr,
         endTime: endTimeStr,
@@ -166,6 +171,29 @@ export const createBloque = async (data, userId) => {
         userId,
     }, 'Bloque creado exitosamente');
     return bloque;
+};
+/**
+ * Materializa un bloque concreto desde una plantilla para una fecha dada.
+ * Función interna: no valida permisos de admin (usada por createBloqueFromTemplate y listBloquesByActividad).
+ *
+ * @param template - Bloque plantilla (isTemplate: true)
+ * @param dateStr - Fecha en formato YYYY-MM-DD
+ * @param organizationId - ID de la organización (multi-tenant)
+ * @param capacityOverride - Capacidad opcional; si no se pasa, se usa la de la plantilla
+ * @returns Bloque creado
+ * @throws {ValidationError} Si hay solapamiento
+ */
+const materializeBloqueFromTemplate = async (template, dateStr, organizationId, capacityOverride) => {
+    await validateNoTimeOverlap(template.actividadId, dateStr, template.startTime, template.endTime, organizationId);
+    return await Bloque.create({
+        areaId: template.areaId,
+        actividadId: template.actividadId,
+        date: dateStr,
+        startTime: template.startTime,
+        endTime: template.endTime,
+        capacity: capacityOverride ?? template.capacity,
+        isTemplate: false,
+    });
 };
 /**
  * Crea un bloque desde una plantilla.
@@ -214,18 +242,7 @@ export const createBloqueFromTemplate = async (data, organizationId, userId) => 
     if (!dateStr) {
         throw new ValidationError('La fecha proporcionada no es válida');
     }
-    // Validar que no haya solapamiento
-    await validateNoTimeOverlap(template.actividadId, dateStr, template.startTime, template.endTime, organizationId);
-    // Crear el bloque desde la plantilla
-    const bloque = await Bloque.create({
-        areaId: template.areaId,
-        actividadId: template.actividadId,
-        date: dateStr,
-        startTime: template.startTime,
-        endTime: template.endTime,
-        capacity: data.capacity ?? template.capacity,
-        isTemplate: false,
-    });
+    const bloque = await materializeBloqueFromTemplate(template, dateStr, organizationId, data.capacity);
     logger.info({
         bloqueId: bloque.id,
         templateId: data.templateId,
@@ -294,17 +311,39 @@ export const listBloquesByActividad = async (actividadId, organizationId, filter
     if (!actividad) {
         throw new NotFoundError('Actividad', { actividadId, organizationId });
     }
+    // Normalizar fecha del filtro (reutilizada para materialización y where)
+    const dateStr = filters['date'] !== undefined && filters['date'] !== null
+        ? typeof filters['date'] === 'string'
+            ? filters['date']
+            : toDateOnlyDB(filters['date'])
+        : null;
+    // Materialización bajo demanda: si hay fecha, actividad es BLOQUES y tiene plantillas pero no bloques para esa fecha, crearlos
+    if (dateStr && actividad.agendaType === 'BLOQUES') {
+        const templates = await getBloquesTemplates(actividadId, organizationId);
+        if (templates.length > 0) {
+            const existingCount = await Bloque.count({
+                where: {
+                    actividadId,
+                    areaId: organizationId,
+                    date: dateStr,
+                    isTemplate: false,
+                },
+            });
+            if (existingCount === 0) {
+                for (const template of templates) {
+                    await materializeBloqueFromTemplate(template, dateStr, organizationId);
+                }
+            }
+        }
+    }
     // Construir query con filtros multi-tenant obligatorio
     const where = {
         actividadId,
         areaId: organizationId, // Multi-tenant obligatorio
     };
     // Aplicar filtros opcionales
-    if (filters['date']) {
-        const dateStr = typeof filters['date'] === 'string' ? filters['date'] : toDateOnlyDB(filters['date']);
-        if (dateStr) {
-            where['date'] = dateStr;
-        }
+    if (dateStr) {
+        where['date'] = dateStr;
     }
     if (filters['isTemplate'] !== undefined) {
         where['isTemplate'] = filters['isTemplate'];
