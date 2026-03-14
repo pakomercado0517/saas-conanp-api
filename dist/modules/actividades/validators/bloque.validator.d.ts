@@ -3,8 +3,8 @@ import { z } from 'zod';
  * Schema Zod para crear bloque
  */
 export declare const CreateBloqueSchema: z.ZodObject<{
-    organizationId: z.ZodString;
-    actividadId: z.ZodString;
+    organizationId: z.ZodOptional<z.ZodString>;
+    actividadId: z.ZodOptional<z.ZodString>;
     date: z.ZodNullable<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>;
     startTime: z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>;
     endTime: z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>;

@@ -8,7 +8,7 @@ import type {
   UpdateBloqueDTO,
   ListBloquesDTO,
 } from '@/modules/actividades/validators/bloque.validator.js';
-import { NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import { BadRequestError, NotFoundError, ValidationError } from '@/shared/errors/index.js';
 import type { PaginationMeta } from '@/shared/responses/types.js';
 import { logger } from '@/shared/logger/index.js';
 import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
@@ -187,14 +187,20 @@ export const getBloquesTemplates = async (
  * @throws {ValidationError} Si la actividad no tiene tipo BLOQUES o hay solapamiento
  */
 export const createBloque = async (data: CreateBloqueDTO, userId: UUID): Promise<Bloque> => {
+  const organizationId = data.organizationId;
+  const actividadId = data.actividadId;
+  if (!organizationId || !actividadId) {
+    throw new BadRequestError('organizationId y actividadId son requeridos');
+  }
+
   // Validar que el usuario sea admin
-  await assertIsAdmin(userId, data.organizationId);
+  await assertIsAdmin(userId, organizationId);
 
   // Validar acceso a la organización
-  await assertCanAccessOrganization(userId, data.organizationId);
+  await assertCanAccessOrganization(userId, organizationId);
 
   // Validar que la actividad tenga tipo BLOQUES
-  await validateActividadHasBloquesType(data.actividadId, data.organizationId);
+  await validateActividadHasBloquesType(actividadId, organizationId);
 
   // Convertir fechas/horas de DateTime a strings para BD
   const dateStr = data['date'] ? toDateOnlyDB(data['date']) : null;
@@ -207,19 +213,13 @@ export const createBloque = async (data: CreateBloqueDTO, userId: UUID): Promise
 
   // Validar que no haya solapamiento (solo para bloques no plantilla)
   if (!data['isTemplate'] && dateStr) {
-    await validateNoTimeOverlap(
-      data.actividadId,
-      dateStr,
-      startTimeStr,
-      endTimeStr,
-      data.organizationId
-    );
+    await validateNoTimeOverlap(actividadId, dateStr, startTimeStr, endTimeStr, organizationId);
   }
 
   // Crear el bloque
   const bloque = await Bloque.create({
-    areaId: data.organizationId,
-    actividadId: data.actividadId,
+    areaId: organizationId,
+    actividadId,
     date: dateStr,
     startTime: startTimeStr,
     endTime: endTimeStr,
