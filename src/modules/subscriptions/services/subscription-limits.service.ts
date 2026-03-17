@@ -33,6 +33,12 @@ export interface OrganizationLimits {
   maxEventos: number | null;
   maxActividades: number | null;
   maxOrganizations: number | null;
+  /** Límite de áreas por dependencia (plan FREE o features.limits.areas). */
+  maxAreas: number | null;
+  /** Límite de prestadores (plan FREE o features.limits.prestadores). */
+  maxPrestadores: number | null;
+  /** Límite de activos (plan FREE o features.limits.activos). */
+  maxActivos: number | null;
   planId: UUID;
   planName: string;
 }
@@ -70,6 +76,27 @@ export const getActiveSubscriptionByOrganization = async (
   return subscription;
 };
 
+/** Obtiene el límite de prestadores del plan (FREE = constante; otros = features.limits.prestadores). */
+const getPrestadoresLimit = (plan: SubscriptionPlan): number | null => {
+  if (plan.name === 'free') return FREE_PLAN_PRESTADORES_LIMIT;
+  const limit = plan.features?.limits?.['prestadores'];
+  return typeof limit === 'number' && limit >= 0 ? limit : null;
+};
+
+/** Obtiene el límite de activos del plan (FREE = constante; otros = features.limits.activos). */
+const getActivosLimit = (plan: SubscriptionPlan): number | null => {
+  if (plan.name === 'free') return FREE_PLAN_ACTIVOS_LIMIT;
+  const limit = plan.features?.limits?.['activos'];
+  return typeof limit === 'number' && limit >= 0 ? limit : null;
+};
+
+/** Obtiene el límite de áreas por dependencia (FREE = constante; otros = features.limits.areas). */
+const getAreasLimitForPlan = (plan: SubscriptionPlan): number | null => {
+  if (plan.name === 'free') return FREE_PLAN_AREAS_PER_DEPENDENCIA_LIMIT;
+  const limit = plan.features?.limits?.['areas'];
+  return typeof limit === 'number' && limit >= 0 ? limit : null;
+};
+
 /**
  * Obtiene los límites del plan actual de una organización.
  *
@@ -90,6 +117,9 @@ export const getOrganizationLimits = async (
     maxEventos: plan.maxEventos,
     maxActividades: plan.maxActividades,
     maxOrganizations: plan.maxOrganizations,
+    maxAreas: getAreasLimitForPlan(plan) ?? null,
+    maxPrestadores: getPrestadoresLimit(plan) ?? null,
+    maxActivos: getActivosLimit(plan) ?? null,
     planId: plan.id,
     planName: plan.name,
   };
@@ -175,6 +205,9 @@ export const getLimitsAndUsage = async (organizationId: UUID): Promise<LimitsAnd
     maxEventos: plan.maxEventos,
     maxActividades: plan.maxActividades,
     maxOrganizations: plan.maxOrganizations,
+    maxAreas: getAreasLimitForPlan(plan) ?? null,
+    maxPrestadores: getPrestadoresLimit(plan) ?? null,
+    maxActivos: getActivosLimit(plan) ?? null,
     planId: plan.id,
     planName: plan.name,
   };
@@ -214,7 +247,7 @@ export const checkUsersLimit = async (
   if (count >= plan.maxUsers) {
     throw new ValidationError(
       plan.name === 'free'
-        ? 'El plan gratuito permite solo 1 usuario. Actualiza tu plan para agregar más.'
+        ? `El plan gratuito permite hasta ${plan.maxUsers} usuarios. Actualiza tu plan para agregar más.`
         : `Has alcanzado el límite de usuarios del plan (${plan.maxUsers}). Considera actualizar tu plan.`,
       'maxUsers'
     );
@@ -296,12 +329,11 @@ export const checkActividadesLimit = async (
 };
 
 /**
- * Verifica el límite de prestadores (plan FREE = 1).
- * Solo aplica cuando el plan es "free".
+ * Verifica el límite de prestadores. FREE = 1; planes de pago usan features.limits.prestadores si existe.
  *
  * @param areaId - ID del área (organizationId en API)
  * @throws {NotFoundError} Si no tiene suscripción activa
- * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ * @throws {ValidationError} Si se excede el límite
  */
 export const checkPrestadoresLimit = async (areaId: UUID): Promise<void> => {
   const subscription = await getActiveSubscriptionByOrganization(areaId);
@@ -309,28 +341,30 @@ export const checkPrestadoresLimit = async (areaId: UUID): Promise<void> => {
     throw new NotFoundError('Suscripción activa', { organizationId: areaId });
   }
   const plan = subscription.SubscriptionPlan;
-  if (plan.name !== 'free') return;
+  const limit = getPrestadoresLimit(plan);
+  if (limit == null) return;
 
   const area = await Area.findByPk(areaId);
   if (!area) return;
   const count = await PrestadorProfile.count({
     where: { dependenciaId: area.dependenciaId },
   });
-  if (count >= FREE_PLAN_PRESTADORES_LIMIT) {
+  if (count >= limit) {
     throw new ValidationError(
-      'El plan gratuito permite solo 1 prestador. Actualiza tu plan para agregar más.',
+      plan.name === 'free'
+        ? 'El plan gratuito permite solo 1 prestador. Actualiza tu plan para agregar más.'
+        : `Has alcanzado el límite de prestadores del plan (${limit}). Considera actualizar tu plan.`,
       'maxPrestadores'
     );
   }
 };
 
 /**
- * Verifica el límite de activos (plan FREE = 1).
- * Solo aplica cuando el plan es "free".
+ * Verifica el límite de activos. FREE = 1; planes de pago usan features.limits.activos si existe.
  *
  * @param areaId - ID del área (organizationId en API)
  * @throws {NotFoundError} Si no tiene suscripción activa
- * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ * @throws {ValidationError} Si se excede el límite
  */
 export const checkActivosLimit = async (areaId: UUID): Promise<void> => {
   const subscription = await getActiveSubscriptionByOrganization(areaId);
@@ -338,16 +372,19 @@ export const checkActivosLimit = async (areaId: UUID): Promise<void> => {
     throw new NotFoundError('Suscripción activa', { organizationId: areaId });
   }
   const plan = subscription.SubscriptionPlan;
-  if (plan.name !== 'free') return;
+  const limit = getActivosLimit(plan);
+  if (limit == null) return;
 
   const area = await Area.findByPk(areaId);
   if (!area) return;
   const count = await Activo.count({
     where: { dependenciaId: area.dependenciaId },
   });
-  if (count >= FREE_PLAN_ACTIVOS_LIMIT) {
+  if (count >= limit) {
     throw new ValidationError(
-      'El plan gratuito permite solo 1 activo. Actualiza tu plan para agregar más.',
+      plan.name === 'free'
+        ? 'El plan gratuito permite solo 1 activo. Actualiza tu plan para agregar más.'
+        : `Has alcanzado el límite de activos del plan (${limit}). Considera actualizar tu plan.`,
       'maxActivos'
     );
   }
@@ -398,23 +435,26 @@ export const getActiveSubscriptionByDependencia = async (
 };
 
 /**
- * Verifica el límite de áreas por dependencia en plan FREE.
- * FREE = 1 área por dependencia. Llamar antes de crear área bajo dependencia.
+ * Verifica el límite de áreas por dependencia. FREE = 1; planes de pago usan features.limits.areas si existe.
+ * Llamar antes de crear área bajo dependencia.
  */
 export const checkAreasLimitForDependencia = async (dependenciaId: UUID): Promise<void> => {
   const subscription = await getActiveSubscriptionByDependencia(dependenciaId);
   if (!subscription?.SubscriptionPlan) {
     throw new NotFoundError('Suscripción activa', { dependenciaId });
   }
-  if (subscription.SubscriptionPlan.name !== 'free') {
-    return;
-  }
+  const plan = subscription.SubscriptionPlan;
+  const limit = getAreasLimitForPlan(plan);
+  if (limit == null) return;
+
   const count = await Area.count({
     where: { dependenciaId },
   });
-  if (count >= FREE_PLAN_AREAS_PER_DEPENDENCIA_LIMIT) {
+  if (count >= limit) {
     throw new ValidationError(
-      'El plan gratuito permite solo 1 área por dependencia. Actualiza tu plan para agregar más áreas.',
+      plan.name === 'free'
+        ? 'El plan gratuito permite solo 1 área por dependencia. Actualiza tu plan para agregar más áreas.'
+        : `Has alcanzado el límite de áreas del plan (${limit}). Considera actualizar tu plan.`,
       'maxAreas'
     );
   }

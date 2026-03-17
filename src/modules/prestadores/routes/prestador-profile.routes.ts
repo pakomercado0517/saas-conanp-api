@@ -4,6 +4,7 @@ import {
   getPrestadorProfileById,
   listPrestadores,
   updatePrestadorProfile,
+  createPrestadorCompleto,
 } from '../controllers/prestador-profile.controller.js';
 import {
   validateCreatePrestadorProfile,
@@ -54,6 +55,21 @@ prestadorRouter.post(
   requireAdmin,
   validateCreatePrestadorProfile,
   createPrestadorProfile
+);
+
+// Ruta para crear prestador completo (usuario + membership + perfil + activos opcionales)
+prestadorRouter.post(
+  '/crear-completo',
+  authenticate,
+  requireOrganizationAccess,
+  requireAdmin,
+  // Usamos un middleware genérico de validación en lugar de uno específico;
+  // la validación fina se hace con Zod en el controlador/servicio.
+  (_req, _res, next) => {
+    // No hacemos nada aquí, solo seguimos; el esquema Zod se aplica en el servicio.
+    next();
+  },
+  createPrestadorCompleto
 );
 
 /**

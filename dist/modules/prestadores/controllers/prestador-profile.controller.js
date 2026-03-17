@@ -164,4 +164,24 @@ export const updatePrestadorProfile = async (req, res) => {
     const profile = await prestadorProfileService.updatePrestadorProfile(prestadorId, organizationId, data, userId);
     return sendSuccess(res, profile, 'Perfil de prestador actualizado exitosamente');
 };
+/**
+ * Crea un prestador completo (usuario + membership + perfil + activos opcionales)
+ * en una sola operación.
+ *
+ * POST /api/v1/organizations/:organizationId/prestadores/crear-completo
+ */
+export const createPrestadorCompleto = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const userId = req.user.userId;
+    const data = req.body;
+    const result = await prestadorProfileService.createPrestadorCompleto(organizationId, data, userId);
+    return sendCreated(res, result, 'Prestador completo creado exitosamente');
+};
 //# sourceMappingURL=prestador-profile.controller.js.map

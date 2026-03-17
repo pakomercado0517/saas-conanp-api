@@ -23,6 +23,32 @@ describe('Subscription plans endpoints (integration)', () => {
       expect(res.body).toHaveProperty('data');
       expect(Array.isArray(res.body.data)).toBe(true);
     });
+
+    it('devuelve planes con priceMonthly, límites y features para comparativa', async () => {
+      const res = await request(app).get(API_PLANS).query({ limit: 20 }).expect(200);
+
+      expect(res.body.success).toBe(true);
+      const plans = res.body.data as Array<{
+        id: string;
+        name: string;
+        priceMonthly: number;
+        priceYearly: number;
+        maxUsers?: number | null;
+        maxEventos?: number | null;
+        maxActividades?: number | null;
+        features?: { limits?: Record<string, number>; functionalities?: string[] } | null;
+      }>;
+      expect(plans.length).toBeGreaterThanOrEqual(0);
+      for (const plan of plans) {
+        expect(plan).toHaveProperty('name');
+        expect(plan).toHaveProperty('priceMonthly');
+        expect(plan).toHaveProperty('priceYearly');
+        expect(typeof plan.priceMonthly).toBe('number');
+        if (plan.features != null) {
+          expect(plan.features).toEqual(expect.any(Object));
+        }
+      }
+    });
   });
 });
 

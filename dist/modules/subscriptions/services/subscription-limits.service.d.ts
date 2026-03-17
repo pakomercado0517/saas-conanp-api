@@ -6,6 +6,12 @@ export interface OrganizationLimits {
     maxEventos: number | null;
     maxActividades: number | null;
     maxOrganizations: number | null;
+    /** Límite de áreas por dependencia (plan FREE o features.limits.areas). */
+    maxAreas: number | null;
+    /** Límite de prestadores (plan FREE o features.limits.prestadores). */
+    maxPrestadores: number | null;
+    /** Límite de activos (plan FREE o features.limits.activos). */
+    maxActivos: number | null;
     planId: UUID;
     planName: string;
 }
@@ -79,21 +85,19 @@ export declare const checkEventosLimit: (organizationId: UUID, currentCount?: nu
  */
 export declare const checkActividadesLimit: (organizationId: UUID, currentCount?: number) => Promise<void>;
 /**
- * Verifica el límite de prestadores (plan FREE = 1).
- * Solo aplica cuando el plan es "free".
+ * Verifica el límite de prestadores. FREE = 1; planes de pago usan features.limits.prestadores si existe.
  *
  * @param areaId - ID del área (organizationId en API)
  * @throws {NotFoundError} Si no tiene suscripción activa
- * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ * @throws {ValidationError} Si se excede el límite
  */
 export declare const checkPrestadoresLimit: (areaId: UUID) => Promise<void>;
 /**
- * Verifica el límite de activos (plan FREE = 1).
- * Solo aplica cuando el plan es "free".
+ * Verifica el límite de activos. FREE = 1; planes de pago usan features.limits.activos si existe.
  *
  * @param areaId - ID del área (organizationId en API)
  * @throws {NotFoundError} Si no tiene suscripción activa
- * @throws {ValidationError} Si se excede el límite (FREE = 1)
+ * @throws {ValidationError} Si se excede el límite
  */
 export declare const checkActivosLimit: (areaId: UUID) => Promise<void>;
 /**
@@ -111,8 +115,8 @@ export declare const getActiveSubscriptionByDependencia: (dependenciaId: UUID) =
     SubscriptionPlan?: SubscriptionPlan;
 }) | null>;
 /**
- * Verifica el límite de áreas por dependencia en plan FREE.
- * FREE = 1 área por dependencia. Llamar antes de crear área bajo dependencia.
+ * Verifica el límite de áreas por dependencia. FREE = 1; planes de pago usan features.limits.areas si existe.
+ * Llamar antes de crear área bajo dependencia.
  */
 export declare const checkAreasLimitForDependencia: (dependenciaId: UUID) => Promise<void>;
 /**

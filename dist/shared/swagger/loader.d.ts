@@ -20,4 +20,5 @@ import '../../modules/eventos/swagger/evento.swagger.js';
 import '../../modules/evidencias/swagger/evidencia.swagger.js';
 import '../../modules/reportes/swagger/reporte.swagger.js';
 import '../../modules/payments/swagger/payment.swagger.js';
+import '../../modules/subscriptions/swagger/subscription-plan.swagger.js';
 //# sourceMappingURL=loader.d.ts.map

@@ -242,39 +242,49 @@ export const deletePlan = async (planId) => {
 export const syncPlanToStripe = async (planId) => {
     const plan = await getPlanById(planId);
     const currency = getDefaultCurrency().toLowerCase();
-    const monthlyCents = Math.round(Number(plan.priceMonthly) * 100);
-    const yearlyCents = Math.round(Number(plan.priceYearly) * 100);
+    const hasPrices = plan.priceMonthly != null &&
+        plan.priceYearly != null &&
+        Number(plan.priceMonthly) >= 0 &&
+        Number(plan.priceYearly) >= 0;
+    const monthlyCents = hasPrices ? Math.round(Number(plan.priceMonthly) * 100) : 0;
+    const yearlyCents = hasPrices ? Math.round(Number(plan.priceYearly) * 100) : 0;
     try {
         if (!plan.stripeProductId) {
-            // Crear Product y Prices en Stripe
+            // Crear Product en Stripe (y Prices solo si el plan tiene precios, ej. Enterprise no)
             const product = await stripeClient.products.create({
                 name: plan.name,
                 ...(plan.description != null && { description: plan.description }),
                 active: plan.active,
             });
-            const priceMonthly = await stripeClient.prices.create({
-                currency,
-                unit_amount: monthlyCents,
-                recurring: { interval: 'month' },
-                product: product.id,
-            });
-            const priceYearly = await stripeClient.prices.create({
-                currency,
-                unit_amount: yearlyCents,
-                recurring: { interval: 'year' },
-                product: product.id,
-            });
-            await plan.update({
-                stripeProductId: product.id,
-                stripePriceIdMonthly: priceMonthly.id,
-                stripePriceIdYearly: priceYearly.id,
-            });
-            logger.info({
-                planId: plan.id,
-                stripeProductId: product.id,
-                stripePriceIdMonthly: priceMonthly.id,
-                stripePriceIdYearly: priceYearly.id,
-            }, 'Plan sincronizado con Stripe (Product y Prices creados)');
+            if (hasPrices) {
+                const priceMonthly = await stripeClient.prices.create({
+                    currency,
+                    unit_amount: monthlyCents,
+                    recurring: { interval: 'month' },
+                    product: product.id,
+                });
+                const priceYearly = await stripeClient.prices.create({
+                    currency,
+                    unit_amount: yearlyCents,
+                    recurring: { interval: 'year' },
+                    product: product.id,
+                });
+                await plan.update({
+                    stripeProductId: product.id,
+                    stripePriceIdMonthly: priceMonthly.id,
+                    stripePriceIdYearly: priceYearly.id,
+                });
+                logger.info({
+                    planId: plan.id,
+                    stripeProductId: product.id,
+                    stripePriceIdMonthly: priceMonthly.id,
+                    stripePriceIdYearly: priceYearly.id,
+                }, 'Plan sincronizado con Stripe (Product y Prices creados)');
+            }
+            else {
+                await plan.update({ stripeProductId: product.id });
+                logger.info({ planId: plan.id, stripeProductId: product.id }, 'Plan sincronizado con Stripe (solo Product; sin precios, ej. Enterprise)');
+            }
         }
         else {
             // Actualizar Product existente

@@ -5,13 +5,23 @@ import * as subscriptionLimitsService from '../subscription-limits.service.js';
 
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' as UUID;
 const PLAN_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' as UUID;
+const DEP_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc' as UUID;
 
+const mockAreaFindByPk = vi.fn();
 const mockSubscriptionFindOne = vi.fn();
 const mockSubscriptionCount = vi.fn();
 const mockMembershipCount = vi.fn();
 const mockEventoOperativoCount = vi.fn();
 const mockActividadCount = vi.fn();
 const mockGetPlanById = vi.fn();
+
+vi.mock('@/modules/areas/models/area.model.js', () => ({
+  Area: {
+    findByPk: (...args: unknown[]): unknown => mockAreaFindByPk(...args),
+    findAll: vi.fn().mockResolvedValue([]),
+    count: vi.fn().mockResolvedValue(0),
+  },
+}));
 
 vi.mock('@/modules/subscriptions/models/subscription.model.js', () => ({
   Subscription: {
@@ -49,6 +59,7 @@ vi.mock('@/modules/subscriptions/services/subscription-plan.service.js', () => (
 describe('subscription-limits.service', () => {
   beforeEach((): void => {
     vi.clearAllMocks();
+    mockAreaFindByPk.mockResolvedValue({ id: ORG_ID, dependenciaId: DEP_ID });
     mockMembershipCount.mockResolvedValue(0);
     mockEventoOperativoCount.mockResolvedValue(0);
     mockActividadCount.mockResolvedValue(0);
@@ -70,6 +81,14 @@ describe('subscription-limits.service', () => {
   });
 
   describe('getActiveSubscriptionByOrganization', () => {
+    it('returns null when no area', async () => {
+      mockAreaFindByPk.mockResolvedValueOnce(null);
+
+      const result = await subscriptionLimitsService.getActiveSubscriptionByOrganization(ORG_ID);
+
+      expect(result).toBeNull();
+    });
+
     it('returns null when no active subscription', async () => {
       mockSubscriptionFindOne.mockResolvedValueOnce(null);
 
@@ -124,6 +143,29 @@ describe('subscription-limits.service', () => {
       expect(result?.maxEventos).toBe(100);
       expect(result?.maxActividades).toBe(5);
       expect(result?.maxOrganizations).toBe(50);
+      expect(result).toHaveProperty('maxAreas');
+      expect(result).toHaveProperty('maxPrestadores');
+      expect(result).toHaveProperty('maxActivos');
+    });
+
+    it('returns maxAreas, maxPrestadores, maxActivos from features.limits when set', async () => {
+      const plan = {
+        id: PLAN_ID,
+        name: 'profesional',
+        maxUsers: 50,
+        maxEventos: 5000,
+        maxActividades: 40,
+        maxOrganizations: null,
+        features: { limits: { areas: 15, prestadores: 150, activos: 300 } },
+      };
+      mockSubscriptionFindOne.mockResolvedValueOnce(activeSubscriptionWithPlan(plan));
+
+      const result = await subscriptionLimitsService.getOrganizationLimits(ORG_ID);
+
+      expect(result).not.toBeNull();
+      expect(result?.maxAreas).toBe(15);
+      expect(result?.maxPrestadores).toBe(150);
+      expect(result?.maxActivos).toBe(300);
     });
   });
 

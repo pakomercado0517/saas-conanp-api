@@ -6,6 +6,7 @@ import type {
   UpdatePrestadorProfileDTO,
   ListPrestadoresDTO,
 } from '../validators/prestador-profile.validator.js';
+import type { CreatePrestadorCompletoDTO } from '../validators/prestador-profile.validator.js';
 
 /**
  * Crea un nuevo perfil de prestador.
@@ -196,4 +197,32 @@ export const updatePrestadorProfile = async (req: Request, res: Response): Promi
   );
 
   return sendSuccess(res, profile, 'Perfil de prestador actualizado exitosamente');
+};
+
+/**
+ * Crea un prestador completo (usuario + membership + perfil + activos opcionales)
+ * en una sola operación.
+ *
+ * POST /api/v1/organizations/:organizationId/prestadores/crear-completo
+ */
+export const createPrestadorCompleto = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const data = req.body as CreatePrestadorCompletoDTO;
+
+  const result = await prestadorProfileService.createPrestadorCompleto(
+    organizationId,
+    data,
+    userId
+  );
+
+  return sendCreated(res, result, 'Prestador completo creado exitosamente');
 };

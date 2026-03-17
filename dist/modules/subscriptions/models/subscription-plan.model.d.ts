@@ -9,8 +9,8 @@ export interface SubscriptionPlanAttributes {
     id: UUID;
     name: SubscriptionPlanName | string;
     description: string | null;
-    priceMonthly: number;
-    priceYearly: number;
+    priceMonthly: number | null;
+    priceYearly: number | null;
     stripePriceIdMonthly: string | null;
     stripePriceIdYearly: string | null;
     stripeProductId: string | null;
@@ -24,15 +24,15 @@ export interface SubscriptionPlanAttributes {
     updatedAt: Date;
     deletedAt: Date | null;
 }
-export interface SubscriptionPlanCreationAttributes extends Optional<SubscriptionPlanAttributes, 'id' | 'description' | 'stripePriceIdMonthly' | 'stripePriceIdYearly' | 'stripeProductId' | 'features' | 'maxOrganizations' | 'maxUsers' | 'maxEventos' | 'maxActividades' | 'active' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
+export interface SubscriptionPlanCreationAttributes extends Optional<SubscriptionPlanAttributes, 'id' | 'description' | 'stripePriceIdMonthly' | 'stripePriceIdYearly' | 'stripeProductId' | 'features' | 'maxOrganizations' | 'maxUsers' | 'maxEventos' | 'maxActividades' | 'active' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'priceMonthly' | 'priceYearly'> {
 }
 export declare const SUBSCRIPTION_PLAN_NAMES: SubscriptionPlanName[];
 export declare class SubscriptionPlan extends Model<SubscriptionPlanAttributes, SubscriptionPlanCreationAttributes> implements SubscriptionPlanAttributes {
     id: UUID;
     name: SubscriptionPlanName | string;
     description: string | null;
-    priceMonthly: number;
-    priceYearly: number;
+    priceMonthly: number | null;
+    priceYearly: number | null;
     stripePriceIdMonthly: string | null;
     stripePriceIdYearly: string | null;
     stripeProductId: string | null;

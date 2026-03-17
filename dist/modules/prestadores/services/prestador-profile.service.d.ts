@@ -1,8 +1,11 @@
 import type { UUID } from '../../../shared/database/types.js';
 import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
 import { Membership } from '../../../modules/users/models/membership.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 import type { CreatePrestadorProfileDTO, UpdatePrestadorProfileDTO, ListPrestadoresDTO } from '../../../modules/prestadores/validators/prestador-profile.validator.js';
+import type { CreatePrestadorCompletoDTO } from '../../../modules/prestadores/validators/prestador-profile.validator.js';
 import type { PaginationMeta } from '../../../shared/responses/types.js';
+import { Activo } from '../../../modules/activos/models/activo.model.js';
 /**
  * Valida que el usuario tenga una membership activa en la organización.
  *
@@ -79,4 +82,13 @@ export declare const listPrestadores: (organizationId: UUID, filters: ListPresta
  * @throws {NotFoundError} Si el perfil no existe o no pertenece a la organización
  */
 export declare const updatePrestadorProfile: (profileId: UUID, organizationId: UUID, data: UpdatePrestadorProfileDTO, requestingUserId: UUID) => Promise<PrestadorProfile>;
+/**
+ * Crea un prestador completo: usuario, membership con rol 'prestador',
+ * perfil de prestador y activos opcionales en una sola transacción.
+ */
+export declare const createPrestadorCompleto: (organizationId: UUID, data: CreatePrestadorCompletoDTO, creatorUserId: UUID) => Promise<{
+    user: User;
+    prestador: PrestadorProfile;
+    activos: Activo[];
+}>;
 //# sourceMappingURL=prestador-profile.service.d.ts.map

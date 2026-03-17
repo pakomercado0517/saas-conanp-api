@@ -9,12 +9,24 @@ import type {
   UpdatePrestadorProfileDTO,
   ListPrestadoresDTO,
 } from '@/modules/prestadores/validators/prestador-profile.validator.js';
-import { ForbiddenError, NotFoundError, ConflictError } from '@/shared/errors/index.js';
+import type { CreatePrestadorCompletoDTO } from '@/modules/prestadores/validators/prestador-profile.validator.js';
+import {
+  ForbiddenError,
+  NotFoundError,
+  ConflictError,
+  ValidationError,
+} from '@/shared/errors/index.js';
 import type { PaginationMeta } from '@/shared/responses/types.js';
 import { logger } from '@/shared/logger/index.js';
 import { assertCanAccessOrganization } from '@/modules/organizations/services/organization.service.js';
-import { checkPrestadoresLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
+import {
+  checkActivosLimit,
+  checkPrestadoresLimit,
+} from '@/modules/subscriptions/services/subscription-limits.service.js';
 import type { DateTime } from 'luxon';
+import { Activo } from '@/modules/activos/models/activo.model.js';
+import { sequelize } from '@/shared/database/index.js';
+import bcrypt from 'bcrypt';
 
 /**
  * Valida que el usuario tenga una membership activa en la organización.
@@ -421,4 +433,199 @@ export const updatePrestadorProfile = async (
   );
 
   return profile;
+};
+
+/**
+ * Crea un prestador completo: usuario, membership con rol 'prestador',
+ * perfil de prestador y activos opcionales en una sola transacción.
+ */
+export const createPrestadorCompleto = async (
+  organizationId: UUID,
+  data: CreatePrestadorCompletoDTO,
+  creatorUserId: UUID
+): Promise<{ user: User; prestador: PrestadorProfile; activos: Activo[] }> => {
+  // Validar que el creador tenga acceso a la organización y sea admin
+  await assertCanAccessOrganization(creatorUserId, organizationId);
+  const creatorMembership = await validateUserMembership(creatorUserId, organizationId);
+  if (creatorMembership.role !== 'admin') {
+    throw new ForbiddenError('Solo los administradores pueden crear prestadores completos', {
+      organizationId,
+      userId: creatorUserId,
+      currentRole: creatorMembership.role,
+    });
+  }
+
+  // Verificar límites de prestadores y activos (si se envían)
+  await checkPrestadoresLimit(organizationId);
+  if (data.activos && data.activos.length > 0) {
+    await checkActivosLimit(organizationId);
+  }
+
+  const area = await Area.findByPk(organizationId);
+  if (!area) {
+    throw new NotFoundError('Área', { organizationId });
+  }
+  const dependenciaId = area.dependenciaId;
+
+  const normalizedEmail = data.email.trim().toLowerCase();
+
+  return sequelize.transaction(async (transaction) => {
+    const existingUser = await User.findOne({
+      where: { email: normalizedEmail },
+      paranoid: false,
+      transaction,
+    });
+
+    if (existingUser?.deletedAt) {
+      throw new ValidationError(
+        'No se puede crear un prestador con un usuario eliminado. Usa otro email.',
+        undefined,
+        { email: normalizedEmail }
+      );
+    }
+
+    if (existingUser) {
+      throw new ConflictError('Ya existe un usuario con este email', {
+        email: normalizedEmail,
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    const user = await User.create(
+      {
+        email: normalizedEmail,
+        name: data.name,
+        password: passwordHash,
+        emailVerified: true,
+        onboardingStatus: 'completed',
+      },
+      { transaction }
+    );
+
+    const existingMembership = await Membership.findOne({
+      where: { userId: user.id, areaId: organizationId },
+      transaction,
+    });
+
+    if (existingMembership) {
+      throw new ConflictError('El usuario ya tiene una membresía en esta área', {
+        userId: user.id,
+        areaId: organizationId,
+        membershipId: existingMembership.id,
+        existingRole: existingMembership.role,
+        existingStatus: existingMembership.status,
+      });
+    }
+
+    const membership = await Membership.create(
+      {
+        userId: user.id,
+        areaId: organizationId,
+        role: 'prestador',
+        status: data.status ?? 'activo',
+      },
+      { transaction }
+    );
+
+    // Convertir permitExpiresAt de DateTime a Date si está presente
+    let permitExpiresAtDate: Date | null | undefined = undefined;
+    if (data['permitExpiresAt'] !== undefined) {
+      if (
+        data['permitExpiresAt'] &&
+        typeof data['permitExpiresAt'] === 'object' &&
+        'toJSDate' in data['permitExpiresAt']
+      ) {
+        permitExpiresAtDate = (data['permitExpiresAt'] as DateTime).toJSDate();
+      } else if (data['permitExpiresAt'] === null) {
+        permitExpiresAtDate = null;
+      }
+    }
+
+    const prestador = await PrestadorProfile.create(
+      {
+        userId: user.id,
+        dependenciaId,
+        status: data.status ?? 'activo',
+        ...(permitExpiresAtDate !== undefined && { permitExpiresAt: permitExpiresAtDate }),
+      },
+      { transaction }
+    );
+
+    const activos: Activo[] = [];
+
+    if (data.activos && data.activos.length > 0) {
+      // Validar tipos de activo según ecosystem_type
+      const allowedTypesByEcosystem: Record<Area['ecosystem_type'], Array<Activo['type']>> = {
+        maritimo: ['embarcacion', 'guia', 'equipo'],
+        terrestre: ['vehiculo', 'guia', 'equipo'],
+        mixto: ['embarcacion', 'vehiculo', 'guia', 'equipo'],
+      };
+
+      const allowedTypes = allowedTypesByEcosystem[area.ecosystem_type];
+
+      for (const activoInput of data.activos) {
+        if (!allowedTypes.includes(activoInput.type as Activo['type'])) {
+          throw new ValidationError(
+            `El tipo de activo '${activoInput.type}' no está permitido para áreas de tipo '${area.ecosystem_type}'`,
+            undefined,
+            {
+              ecosystem_type: area.ecosystem_type,
+              type: activoInput.type,
+            }
+          );
+        }
+      }
+
+      // Crear activos
+      for (const activoInput of data.activos) {
+        const activo = await Activo.create(
+          {
+            dependenciaId,
+            ownerId: prestador.id,
+            type: activoInput.type as Activo['type'],
+            status: 'pendiente',
+          },
+          { transaction }
+        );
+        activos.push(activo);
+      }
+    }
+
+    // Cargar relaciones mínimas para la respuesta
+    await prestador.reload({
+      include: [
+        { model: User, as: 'User' },
+        { model: Dependencia, as: 'Dependencia' },
+      ],
+      transaction,
+    });
+
+    await Promise.all([
+      membership.reload({ include: [{ model: Area, as: 'Area' }], transaction }),
+      ...activos.map((a) =>
+        a.reload({
+          include: [
+            { model: Dependencia, as: 'Dependencia' },
+            { model: PrestadorProfile, as: 'Owner' },
+          ],
+          transaction,
+        })
+      ),
+    ]);
+
+    logger.info(
+      {
+        prestadorId: prestador.id,
+        dependenciaId,
+        userId: user.id,
+        membershipId: membership.id,
+        activosCount: activos.length,
+        creatorUserId,
+      },
+      'Prestador completo creado exitosamente'
+    );
+
+    return { user, prestador, activos };
+  });
 };
