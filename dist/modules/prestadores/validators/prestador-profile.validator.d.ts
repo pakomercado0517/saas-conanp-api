@@ -50,4 +50,27 @@ export declare const ListPrestadoresSchema: z.ZodObject<{
     permitExpiresAt: z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>;
 }, z.core.$strip>;
 export type ListPrestadoresDTO = z.infer<typeof ListPrestadoresSchema>;
+/**
+ * Schema Zod para crear prestador completo (usuario + membership + perfil + activos opcionales).
+ */
+export declare const CreatePrestadorCompletoSchema: z.ZodObject<{
+    email: z.ZodString;
+    name: z.ZodString;
+    password: z.ZodString;
+    status: z.ZodDefault<z.ZodOptional<z.ZodEnum<{
+        activo: "activo";
+        inactivo: "inactivo";
+        suspendido: "suspendido";
+    }>>>;
+    permitExpiresAt: z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>;
+    activos: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        type: z.ZodEnum<{
+            embarcacion: "embarcacion";
+            vehiculo: "vehiculo";
+            guia: "guia";
+            equipo: "equipo";
+        }>;
+    }, z.core.$strip>>>;
+}, z.core.$strip>;
+export type CreatePrestadorCompletoDTO = z.infer<typeof CreatePrestadorCompletoSchema>;
 //# sourceMappingURL=prestador-profile.validator.d.ts.map

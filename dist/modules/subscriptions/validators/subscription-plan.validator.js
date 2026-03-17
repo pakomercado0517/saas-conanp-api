@@ -1,16 +1,13 @@
 import { z } from 'zod';
 // Helpers reutilizables
-const PLAN_NAMES = ['free', 'básico', 'profesional', 'empresarial'];
+const PLAN_NAMES = ['free', 'básico', 'profesional', 'empresarial', 'enterprise'];
 const planNameEnum = z.enum(PLAN_NAMES, {
-    error: 'El nombre del plan debe ser: free, básico, profesional o empresarial',
+    error: 'El nombre del plan debe ser: free, básico, profesional, empresarial o enterprise',
 });
-const priceSchema = z
-    .number({
-    message: 'El precio debe ser un número',
-})
-    .min(0, {
-    message: 'El precio no puede ser negativo',
-});
+const priceSchema = z.union([
+    z.number({ message: 'El precio debe ser un número' }).min(0, 'El precio no puede ser negativo'),
+    z.null(),
+]);
 const limitPositiveSchema = z
     .union([z.number().int('Debe ser un número entero').min(1, 'Debe ser al menos 1'), z.null()])
     .optional();

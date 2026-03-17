@@ -6,6 +6,7 @@ import { optionalDateTimeSchema } from '../../../shared/dates/zod-schemas.js';
 extendZodWithOpenApi(z);
 // Constantes para enums reutilizables
 const STATUS_VALUES = ['activo', 'inactivo', 'suspendido'];
+const ACTIVO_TYPES = ['embarcacion', 'vehiculo', 'guia', 'equipo'];
 // Enum Zod para status
 const statusEnum = z.enum(STATUS_VALUES, {
     error: 'El estado debe ser: activo, inactivo o suspendido',
@@ -106,6 +107,57 @@ export const ListPrestadoresSchema = registry.register('ListPrestadores', z
         page: 1,
         limit: 20,
         sortOrder: 'desc',
+    },
+}));
+/**
+ * Schema Zod para crear prestador completo (usuario + membership + perfil + activos opcionales).
+ */
+export const CreatePrestadorCompletoSchema = registry.register('CreatePrestadorCompleto', z
+    .object({
+    email: z
+        .string({
+        message: 'El email es requerido y debe ser un texto',
+    })
+        .email({
+        message: 'El email debe tener un formato válido',
+    })
+        .max(255, {
+        message: 'El email no puede exceder 255 caracteres',
+    })
+        .describe('Email del prestador'),
+    name: z
+        .string({
+        message: 'El nombre es requerido y debe ser un texto',
+    })
+        .min(1, { message: 'El nombre debe tener al menos 1 carácter' })
+        .max(255, { message: 'El nombre no puede exceder 255 caracteres' })
+        .describe('Nombre completo del prestador'),
+    password: z
+        .string({
+        message: 'La contraseña es requerida y debe ser un texto',
+    })
+        .min(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+        .max(255, { message: 'La contraseña no puede exceder 255 caracteres' })
+        .describe('Contraseña inicial del prestador'),
+    status: statusEnum.optional().default('activo').describe('Estado del prestador'),
+    permitExpiresAt: optionalDateTimeSchema.describe('Fecha de expiración del permiso (opcional)'),
+    activos: z
+        .array(z.object({
+        type: z.enum(ACTIVO_TYPES, {
+            error: `El tipo de activo debe ser uno de: ${ACTIVO_TYPES.join(', ')}`,
+        }),
+    }))
+        .optional()
+        .describe('Lista opcional de activos (embarcaciones, vehículos, guías, equipo)'),
+})
+    .openapi({
+    example: {
+        email: 'prestador@ejemplo.com',
+        name: 'Juan Pérez',
+        password: 'TempPass123!',
+        status: 'activo',
+        permitExpiresAt: '2026-12-31T23:59:59Z',
+        activos: [{ type: 'embarcacion' }, { type: 'vehiculo' }],
     },
 }));
 //# sourceMappingURL=prestador-profile.validator.js.map

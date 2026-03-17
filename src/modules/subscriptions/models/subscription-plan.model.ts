@@ -12,8 +12,8 @@ export interface SubscriptionPlanAttributes {
   id: UUID;
   name: SubscriptionPlanName | string;
   description: string | null;
-  priceMonthly: number;
-  priceYearly: number;
+  priceMonthly: number | null;
+  priceYearly: number | null;
   stripePriceIdMonthly: string | null;
   stripePriceIdYearly: string | null;
   stripeProductId: string | null;
@@ -44,6 +44,8 @@ export interface SubscriptionPlanCreationAttributes extends Optional<
   | 'createdAt'
   | 'updatedAt'
   | 'deletedAt'
+  | 'priceMonthly'
+  | 'priceYearly'
 > {}
 
 export const SUBSCRIPTION_PLAN_NAMES: SubscriptionPlanName[] = [
@@ -51,6 +53,7 @@ export const SUBSCRIPTION_PLAN_NAMES: SubscriptionPlanName[] = [
   'básico',
   'profesional',
   'empresarial',
+  'enterprise',
 ];
 
 export class SubscriptionPlan
@@ -60,8 +63,8 @@ export class SubscriptionPlan
   declare id: UUID;
   declare name: SubscriptionPlanName | string;
   declare description: string | null;
-  declare priceMonthly: number;
-  declare priceYearly: number;
+  declare priceMonthly: number | null;
+  declare priceYearly: number | null;
   declare stripePriceIdMonthly: string | null;
   declare stripePriceIdYearly: string | null;
   declare stripeProductId: string | null;
@@ -97,7 +100,7 @@ SubscriptionPlan.init(
         },
         isIn: {
           args: [SUBSCRIPTION_PLAN_NAMES],
-          msg: 'El nombre del plan debe ser: free, básico, profesional o empresarial',
+          msg: 'El nombre del plan debe ser: free, básico, profesional, empresarial o enterprise',
         },
       },
     },
@@ -107,10 +110,10 @@ SubscriptionPlan.init(
     },
     priceMonthly: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      get(): number {
+      allowNull: true,
+      get(): number | null {
         const value = this.getDataValue('priceMonthly');
-        return value != null ? Number(value) : 0;
+        return value != null ? Number(value) : null;
       },
       validate: {
         min: {
@@ -121,10 +124,10 @@ SubscriptionPlan.init(
     },
     priceYearly: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      get(): number {
+      allowNull: true,
+      get(): number | null {
         const value = this.getDataValue('priceYearly');
-        return value != null ? Number(value) : 0;
+        return value != null ? Number(value) : null;
       },
       validate: {
         min: {

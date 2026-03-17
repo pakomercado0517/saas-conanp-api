@@ -12,7 +12,7 @@ export type Role = 'admin' | 'gestor' | 'prestador' | 'observador';
 /** Rol en una dependencia (owner = primer admin de la dependencia) */
 export type DependenciaRole = 'owner' | 'admin' | 'gestor' | 'prestador' | 'observador';
 export type PaymentStatus = 'pending' | 'processing' | 'succeeded' | 'failed' | 'refunded' | 'cancelled';
-export type SubscriptionPlanName = 'free' | 'básico' | 'profesional' | 'empresarial';
+export type SubscriptionPlanName = 'free' | 'básico' | 'profesional' | 'empresarial' | 'enterprise';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing' | 'incomplete' | 'incomplete_expired';
 export type BillingCycle = 'monthly' | 'yearly';
 /** Tipo de producto de acceso (brazalete o pasaporte turístico) */

@@ -5,6 +5,7 @@ export const SUBSCRIPTION_PLAN_NAMES = [
     'básico',
     'profesional',
     'empresarial',
+    'enterprise',
 ];
 export class SubscriptionPlan extends Model {
 }
@@ -28,7 +29,7 @@ SubscriptionPlan.init({
             },
             isIn: {
                 args: [SUBSCRIPTION_PLAN_NAMES],
-                msg: 'El nombre del plan debe ser: free, básico, profesional o empresarial',
+                msg: 'El nombre del plan debe ser: free, básico, profesional, empresarial o enterprise',
             },
         },
     },
@@ -38,10 +39,10 @@ SubscriptionPlan.init({
     },
     priceMonthly: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
+        allowNull: true,
         get() {
             const value = this.getDataValue('priceMonthly');
-            return value != null ? Number(value) : 0;
+            return value != null ? Number(value) : null;
         },
         validate: {
             min: {
@@ -52,10 +53,10 @@ SubscriptionPlan.init({
     },
     priceYearly: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
+        allowNull: true,
         get() {
             const value = this.getDataValue('priceYearly');
-            return value != null ? Number(value) : 0;
+            return value != null ? Number(value) : null;
         },
         validate: {
             min: {

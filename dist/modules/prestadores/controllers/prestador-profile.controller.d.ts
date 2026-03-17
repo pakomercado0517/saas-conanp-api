@@ -103,4 +103,11 @@ export declare const listPrestadores: (req: Request, res: Response) => Promise<R
  * }
  */
 export declare const updatePrestadorProfile: (req: Request, res: Response) => Promise<Response>;
+/**
+ * Crea un prestador completo (usuario + membership + perfil + activos opcionales)
+ * en una sola operación.
+ *
+ * POST /api/v1/organizations/:organizationId/prestadores/crear-completo
+ */
+export declare const createPrestadorCompleto: (req: Request, res: Response) => Promise<Response>;
 //# sourceMappingURL=prestador-profile.controller.d.ts.map

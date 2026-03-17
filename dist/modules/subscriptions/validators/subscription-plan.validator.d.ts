@@ -8,10 +8,11 @@ export declare const CreateSubscriptionPlanSchema: z.ZodObject<{
         básico: "básico";
         profesional: "profesional";
         empresarial: "empresarial";
+        enterprise: "enterprise";
     }>;
     description: z.ZodNullable<z.ZodOptional<z.ZodString>>;
-    priceMonthly: z.ZodNumber;
-    priceYearly: z.ZodNumber;
+    priceMonthly: z.ZodUnion<readonly [z.ZodNumber, z.ZodNull]>;
+    priceYearly: z.ZodUnion<readonly [z.ZodNumber, z.ZodNull]>;
     stripePriceIdMonthly: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     stripePriceIdYearly: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     stripeProductId: z.ZodNullable<z.ZodOptional<z.ZodString>>;
@@ -32,10 +33,11 @@ export declare const UpdateSubscriptionPlanSchema: z.ZodObject<{
         básico: "básico";
         profesional: "profesional";
         empresarial: "empresarial";
+        enterprise: "enterprise";
     }>>;
     description: z.ZodNullable<z.ZodOptional<z.ZodString>>;
-    priceMonthly: z.ZodOptional<z.ZodNumber>;
-    priceYearly: z.ZodOptional<z.ZodNumber>;
+    priceMonthly: z.ZodOptional<z.ZodUnion<readonly [z.ZodNumber, z.ZodNull]>>;
+    priceYearly: z.ZodOptional<z.ZodUnion<readonly [z.ZodNumber, z.ZodNull]>>;
     stripePriceIdMonthly: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     stripePriceIdYearly: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     stripeProductId: z.ZodNullable<z.ZodOptional<z.ZodString>>;
