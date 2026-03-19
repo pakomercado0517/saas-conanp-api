@@ -82,11 +82,7 @@ export const validateActivoAprobado = async (activoId: UUID, areaId: UUID): Prom
   const dependenciaId = area.dependenciaId;
 
   const activo = await Activo.findOne({
-    where: {
-      id: activoId,
-      dependenciaId,
-      deletedAt: null,
-    } as unknown as Record<string, unknown>,
+    where: { id: activoId, dependenciaId },
   });
 
   if (!activo) {
@@ -195,11 +191,7 @@ export const getActivoById = async (
   const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
 
   const activo = await Activo.findOne({
-    where: {
-      id: activoId,
-      dependenciaId,
-      deletedAt: null,
-    } as unknown as Record<string, unknown>,
+    where: { id: activoId, dependenciaId },
     include: [
       { model: Dependencia, as: 'Dependencia' },
       { model: PrestadorProfile, as: 'Owner' },
@@ -232,7 +224,6 @@ export const listActivos = async (
 
   const where: Record<string, unknown> = {
     dependenciaId,
-    deletedAt: null,
   };
 
   // Aplicar filtros opcionales
@@ -314,11 +305,7 @@ export const updateActivoStatus = async (
   const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
 
   const activo = await Activo.findOne({
-    where: {
-      id: activoId,
-      dependenciaId,
-      deletedAt: null,
-    } as unknown as Record<string, unknown>,
+    where: { id: activoId, dependenciaId },
   });
 
   if (!activo) {
@@ -378,11 +365,7 @@ export const updateActivo = async (
   const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
 
   const activo = await Activo.findOne({
-    where: {
-      id: activoId,
-      dependenciaId,
-      deletedAt: null,
-    } as unknown as Record<string, unknown>,
+    where: { id: activoId, dependenciaId },
   });
 
   if (!activo) {
@@ -454,21 +437,14 @@ export const deleteActivo = async (
   const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
 
   const activo = await Activo.findOne({
-    where: {
-      id: activoId,
-      dependenciaId,
-      deletedAt: null,
-    } as unknown as Record<string, unknown>,
+    where: { id: activoId, dependenciaId },
   });
 
   if (!activo) {
     throw new NotFoundError('Activo', { activoId, organizationId });
   }
 
-  // Realizar soft delete manual
-  // Nota: El modelo no tiene paranoid: true, por lo que se usa soft delete manual
-  // Se asume que el campo deletedAt existe en la tabla (puede requerir migración)
-  await activo.update({ deletedAt: new Date() } as unknown as Partial<Activo>);
+  await activo.destroy();
 
   logger.info(
     {

@@ -109,4 +109,78 @@ export declare const ListActivoRequisitosSchema: z.ZodObject<{
     validated: z.ZodOptional<z.ZodCoercedBoolean<unknown>>;
 }, z.core.$strip>;
 export type ListActivoRequisitosDTO = z.infer<typeof ListActivoRequisitosSchema>;
+/**
+ * Schema para un ítem del catálogo (reutilizable en POST catálogo y en requisitoCatalogo al crear área).
+ */
+export declare const CreateActivoRequisitoCatalogoItemSchema: z.ZodObject<{
+    tipoActivo: z.ZodEnum<{
+        embarcacion: "embarcacion";
+        vehiculo: "vehiculo";
+        guia: "guia";
+        equipo: "equipo";
+    }>;
+    key: z.ZodString;
+    label: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    tipoDato: z.ZodEnum<{
+        string: "string";
+        number: "number";
+        date: "date";
+    }>;
+    requerido: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    requiereDocumento: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    orden: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    activo: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+}, z.core.$strip>;
+export type CreateActivoRequisitoCatalogoItemDTO = z.infer<typeof CreateActivoRequisitoCatalogoItemSchema>;
+/**
+ * Schema para crear una entrada en el catálogo (POST /activo-requisito-catalogo).
+ */
+export declare const CreateActivoRequisitoCatalogoSchema: z.ZodObject<{
+    tipoActivo: z.ZodEnum<{
+        embarcacion: "embarcacion";
+        vehiculo: "vehiculo";
+        guia: "guia";
+        equipo: "equipo";
+    }>;
+    key: z.ZodString;
+    label: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    tipoDato: z.ZodEnum<{
+        string: "string";
+        number: "number";
+        date: "date";
+    }>;
+    requerido: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    requiereDocumento: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    orden: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    activo: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+}, z.core.$strip>;
+export type CreateActivoRequisitoCatalogoDTO = z.infer<typeof CreateActivoRequisitoCatalogoSchema>;
+/**
+ * Schema para actualizar una entrada del catálogo (PATCH). No se permite cambiar key ni tipoActivo.
+ */
+export declare const UpdateActivoRequisitoCatalogoSchema: z.ZodObject<{
+    label: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    tipoDato: z.ZodOptional<z.ZodEnum<{
+        string: "string";
+        number: "number";
+        date: "date";
+    }>>;
+    requerido: z.ZodOptional<z.ZodBoolean>;
+    requiereDocumento: z.ZodOptional<z.ZodBoolean>;
+    orden: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    activo: z.ZodOptional<z.ZodBoolean>;
+}, z.core.$strip>;
+export type UpdateActivoRequisitoCatalogoDTO = z.infer<typeof UpdateActivoRequisitoCatalogoSchema>;
+/**
+ * Schema para listar catálogo (query: tipoActivo opcional).
+ */
+export declare const ListActivoRequisitoCatalogoSchema: z.ZodObject<{
+    tipoActivo: z.ZodOptional<z.ZodEnum<{
+        embarcacion: "embarcacion";
+        vehiculo: "vehiculo";
+        guia: "guia";
+        equipo: "equipo";
+    }>>;
+}, z.core.$strip>;
+export type ListActivoRequisitoCatalogoDTO = z.infer<typeof ListActivoRequisitoCatalogoSchema>;
 //# sourceMappingURL=activo.validator.d.ts.map

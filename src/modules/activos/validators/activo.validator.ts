@@ -260,3 +260,83 @@ export const ListActivoRequisitosSchema = registry.register(
 );
 
 export type ListActivoRequisitosDTO = z.infer<typeof ListActivoRequisitosSchema>;
+
+// --- Catálogo de requisitos de activos (por dependencia + tipoActivo) ---
+
+const TIPO_DATO_CATALOGO_VALUES = ['string', 'date', 'number'] as const;
+const tipoDatoCatalogoEnum = z.enum(TIPO_DATO_CATALOGO_VALUES, {
+  error: 'tipoDato debe ser: string, date o number',
+});
+
+/**
+ * Schema para un ítem del catálogo (reutilizable en POST catálogo y en requisitoCatalogo al crear área).
+ */
+export const CreateActivoRequisitoCatalogoItemSchema = registry.register(
+  'CreateActivoRequisitoCatalogoItem',
+  z.object({
+    tipoActivo: activoTypeEnum.describe('Tipo de activo al que aplica'),
+    key: z
+      .string({ message: 'La clave es requerida' })
+      .min(1)
+      .max(255)
+      .trim()
+      .describe('Clave única del requisito'),
+    label: z.string().max(255).trim().optional().nullable().describe('Etiqueta para la UI'),
+    tipoDato: tipoDatoCatalogoEnum.describe('Tipo de dato del valor'),
+    requerido: z.boolean().optional().default(false).describe('Si el requisito es obligatorio'),
+    requiereDocumento: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe('Si debe adjuntarse documento'),
+    orden: z.number().int().optional().nullable().describe('Orden en formularios'),
+    activo: z.boolean().optional().default(true).describe('Si la definición está habilitada'),
+  })
+);
+
+export type CreateActivoRequisitoCatalogoItemDTO = z.infer<
+  typeof CreateActivoRequisitoCatalogoItemSchema
+>;
+
+/**
+ * Schema para crear una entrada en el catálogo (POST /activo-requisito-catalogo).
+ */
+export const CreateActivoRequisitoCatalogoSchema = registry.register(
+  'CreateActivoRequisitoCatalogo',
+  CreateActivoRequisitoCatalogoItemSchema
+);
+
+export type CreateActivoRequisitoCatalogoDTO = z.infer<typeof CreateActivoRequisitoCatalogoSchema>;
+
+/**
+ * Schema para actualizar una entrada del catálogo (PATCH). No se permite cambiar key ni tipoActivo.
+ */
+export const UpdateActivoRequisitoCatalogoSchema = registry.register(
+  'UpdateActivoRequisitoCatalogo',
+  z
+    .object({
+      label: z.string().max(255).trim().optional().nullable(),
+      tipoDato: tipoDatoCatalogoEnum.optional(),
+      requerido: z.boolean().optional(),
+      requiereDocumento: z.boolean().optional(),
+      orden: z.number().int().optional().nullable(),
+      activo: z.boolean().optional(),
+    })
+    .refine((data) => Object.keys(data).some((k) => data[k as keyof typeof data] !== undefined), {
+      message: 'Debe incluir al menos un campo para actualizar',
+    })
+);
+
+export type UpdateActivoRequisitoCatalogoDTO = z.infer<typeof UpdateActivoRequisitoCatalogoSchema>;
+
+/**
+ * Schema para listar catálogo (query: tipoActivo opcional).
+ */
+export const ListActivoRequisitoCatalogoSchema = registry.register(
+  'ListActivoRequisitoCatalogo',
+  z.object({
+    tipoActivo: activoTypeEnum.optional().describe('Filtrar por tipo de activo'),
+  })
+);
+
+export type ListActivoRequisitoCatalogoDTO = z.infer<typeof ListActivoRequisitoCatalogoSchema>;

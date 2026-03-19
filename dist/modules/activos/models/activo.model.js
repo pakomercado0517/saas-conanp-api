@@ -68,11 +68,16 @@ Activo.init({
         allowNull: false,
         defaultValue: DataTypes.NOW,
     },
+    deletedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
 }, {
     sequelize,
     modelName: 'Activo',
     tableName: 'activos',
     timestamps: true,
+    paranoid: true,
     underscored: false,
     indexes: [
         {
@@ -98,6 +103,10 @@ Activo.init({
         {
             name: 'idx_activos_dep_status',
             fields: ['dependenciaId', 'status'],
+        },
+        {
+            name: 'idx_activos_deleted_at',
+            fields: ['deletedAt'],
         },
     ],
 });

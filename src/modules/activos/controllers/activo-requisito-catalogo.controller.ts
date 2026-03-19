@@ -1,0 +1,95 @@
+import type { Request, Response } from 'express';
+import * as catalogoService from '../services/activo-requisito-catalogo.service.js';
+import { sendSuccess, sendCreated, sendNoContent } from '@/shared/responses/helpers.js';
+import type {
+  CreateActivoRequisitoCatalogoDTO,
+  UpdateActivoRequisitoCatalogoDTO,
+  ListActivoRequisitoCatalogoDTO,
+} from '../validators/activo.validator.js';
+
+/**
+ * Lista el catálogo de requisitos de activos para el área (dependencia).
+ * GET /api/v1/organizations/:organizationId/activo-requisito-catalogo
+ */
+export const listCatalogo = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const filters =
+    (req.validatedQuery as ListActivoRequisitoCatalogoDTO | undefined) ??
+    (req.query as unknown as ListActivoRequisitoCatalogoDTO);
+
+  const data = await catalogoService.listCatalogo(organizationId, filters, userId);
+  return sendSuccess(res, data, 'Catálogo obtenido exitosamente');
+};
+
+/**
+ * Crea una entrada en el catálogo.
+ * POST /api/v1/organizations/:organizationId/activo-requisito-catalogo
+ */
+export const createCatalogoEntry = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const data = req.body as CreateActivoRequisitoCatalogoDTO;
+
+  const entry = await catalogoService.createCatalogoEntry(organizationId, data, userId);
+  return sendCreated(res, entry, 'Entrada de catálogo creada exitosamente');
+};
+
+/**
+ * Actualiza una entrada del catálogo.
+ * PATCH /api/v1/organizations/:organizationId/activo-requisito-catalogo/:catalogoId
+ */
+export const updateCatalogoEntry = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const catalogoId = req.params['catalogoId'] as string;
+  const data = req.body as UpdateActivoRequisitoCatalogoDTO;
+
+  const entry = await catalogoService.updateCatalogoEntry(organizationId, catalogoId, data, userId);
+  return sendSuccess(res, entry, 'Entrada de catálogo actualizada exitosamente');
+};
+
+/**
+ * Elimina una entrada del catálogo.
+ * DELETE /api/v1/organizations/:organizationId/activo-requisito-catalogo/:catalogoId
+ */
+export const deleteCatalogoEntry = async (req: Request, res: Response): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const catalogoId = req.params['catalogoId'] as string;
+
+  await catalogoService.deleteCatalogoEntry(organizationId, catalogoId, userId);
+  return sendNoContent(res);
+};

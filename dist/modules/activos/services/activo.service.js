@@ -61,11 +61,7 @@ export const validateActivoAprobado = async (activoId, areaId) => {
     }
     const dependenciaId = area.dependenciaId;
     const activo = await Activo.findOne({
-        where: {
-            id: activoId,
-            dependenciaId,
-            deletedAt: null,
-        },
+        where: { id: activoId, dependenciaId },
     });
     if (!activo) {
         throw new NotFoundError('Activo', { activoId, areaId });
@@ -145,11 +141,7 @@ export const getActivoById = async (activoId, organizationId, requestingUserId) 
     await assertCanAccessOrganization(requestingUserId, organizationId);
     const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const activo = await Activo.findOne({
-        where: {
-            id: activoId,
-            dependenciaId,
-            deletedAt: null,
-        },
+        where: { id: activoId, dependenciaId },
         include: [
             { model: Dependencia, as: 'Dependencia' },
             { model: PrestadorProfile, as: 'Owner' },
@@ -174,7 +166,6 @@ export const listActivos = async (organizationId, filters, requestingUserId) => 
     const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const where = {
         dependenciaId,
-        deletedAt: null,
     };
     // Aplicar filtros opcionales
     if (filters.ownerId) {
@@ -243,11 +234,7 @@ export const updateActivoStatus = async (activoId, organizationId, newStatus, re
     await assertCanAccessOrganization(requestingUserId, organizationId);
     const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const activo = await Activo.findOne({
-        where: {
-            id: activoId,
-            dependenciaId,
-            deletedAt: null,
-        },
+        where: { id: activoId, dependenciaId },
     });
     if (!activo) {
         throw new NotFoundError('Activo', { activoId, organizationId });
@@ -291,11 +278,7 @@ export const updateActivo = async (activoId, organizationId, data, requestingUse
     await assertCanAccessOrganization(requestingUserId, organizationId);
     const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const activo = await Activo.findOne({
-        where: {
-            id: activoId,
-            dependenciaId,
-            deletedAt: null,
-        },
+        where: { id: activoId, dependenciaId },
     });
     if (!activo) {
         throw new NotFoundError('Activo', { activoId, organizationId });
@@ -346,19 +329,12 @@ export const deleteActivo = async (activoId, organizationId, requestingUserId) =
     await assertCanAccessOrganization(requestingUserId, organizationId);
     const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
     const activo = await Activo.findOne({
-        where: {
-            id: activoId,
-            dependenciaId,
-            deletedAt: null,
-        },
+        where: { id: activoId, dependenciaId },
     });
     if (!activo) {
         throw new NotFoundError('Activo', { activoId, organizationId });
     }
-    // Realizar soft delete manual
-    // Nota: El modelo no tiene paranoid: true, por lo que se usa soft delete manual
-    // Se asume que el campo deletedAt existe en la tabla (puede requerir migración)
-    await activo.update({ deletedAt: new Date() });
+    await activo.destroy();
     logger.info({
         activoId,
         organizationId,

@@ -12,11 +12,12 @@ export interface ActivoAttributes {
   status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido';
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
 }
 
 export interface ActivoCreationAttributes extends Optional<
   ActivoAttributes,
-  'id' | 'status' | 'createdAt' | 'updatedAt'
+  'id' | 'status' | 'createdAt' | 'updatedAt' | 'deletedAt'
 > {}
 
 export class Activo
@@ -30,6 +31,7 @@ export class Activo
   declare status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido';
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+  declare deletedAt: Date | null;
 
   declare Dependencia?: Dependencia;
   declare Owner?: PrestadorProfile;
@@ -100,12 +102,17 @@ Activo.init(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
     modelName: 'Activo',
     tableName: 'activos',
     timestamps: true,
+    paranoid: true,
     underscored: false,
     indexes: [
       {
@@ -131,6 +138,10 @@ Activo.init(
       {
         name: 'idx_activos_dep_status',
         fields: ['dependenciaId', 'status'],
+      },
+      {
+        name: 'idx_activos_deleted_at',
+        fields: ['deletedAt'],
       },
     ],
   }

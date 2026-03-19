@@ -6,24 +6,24 @@ import type { PaginationMeta } from '../../../shared/responses/types.js';
  * Crea un requisito de activo.
  *
  * @param data - Datos del requisito
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param organizationId - ID de la organizaci?n (multi-tenant)
  * @param requestingUserId - ID del usuario que crea
- * @returns ActivoRequisito creado con relación Activo cargada
- * @throws {ForbiddenError} Si no tiene acceso a la organización
- * @throws {NotFoundError} Si el activo no existe o no pertenece a la organización
+ * @returns ActivoRequisito creado con relaci?n Activo cargada
+ * @throws {ForbiddenError} Si no tiene acceso a la organizaci?n
+ * @throws {NotFoundError} Si el activo no existe o no pertenece a la organizaci?n
  * @throws {ValidationError} Si ya existe un requisito con la misma clave para el activo
  */
 export declare const createRequisito: (data: CreateActivoRequisitoDTO, organizationId: UUID, requestingUserId: UUID) => Promise<ActivoRequisito>;
 /**
- * Lista requisitos de un activo con paginación y filtros.
+ * Lista requisitos de un activo con paginaci?n y filtros.
  *
  * @param activoId - ID del activo
- * @param organizationId - ID de la organización (multi-tenant)
- * @param filters - Filtros de paginación y búsqueda
+ * @param organizationId - ID de la organizaci?n (multi-tenant)
+ * @param filters - Filtros de paginaci?n y b?squeda
  * @param requestingUserId - ID del usuario que solicita
- * @returns Datos paginados de requisitos con relación Activo cargada
- * @throws {ForbiddenError} Si no tiene acceso a la organización
- * @throws {NotFoundError} Si el activo no existe o no pertenece a la organización
+ * @returns Datos paginados de requisitos con relaci?n Activo cargada
+ * @throws {ForbiddenError} Si no tiene acceso a la organizaci?n
+ * @throws {NotFoundError} Si el activo no existe o no pertenece a la organizaci?n
  */
 export declare const listRequisitosByActivo: (activoId: UUID, organizationId: UUID, filters: ListActivoRequisitosDTO, requestingUserId: UUID) => Promise<{
     data: ActivoRequisito[];
@@ -34,22 +34,22 @@ export declare const listRequisitosByActivo: (activoId: UUID, organizationId: UU
  * Solo se pueden actualizar value, documentUrl y validated (no key).
  *
  * @param requisitoId - ID del requisito
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param organizationId - ID de la organizaci?n (multi-tenant)
  * @param data - Datos a actualizar
  * @param requestingUserId - ID del usuario que actualiza
- * @returns ActivoRequisito actualizado con relación Activo cargada
- * @throws {ForbiddenError} Si no tiene acceso a la organización
- * @throws {NotFoundError} Si el requisito no existe o su activo no pertenece a la organización
+ * @returns ActivoRequisito actualizado con relaci?n Activo cargada
+ * @throws {ForbiddenError} Si no tiene acceso a la organizaci?n
+ * @throws {NotFoundError} Si el requisito no existe o su activo no pertenece a la organizaci?n
  */
 export declare const updateRequisito: (requisitoId: UUID, organizationId: UUID, data: UpdateActivoRequisitoDTO, requestingUserId: UUID) => Promise<ActivoRequisito>;
 /**
  * Elimina un requisito de activo (hard delete).
  *
  * @param requisitoId - ID del requisito
- * @param organizationId - ID de la organización (multi-tenant)
+ * @param organizationId - ID de la organizaci?n (multi-tenant)
  * @param requestingUserId - ID del usuario que elimina
- * @throws {ForbiddenError} Si no tiene acceso a la organización
- * @throws {NotFoundError} Si el requisito no existe o su activo no pertenece a la organización
+ * @throws {ForbiddenError} Si no tiene acceso a la organizaci?n
+ * @throws {NotFoundError} Si el requisito no existe o su activo no pertenece a la organizaci?n
  */
 export declare const deleteRequisito: (requisitoId: UUID, organizationId: UUID, requestingUserId: UUID) => Promise<void>;
 //# sourceMappingURL=activo-requisito.service.d.ts.map

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 import { registry } from '../../../shared/swagger/index.js';
+import { CreateActivoRequisitoCatalogoItemSchema } from '../../../modules/activos/validators/activo.validator.js';
 extendZodWithOpenApi(z);
 const settingsSchema = z
     .record(z.string(), z.unknown())
@@ -49,6 +50,10 @@ export const CreateAreaUnderDependenciaSchema = registry.register('CreateAreaUnd
         .describe('Nombre del área (ANP)'),
     ecosystem_type: ecosystemTypeEnum.describe('Tipo de ecosistema: terrestre, marítimo o mixto'),
     settings: settingsSchema.optional().default({}).describe('Configuraciones del área (JSONB)'),
+    requisitoCatalogo: z
+        .array(CreateActivoRequisitoCatalogoItemSchema)
+        .optional()
+        .describe('Opcional: definiciones del catálogo de requisitos de activos para la dependencia (se aplican al crear el área)'),
 }));
 /** Schema para super admin: crear dependencia y solo enviar invitación al primer admin (sin área). */
 export const CreateDependenciaAdminSchema = registry.register('CreateDependenciaAdmin', z.object({
