@@ -7,6 +7,9 @@ import {
   CreateActivoRequisitoSchema,
   UpdateActivoRequisitoSchema,
   ListActivoRequisitosSchema,
+  CreateActivoRequisitoCatalogoSchema,
+  UpdateActivoRequisitoCatalogoSchema,
+  ListActivoRequisitoCatalogoSchema,
 } from '../validators/activo.validator.js';
 
 /**
@@ -249,6 +252,99 @@ export const validateListActivoRequisitos = (
     }
 
     // Si no es un error de Zod, pasarlo al siguiente middleware de errores
+    next(error);
+  }
+};
+
+/**
+ * Valida el body para crear entrada en el catálogo de requisitos.
+ */
+export const validateCreateActivoRequisitoCatalogo = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.body = CreateActivoRequisitoCatalogoSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los datos proporcionados no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+/**
+ * Valida el body para actualizar entrada del catálogo.
+ */
+export const validateUpdateActivoRequisitoCatalogo = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.body = UpdateActivoRequisitoCatalogoSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los datos proporcionados no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+/**
+ * Valida query params para listar catálogo.
+ */
+export const validateListActivoRequisitoCatalogo = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.validatedQuery = ListActivoRequisitoCatalogoSchema.parse(req.query);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const detalles = error.issues.map((err) => ({
+        campo: err.path.join('.') || 'raíz',
+        mensaje: err.message,
+        codigo: err.code,
+      }));
+      res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'Los datos proporcionados no son válidos',
+        code: 'VALIDATION_ERROR',
+        detalles,
+      });
+      return;
+    }
     next(error);
   }
 };

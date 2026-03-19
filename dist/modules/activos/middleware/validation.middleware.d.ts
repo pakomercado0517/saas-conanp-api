@@ -71,4 +71,16 @@ export declare const validateUpdateActivoRequisito: (req: Request, res: Response
  * @param next - NextFunction de Express
  */
 export declare const validateListActivoRequisitos: (req: Request, res: Response, next: NextFunction) => void;
+/**
+ * Valida el body para crear entrada en el catálogo de requisitos.
+ */
+export declare const validateCreateActivoRequisitoCatalogo: (req: Request, res: Response, next: NextFunction) => void;
+/**
+ * Valida el body para actualizar entrada del catálogo.
+ */
+export declare const validateUpdateActivoRequisitoCatalogo: (req: Request, res: Response, next: NextFunction) => void;
+/**
+ * Valida query params para listar catálogo.
+ */
+export declare const validateListActivoRequisitoCatalogo: (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=validation.middleware.d.ts.map

@@ -10,8 +10,9 @@ export interface ActivoAttributes {
     status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido';
     createdAt: Date;
     updatedAt: Date;
+    deletedAt: Date | null;
 }
-export interface ActivoCreationAttributes extends Optional<ActivoAttributes, 'id' | 'status' | 'createdAt' | 'updatedAt'> {
+export interface ActivoCreationAttributes extends Optional<ActivoAttributes, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
 }
 export declare class Activo extends Model<ActivoAttributes, ActivoCreationAttributes> implements ActivoAttributes {
     id: UUID;
@@ -21,6 +22,7 @@ export declare class Activo extends Model<ActivoAttributes, ActivoCreationAttrib
     status: 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido';
     readonly createdAt: Date;
     readonly updatedAt: Date;
+    deletedAt: Date | null;
     Dependencia?: Dependencia;
     Owner?: PrestadorProfile;
 }

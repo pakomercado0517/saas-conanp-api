@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CreateActivoSchema, UpdateActivoSchema, ListActivosSchema, CreateActivoRequisitoSchema, UpdateActivoRequisitoSchema, ListActivoRequisitosSchema, } from '../validators/activo.validator.js';
+import { CreateActivoSchema, UpdateActivoSchema, ListActivosSchema, CreateActivoRequisitoSchema, UpdateActivoRequisitoSchema, ListActivoRequisitosSchema, CreateActivoRequisitoCatalogoSchema, UpdateActivoRequisitoCatalogoSchema, ListActivoRequisitoCatalogoSchema, } from '../validators/activo.validator.js';
 /**
  * Middleware de validación para crear activo
  *
@@ -217,6 +217,87 @@ export const validateListActivoRequisitos = (req, res, next) => {
             return;
         }
         // Si no es un error de Zod, pasarlo al siguiente middleware de errores
+        next(error);
+    }
+};
+/**
+ * Valida el body para crear entrada en el catálogo de requisitos.
+ */
+export const validateCreateActivoRequisitoCatalogo = (req, res, next) => {
+    try {
+        req.body = CreateActivoRequisitoCatalogoSchema.parse(req.body);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+/**
+ * Valida el body para actualizar entrada del catálogo.
+ */
+export const validateUpdateActivoRequisitoCatalogo = (req, res, next) => {
+    try {
+        req.body = UpdateActivoRequisitoCatalogoSchema.parse(req.body);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
+        next(error);
+    }
+};
+/**
+ * Valida query params para listar catálogo.
+ */
+export const validateListActivoRequisitoCatalogo = (req, res, next) => {
+    try {
+        req.validatedQuery = ListActivoRequisitoCatalogoSchema.parse(req.query);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
         next(error);
     }
 };

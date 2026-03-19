@@ -6,6 +6,9 @@ import {
   CreateActivoRequisitoSchema,
   UpdateActivoRequisitoSchema,
   ListActivoRequisitosSchema,
+  CreateActivoRequisitoCatalogoSchema,
+  UpdateActivoRequisitoCatalogoSchema,
+  ListActivoRequisitoCatalogoSchema,
 } from '../validators/activo.validator.js';
 
 const ActivoSchema = registry.register(
@@ -474,6 +477,184 @@ registry.registerPath({
   responses: {
     204: {
       description: 'Requisito de activo eliminado exitosamente',
+    },
+    401: commonErrorResponses[401],
+    403: commonErrorResponses[403],
+    404: commonErrorResponses[404],
+    500: commonErrorResponses[500],
+  },
+});
+
+// --- Catálogo de requisitos de activos ---
+
+const ActivoRequisitoCatalogoSchema = registry.register(
+  'ActivoRequisitoCatalogo',
+  z.object({
+    id: z.string().uuid().describe('ID único de la entrada'),
+    dependenciaId: z.string().uuid().describe('ID de la dependencia'),
+    tipoActivo: z.enum(['embarcacion', 'vehiculo', 'guia', 'equipo']).describe('Tipo de activo'),
+    key: z.string().describe('Clave del requisito'),
+    label: z.string().nullable().describe('Etiqueta para la UI'),
+    tipoDato: z.enum(['string', 'date', 'number']).describe('Tipo de dato del valor'),
+    requerido: z.boolean().describe('Si es obligatorio'),
+    requiereDocumento: z.boolean().describe('Si debe adjuntarse documento'),
+    orden: z.number().nullable().describe('Orden en formularios'),
+    activo: z.boolean().describe('Si la definición está habilitada'),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+    Dependencia: z
+      .object({ id: z.string().uuid(), name: z.string() })
+      .optional()
+      .describe('Dependencia'),
+  })
+);
+
+const ActivoRequisitoCatalogoResponseSchema = registry.register(
+  'ActivoRequisitoCatalogoResponse',
+  z.object({
+    success: z.literal(true),
+    data: ActivoRequisitoCatalogoSchema,
+    message: z.string().optional(),
+    timestamp: z.string().datetime().optional(),
+  })
+);
+
+const ActivoRequisitoCatalogoListResponseSchema = registry.register(
+  'ActivoRequisitoCatalogoListResponse',
+  z.object({
+    success: z.literal(true),
+    data: z.array(ActivoRequisitoCatalogoSchema),
+    message: z.string().optional(),
+    timestamp: z.string().datetime().optional(),
+  })
+);
+
+// GET listar catálogo de requisitos
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/organizations/{organizationId}/activo-requisito-catalogo',
+  tags: ['Activos'],
+  summary: 'Listar catálogo de requisitos de activos',
+  description:
+    'Obtiene las definiciones de requisitos para la dependencia del área. Opcionalmente filtra por tipoActivo. Sirve para generar formularios dinámicos.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      organizationId: z.string().uuid().describe('ID del área (organización)'),
+    }),
+    query: ListActivoRequisitoCatalogoSchema,
+  },
+  responses: {
+    200: {
+      description: 'Catálogo obtenido exitosamente',
+      content: {
+        'application/json': {
+          schema: ActivoRequisitoCatalogoListResponseSchema,
+        },
+      },
+    },
+    401: commonErrorResponses[401],
+    403: commonErrorResponses[403],
+    500: commonErrorResponses[500],
+  },
+});
+
+// POST crear entrada en catálogo
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/organizations/{organizationId}/activo-requisito-catalogo',
+  tags: ['Activos'],
+  summary: 'Crear entrada en catálogo de requisitos',
+  description:
+    'Añade una definición de requisito para la dependencia del área (tipoActivo + key únicos). Solo administradores.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      organizationId: z.string().uuid().describe('ID del área'),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateActivoRequisitoCatalogoSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Entrada de catálogo creada exitosamente',
+      content: {
+        'application/json': {
+          schema: ActivoRequisitoCatalogoResponseSchema,
+        },
+      },
+    },
+    400: commonErrorResponses[400],
+    401: commonErrorResponses[401],
+    403: commonErrorResponses[403],
+    409: {
+      description: 'Ya existe una entrada con la misma key para este tipo de activo',
+    },
+    500: commonErrorResponses[500],
+  },
+});
+
+// PATCH actualizar entrada del catálogo
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/organizations/{organizationId}/activo-requisito-catalogo/{catalogoId}',
+  tags: ['Activos'],
+  summary: 'Actualizar entrada del catálogo',
+  description:
+    'Actualiza label, tipoDato, requerido, requiereDocumento, orden o activo. No se puede cambiar key ni tipoActivo. Solo administradores.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      organizationId: z.string().uuid().describe('ID del área'),
+      catalogoId: z.string().uuid().describe('ID de la entrada del catálogo'),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: UpdateActivoRequisitoCatalogoSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Entrada de catálogo actualizada exitosamente',
+      content: {
+        'application/json': {
+          schema: ActivoRequisitoCatalogoResponseSchema,
+        },
+      },
+    },
+    400: commonErrorResponses[400],
+    401: commonErrorResponses[401],
+    403: commonErrorResponses[403],
+    404: commonErrorResponses[404],
+    500: commonErrorResponses[500],
+  },
+});
+
+// DELETE eliminar entrada del catálogo
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/organizations/{organizationId}/activo-requisito-catalogo/{catalogoId}',
+  tags: ['Activos'],
+  summary: 'Eliminar entrada del catálogo',
+  description: 'Elimina una definición del catálogo de requisitos. Solo administradores.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      organizationId: z.string().uuid().describe('ID del área'),
+      catalogoId: z.string().uuid().describe('ID de la entrada del catálogo'),
+    }),
+  },
+  responses: {
+    204: {
+      description: 'Entrada de catálogo eliminada exitosamente',
     },
     401: commonErrorResponses[401],
     403: commonErrorResponses[403],

@@ -32,6 +32,25 @@ export declare const CreateAreaUnderDependenciaSchema: z.ZodObject<{
         mixto: "mixto";
     }>;
     settings: z.ZodDefault<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>>;
+    requisitoCatalogo: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        tipoActivo: z.ZodEnum<{
+            embarcacion: "embarcacion";
+            vehiculo: "vehiculo";
+            guia: "guia";
+            equipo: "equipo";
+        }>;
+        key: z.ZodString;
+        label: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+        tipoDato: z.ZodEnum<{
+            string: "string";
+            number: "number";
+            date: "date";
+        }>;
+        requerido: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+        requiereDocumento: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+        orden: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+        activo: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    }, z.core.$strip>>>;
 }, z.core.$strip>;
 export type CreateAreaUnderDependenciaDTO = z.infer<typeof CreateAreaUnderDependenciaSchema>;
 /** Schema para super admin: crear dependencia y solo enviar invitación al primer admin (sin área). */

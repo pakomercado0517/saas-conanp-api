@@ -340,19 +340,17 @@ describe('activo.service', () => {
       );
     });
 
-    it('performs soft delete via update', async () => {
+    it('performs soft delete via destroy (paranoid)', async () => {
       const activoRecord = {
         id: ACTIVO_ID,
         organizationId: ORG_ID,
-        update: vi.fn().mockResolvedValue(undefined),
+        destroy: vi.fn().mockResolvedValue(undefined),
       };
       mockActivoFindOne.mockResolvedValueOnce(activoRecord);
 
       await activoService.deleteActivo(ACTIVO_ID, ORG_ID, USER_ID);
 
-      expect(activoRecord.update).toHaveBeenCalledWith(
-        expect.objectContaining({ deletedAt: expect.any(Date) })
-      );
+      expect(activoRecord.destroy).toHaveBeenCalled();
     });
   });
 });

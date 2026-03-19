@@ -192,7 +192,7 @@ registry.registerPath({
     path: '/api/v1/dependencias/{dependenciaId}/areas',
     tags: ['Dependencias'],
     summary: 'Crear área bajo dependencia',
-    description: 'Crea un área (ANP) dentro de la dependencia. Plan FREE: 1 área por dependencia. Requiere acceso a la dependencia.',
+    description: 'Crea un área (ANP) dentro de la dependencia. Plan FREE: 1 área por dependencia. Requiere acceso a la dependencia. Opcionalmente puede enviar requisitoCatalogo (array de definiciones) para configurar en la misma petición el catálogo de requisitos de activos de la dependencia.',
     security: [{ bearerAuth: [] }],
     request: {
         params: z.object({

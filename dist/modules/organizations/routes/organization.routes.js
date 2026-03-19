@@ -11,6 +11,7 @@ import prestadorRouter from '../../../modules/prestadores/routes/prestador-profi
 import permisoRouter from '../../../modules/permisos/routes/permiso.routes.js';
 import activoRouter from '../../../modules/activos/routes/activo.routes.js';
 import activoRequisitoRouter from '../../../modules/activos/routes/activo-requisito.routes.js';
+import activoRequisitoCatalogoRouter from '../../../modules/activos/routes/activo-requisito-catalogo.routes.js';
 import eventoRouter from '../../../modules/eventos/routes/evento.routes.js';
 import reporteRouter from '../../../modules/reportes/routes/reporte.routes.js';
 import paymentRouter from '../../../modules/payments/routes/payment.routes.js';
@@ -82,6 +83,7 @@ organizationRouter.use('/:areaId/bloques', bloqueRouter);
 organizationRouter.use('/:areaId/prestadores', prestadorRouter);
 organizationRouter.use('/:areaId/permisos', permisoRouter);
 organizationRouter.use('/:areaId/activos', activoRouter);
+organizationRouter.use('/:areaId/activo-requisito-catalogo', activoRequisitoCatalogoRouter);
 organizationRouter.use('/:areaId/activos/:activoId/requisitos', activoRequisitoRouter);
 organizationRouter.use('/:areaId/eventos', eventoRouter);
 organizationRouter.use('/:areaId/reportes', reporteRouter);

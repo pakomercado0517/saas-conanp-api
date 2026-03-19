@@ -5,6 +5,7 @@ import { DependenciaMembership } from '@/modules/dependencias/models/dependencia
 import { Area } from '@/modules/areas/models/area.model.js';
 import { Membership } from '@/modules/users/models/membership.model.js';
 import { User } from '@/modules/users/models/user.model.js';
+import { ActivoRequisitoCatalogo } from '@/modules/activos/models/activo-requisito-catalogo.model.js';
 import { createFreeSubscriptionForDependencia } from '@/modules/subscriptions/services/subscription.service.js';
 import {
   checkAreasLimitForDependencia,
@@ -208,6 +209,37 @@ export const createAreaUnderDependencia = async (
       },
     }
   );
+
+  if (data.requisitoCatalogo?.length) {
+    for (const item of data.requisitoCatalogo) {
+      try {
+        await ActivoRequisitoCatalogo.create({
+          dependenciaId,
+          tipoActivo: item.tipoActivo,
+          key: item.key,
+          label: item.label ?? null,
+          tipoDato: item.tipoDato,
+          requerido: item.requerido ?? false,
+          requiereDocumento: item.requiereDocumento ?? false,
+          orden: item.orden ?? null,
+          activo: item.activo ?? true,
+        });
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          'name' in err &&
+          err.name === 'SequelizeUniqueConstraintError'
+        ) {
+          continue;
+        }
+        throw err;
+      }
+    }
+    logger.info(
+      { dependenciaId, count: data.requisitoCatalogo.length },
+      'Catálogo de requisitos de activos creado al crear área'
+    );
+  }
 
   logger.info(
     { areaId: area.id, dependenciaId, name: area.name, userId },
