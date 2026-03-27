@@ -95,7 +95,7 @@ describe('capacidad.service', () => {
             mockCapacidadCreate.mockResolvedValueOnce(createdCapacidad);
             const result = await capacidadService.createCapacidad(createData, ORG_ID, USER_ID);
             expect(mockCapacidadCreate).toHaveBeenCalledWith({
-                organizationId: ORG_ID,
+                areaId: ORG_ID,
                 actividadId: ACTIVIDAD_ID,
                 date: '2025-02-01',
                 limit: 10,

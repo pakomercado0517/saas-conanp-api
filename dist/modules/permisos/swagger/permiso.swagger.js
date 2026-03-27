@@ -9,8 +9,32 @@ const PermisoSchema = registry.register('Permiso', z.object({
     status: z.enum(['activo', 'inactivo', 'vencido', 'suspendido']).describe('Estado del permiso'),
     documentUrl: z.string().nullable().optional().describe('URL del documento del permiso'),
     organizationId: z.string().uuid().describe('ID de la organización'),
+    appliesToAllAreas: z
+        .boolean()
+        .describe('Si el permiso fue creado en alcance multi-área (materializado por dependencia)'),
+    permissionGroupId: z
+        .string()
+        .uuid()
+        .nullable()
+        .describe('ID común del lote cuando appliesToAllAreas es true; null si es un solo permiso'),
     createdAt: z.string().datetime().describe('Fecha de creación'),
     updatedAt: z.string().datetime().describe('Fecha de última actualización'),
+}));
+const PermisoBulkCreatePayloadSchema = registry.register('PermisoBulkCreatePayload', z.object({
+    created: z
+        .array(PermisoSchema)
+        .describe('Permisos materializados, uno por área de la dependencia'),
+    permissionGroupId: z
+        .string()
+        .uuid()
+        .nullable()
+        .describe('Mismo valor en todas las filas del lote'),
+}));
+const PermisoCreateResponseSchema = registry.register('PermisoCreateResponse', z.object({
+    success: z.literal(true),
+    data: z.union([PermisoSchema, PermisoBulkCreatePayloadSchema]),
+    message: z.string().optional(),
+    timestamp: z.string().datetime().optional(),
 }));
 const PermisoResponseSchema = registry.register('PermisoResponse', z.object({
     success: z.literal(true),
@@ -30,7 +54,7 @@ registry.registerPath({
     path: '/api/v1/organizations/{organizationId}/permisos',
     tags: ['Permisos'],
     summary: 'Crear permiso para un prestador',
-    description: 'Crea un permiso que autoriza a un prestador para realizar una actividad durante un periodo.',
+    description: 'Crea un permiso que autoriza a un prestador para realizar una actividad durante un periodo. Con `appliesToAllAreas: true`, se crea una fila por cada área de la dependencia emparejando actividades por nombre normalizado; la respuesta incluye `created` y `permissionGroupId`.',
     security: [{ bearerAuth: [] }],
     request: {
         params: z.object({ organizationId: z.string().uuid().describe('ID de la organización') }),
@@ -44,13 +68,13 @@ registry.registerPath({
     },
     responses: {
         201: {
-            description: 'Permiso creado exitosamente',
+            description: 'Permiso creado (una fila) o permisos materializados (varias filas con el mismo permissionGroupId)',
             content: {
                 'application/json': {
-                    schema: PermisoResponseSchema,
+                    schema: PermisoCreateResponseSchema,
                     examples: {
-                        created: {
-                            summary: 'Permiso creado',
+                        singleArea: {
+                            summary: 'Una sola área (appliesToAllAreas false o omitido)',
                             value: {
                                 success: true,
                                 data: {
@@ -62,10 +86,53 @@ registry.registerPath({
                                     status: 'activo',
                                     documentUrl: 'https://example.com/doc.pdf',
                                     organizationId: 'org-1234-5678-90ab-cdef',
+                                    appliesToAllAreas: false,
+                                    permissionGroupId: null,
                                     createdAt: '2026-02-03T12:00:00.000Z',
                                     updatedAt: '2026-02-03T12:00:00.000Z',
                                 },
                                 message: 'Permiso creado exitosamente',
+                                timestamp: '2026-02-03T12:00:00.000Z',
+                            },
+                        },
+                        allAreas: {
+                            summary: 'Todas las áreas (appliesToAllAreas true)',
+                            value: {
+                                success: true,
+                                data: {
+                                    created: [
+                                        {
+                                            id: 'perm1-2345-6789-abcd-ef1234567890',
+                                            prestadorId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+                                            actividadId: 'b1c2d3e4-f5a6-7890-abcd-1234567890ab',
+                                            validFrom: '2026-03-01T00:00:00Z',
+                                            validTo: '2026-12-31T23:59:59Z',
+                                            status: 'activo',
+                                            documentUrl: null,
+                                            organizationId: 'org-1234-5678-90ab-cdef',
+                                            appliesToAllAreas: true,
+                                            permissionGroupId: 'a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a0a0a0',
+                                            createdAt: '2026-02-03T12:00:00.000Z',
+                                            updatedAt: '2026-02-03T12:00:00.000Z',
+                                        },
+                                        {
+                                            id: 'perm2-2345-6789-abcd-ef1234567890',
+                                            prestadorId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+                                            actividadId: 'c1c2c3c4-c5c6-c7c8-c9c0-cccccccccccc',
+                                            validFrom: '2026-03-01T00:00:00Z',
+                                            validTo: '2026-12-31T23:59:59Z',
+                                            status: 'activo',
+                                            documentUrl: null,
+                                            organizationId: 'org-2222-2222-2222-2222',
+                                            appliesToAllAreas: true,
+                                            permissionGroupId: 'a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a0a0a0',
+                                            createdAt: '2026-02-03T12:00:00.000Z',
+                                            updatedAt: '2026-02-03T12:00:00.000Z',
+                                        },
+                                    ],
+                                    permissionGroupId: 'a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a0a0a0',
+                                },
+                                message: 'Permisos creados exitosamente',
                                 timestamp: '2026-02-03T12:00:00.000Z',
                             },
                         },

@@ -14,6 +14,7 @@ export declare const CreatePermisoSchema: z.ZodObject<{
         vencido: "vencido";
     }>>>;
     documentUrl: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    appliesToAllAreas: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, z.core.$strip>;
 export type CreatePermisoDTO = z.infer<typeof CreatePermisoSchema>;
 /**

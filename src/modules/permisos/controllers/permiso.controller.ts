@@ -47,9 +47,18 @@ export const createPermiso = async (req: Request, res: Response): Promise<Respon
   const userId = req.user.userId;
   const data = req.body as CreatePermisoDTO;
 
-  const permiso = await permisoService.createPermiso(data, organizationId, userId);
+  const result = await permisoService.createPermiso(data, organizationId, userId);
 
-  return sendCreated(res, permiso, 'Permiso creado exitosamente');
+  if (Array.isArray(result)) {
+    const permissionGroupId = result[0]?.permissionGroupId ?? null;
+    return sendCreated(
+      res,
+      { created: result, permissionGroupId },
+      'Permisos creados exitosamente'
+    );
+  }
+
+  return sendCreated(res, result, 'Permiso creado exitosamente');
 };
 
 /**

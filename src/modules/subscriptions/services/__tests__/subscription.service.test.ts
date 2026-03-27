@@ -1,12 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors/index.js';
 import type { UUID } from '@/shared/database/types.js';
+import { sequelize } from '@/shared/database/index.js';
 import * as subscriptionService from '../subscription.service.js';
 
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' as UUID;
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' as UUID;
 const PLAN_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc' as UUID;
 const SUB_ID = 'dddddddd-dddd-dddd-dddd-dddddddddddd' as UUID;
+const DEPENDENCIA_ID = '11111111-1111-1111-1111-111111111111' as UUID;
+
+const mockAreaFindByPk = vi.fn();
+const mockAreaFindAll = vi.fn();
+const mockAreaFindOne = vi.fn();
 
 const mockSubscriptionFindOne = vi.fn();
 const mockSubscriptionCreate = vi.fn();
@@ -19,7 +25,6 @@ const mockAssertIsAdmin = vi.fn();
 const mockGetPlanById = vi.fn();
 const mockGetPlanByStripePriceId = vi.fn();
 const mockAssertPlanExistsAndActive = vi.fn();
-const mockSequelizeTransaction = vi.fn();
 const mockStripeCustomersCreate = vi.fn();
 const mockStripeSubscriptionsCreate = vi.fn();
 const mockStripeSubscriptionsRetrieve = vi.fn();
@@ -35,6 +40,14 @@ vi.mock('@/modules/subscriptions/models/subscription.model.js', () => ({
 
 vi.mock('@/modules/subscriptions/models/subscription-plan.model.js', () => ({
   SubscriptionPlan: {},
+}));
+
+vi.mock('@/modules/areas/models/area.model.js', () => ({
+  Area: {
+    findByPk: (...args: unknown[]): unknown => mockAreaFindByPk(...args),
+    findAll: (...args: unknown[]): unknown => mockAreaFindAll(...args),
+    findOne: (...args: unknown[]): unknown => mockAreaFindOne(...args),
+  },
 }));
 
 vi.mock('@/modules/organizations/models/organization.model.js', () => ({
@@ -76,12 +89,6 @@ vi.mock('@/modules/subscriptions/services/subscription-plan.service.js', () => (
     mockAssertPlanExistsAndActive(...args),
 }));
 
-vi.mock('@/shared/database/index.js', () => ({
-  sequelize: {
-    transaction: (...args: unknown[]): unknown => mockSequelizeTransaction(...args),
-  },
-}));
-
 vi.mock('@/shared/stripe/index.js', () => ({
   stripeClient: {
     customers: {
@@ -99,16 +106,29 @@ vi.mock('@/shared/stripe/index.js', () => ({
 }));
 
 vi.mock('@/shared/logger/index.js', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn().mockReturnThis() },
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    child: vi.fn().mockReturnThis(),
+  },
 }));
 
 describe('subscription.service', () => {
   beforeEach((): void => {
     vi.clearAllMocks();
+    mockSubscriptionFindOne.mockReset();
+    mockSubscriptionFindOne.mockResolvedValue(null);
     mockMembershipCount.mockResolvedValue(0);
     mockEventoOperativoCount.mockResolvedValue(0);
     mockActividadCount.mockResolvedValue(0);
-    mockSequelizeTransaction.mockImplementation((fn: (t: unknown) => Promise<unknown>) => fn({}));
+    mockAreaFindByPk.mockResolvedValue({ id: ORG_ID, dependenciaId: DEPENDENCIA_ID });
+    mockAreaFindAll.mockResolvedValue([{ id: ORG_ID }]);
+    mockAreaFindOne.mockResolvedValue({ id: ORG_ID, dependenciaId: DEPENDENCIA_ID });
+    (sequelize.transaction as ReturnType<typeof vi.fn>).mockImplementation(
+      (fn: (t: unknown) => Promise<unknown>) => fn({})
+    );
   });
 
   describe('assertNoActiveSubscription', () => {
@@ -241,6 +261,7 @@ describe('subscription.service', () => {
       const subRecord = {
         id: SUB_ID,
         organizationId: ORG_ID,
+        dependenciaId: DEPENDENCIA_ID,
         status: 'active',
         Organization: {},
         SubscriptionPlan: {},
@@ -336,6 +357,7 @@ describe('subscription.service', () => {
       const subRecord = {
         id: SUB_ID,
         organizationId: ORG_ID,
+        dependenciaId: DEPENDENCIA_ID,
         stripeSubscriptionId: 'sub_stripe123',
         update: vi.fn().mockResolvedValue(undefined),
         reload: vi.fn().mockResolvedValue(undefined),
@@ -379,6 +401,7 @@ describe('subscription.service', () => {
     it('updates period and returns subscription', async () => {
       const subRecord = {
         id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
         status: 'active',
         update: vi.fn().mockResolvedValue(undefined),
         reload: vi.fn().mockResolvedValue(undefined),
@@ -417,6 +440,7 @@ describe('subscription.service', () => {
     it('updates status to past_due and returns subscription', async () => {
       const subRecord = {
         id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
         update: vi.fn().mockResolvedValue(undefined),
         reload: vi.fn().mockResolvedValue(undefined),
       };

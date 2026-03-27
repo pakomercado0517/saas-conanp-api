@@ -20,6 +20,7 @@ export default defineConfig({
     setupFiles: [path.resolve(__dirname, 'vitest.setup.ts')],
     env: {
       NODE_ENV: 'test',
+      ALLOW_REGISTER_WITHOUT_INVITATION: 'true',
       JWT_SECRET: 'test-secret-for-unit-tests',
       JWT_ACCESS_EXPIRES_IN: '15m',
       JWT_REFRESH_EXPIRES_IN: '7d',

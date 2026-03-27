@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { Op } from 'sequelize';
+import { sequelize } from '../../../shared/database/index.js';
 import { Area } from '../../../modules/areas/models/area.model.js';
 import { Permiso } from '../../../modules/permisos/models/permiso.model.js';
 import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
@@ -8,6 +10,7 @@ import { NotFoundError, ValidationError } from '../../../shared/errors/index.js'
 import { logger } from '../../../shared/logger/index.js';
 import { assertCanAccessOrganization } from '../../../modules/organizations/services/organization.service.js';
 import { now, isWithinValidityRange, DateTime, fromJSDate } from '../../../shared/dates/index.js';
+import { findMatchingActividadesByDependencia } from './permiso-scope.helper.js';
 /** Resuelve areaId (organizationId en API) a dependenciaId. Prestadores son por dependencia, actividades por área. */
 const getDependenciaIdFromAreaId = async (areaId) => {
     const area = await Area.findByPk(areaId);
@@ -119,6 +122,7 @@ export const validatePrestadorHasPermisoVigente = async (prestadorId, actividadI
  * @throws {ForbiddenError} Si no tiene acceso a la organización
  * @throws {NotFoundError} Si el prestador o actividad no existen
  * @throws {ValidationError} Si el prestador y actividad no pertenecen a la misma organización
+ * @returns Un permiso o varios si `appliesToAllAreas` es true (materialización por área)
  */
 export const createPermiso = async (data, organizationId, creatorUserId) => {
     await assertCanAccessOrganization(creatorUserId, organizationId);
@@ -141,13 +145,75 @@ export const createPermiso = async (data, organizationId, creatorUserId) => {
             areaId: organizationId,
         });
     }
-    // Prestador (dependencia) y actividad (área) ya están en el mismo contexto: área pertenece a dependenciaId
-    // Convertir fechas DateTime a Date para guardar en BD
     const validFromDate = data.validFrom.toJSDate();
     const validToDate = data.validTo.toJSDate();
-    // Validar fechas de vigencia (aunque ya están validadas en el schema, validar nuevamente por seguridad)
     validateFechasVigencia(data.validFrom, data.validTo);
-    // Crear el permiso
+    const appliesToAllAreas = data.appliesToAllAreas === true;
+    if (appliesToAllAreas) {
+        const matched = await findMatchingActividadesByDependencia(dependenciaId, data.actividadId);
+        for (const m of matched) {
+            const existing = await Permiso.findOne({
+                where: { prestadorId: data.prestadorId, actividadId: m.actividadId },
+            });
+            if (existing) {
+                throw new ValidationError('Ya existe un permiso para este prestador y una de las actividades del alcance', undefined, {
+                    prestadorId: data.prestadorId,
+                    actividadId: m.actividadId,
+                    areaId: m.areaId,
+                });
+            }
+        }
+        const permissionGroupId = randomUUID();
+        const status = data.status ?? 'activo';
+        const documentUrl = data.documentUrl ?? null;
+        let createdRows;
+        try {
+            createdRows = await sequelize.transaction(async (transaction) => {
+                const rows = [];
+                for (const m of matched) {
+                    const row = await Permiso.create({
+                        prestadorId: data.prestadorId,
+                        actividadId: m.actividadId,
+                        validFrom: validFromDate,
+                        validTo: validToDate,
+                        status,
+                        documentUrl,
+                        appliesToAllAreas: true,
+                        permissionGroupId,
+                    }, { transaction });
+                    rows.push(row);
+                }
+                return rows;
+            });
+        }
+        catch (error) {
+            if (error instanceof Error &&
+                'name' in error &&
+                error.name === 'SequelizeUniqueConstraintError') {
+                throw new ValidationError('Ya existe un permiso para este prestador y actividad', undefined, {
+                    prestadorId: data.prestadorId,
+                });
+            }
+            throw error;
+        }
+        for (const permiso of createdRows) {
+            await permiso.reload({
+                include: [
+                    { model: PrestadorProfile, as: 'PrestadorProfile' },
+                    { model: Actividad, as: 'Actividad' },
+                ],
+            });
+        }
+        logger.info({
+            count: createdRows.length,
+            permissionGroupId,
+            prestadorId: data.prestadorId,
+            organizationId,
+            creatorUserId,
+        }, 'Permisos creados (alcance todas las áreas)');
+        return createdRows;
+    }
+    // Una sola área: flujo original
     let permiso;
     try {
         permiso = await Permiso.create({
@@ -157,10 +223,11 @@ export const createPermiso = async (data, organizationId, creatorUserId) => {
             validTo: validToDate,
             status: data.status ?? 'activo',
             documentUrl: data.documentUrl ?? null,
+            appliesToAllAreas: false,
+            permissionGroupId: null,
         });
     }
     catch (error) {
-        // Capturar errores de constraint único
         if (error instanceof Error &&
             'name' in error &&
             error.name === 'SequelizeUniqueConstraintError') {
@@ -171,7 +238,6 @@ export const createPermiso = async (data, organizationId, creatorUserId) => {
         }
         throw error;
     }
-    // Cargar relaciones para retornar datos completos
     await permiso.reload({
         include: [
             { model: PrestadorProfile, as: 'PrestadorProfile' },

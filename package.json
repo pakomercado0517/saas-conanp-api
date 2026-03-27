@@ -26,7 +26,7 @@
     "db:seed:all": "sequelize-cli db:seed:all",
     "db:seed:undo": "sequelize-cli db:seed:undo",
     "db:seed:status": "sequelize-cli db:seed:status",
-    "verify:all": "pnpm format && pnpm formatfile vitest.integration.config.ts vitest.integration.setup.ts && pnpm lint && pnpm build",
+    "verify:all": "pnpm format && pnpm formatfile vitest.integration.config.ts vitest.integration.setup.ts vitest-sequelize-mock.ts && pnpm lint && pnpm build",
     "verify:code": "pnpm lint && pnpm build"
   },
   "keywords": [],

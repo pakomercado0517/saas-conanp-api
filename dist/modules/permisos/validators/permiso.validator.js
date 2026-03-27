@@ -56,6 +56,11 @@ export const CreatePermisoSchema = registry.register('CreatePermiso', z
     validTo: dateTimeSchema,
     status: statusEnum.optional().default('activo'),
     documentUrl: urlSchema.optional().nullable(),
+    appliesToAllAreas: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Si es true, crea un permiso por cada área de la dependencia con actividad de mismo nombre normalizado'),
 })
     .openapi({
     example: {
@@ -65,6 +70,7 @@ export const CreatePermisoSchema = registry.register('CreatePermiso', z
         validTo: '2026-12-31T23:59:59Z',
         status: 'activo',
         documentUrl: 'https://example.com/document.pdf',
+        appliesToAllAreas: false,
     },
 })
     .refine((data) => data.validTo > data.validFrom, {

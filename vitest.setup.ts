@@ -1,48 +1,27 @@
 import { vi } from 'vitest';
 
 // ---------------------------------------------------------------------------
-// Mock: Sequelize / Base de datos
+// Mock: Sequelize (ver vitest-sequelize-mock.ts)
 // ---------------------------------------------------------------------------
 
-const mockTransaction = {
-  commit: vi.fn().mockResolvedValue(undefined),
-  rollback: vi.fn().mockResolvedValue(undefined),
-};
-
-const createMockModel = (): unknown => ({
-  findOne: vi.fn().mockResolvedValue(null),
-  findAll: vi.fn().mockResolvedValue([]),
-  findByPk: vi.fn().mockResolvedValue(null),
-  create: vi.fn().mockImplementation((data: unknown) => Promise.resolve({ ...data, id: 1 })),
-  update: vi.fn().mockResolvedValue([1]),
-  destroy: vi.fn().mockResolvedValue(1),
-  count: vi.fn().mockResolvedValue(0),
-  findAndCountAll: vi.fn().mockResolvedValue({ rows: [], count: 0 }),
-  belongsTo: vi.fn().mockReturnThis(),
-  hasMany: vi.fn().mockReturnThis(),
-  hasOne: vi.fn().mockReturnThis(),
-  belongsToMany: vi.fn().mockReturnThis(),
+vi.mock('@/shared/database/index.js', async () => {
+  const { mockSequelize } = await import('./vitest-sequelize-mock.js');
+  return {
+    sequelize: mockSequelize,
+    testConnection: vi.fn().mockResolvedValue(undefined),
+    default: mockSequelize,
+  };
 });
 
-const mockDefine = vi.fn().mockImplementation(() => createMockModel());
+export { mockSequelize } from './vitest-sequelize-mock.js';
 
-export const mockSequelize = {
-  authenticate: vi.fn().mockResolvedValue(undefined),
-  query: vi.fn().mockResolvedValue([]),
-  transaction: vi
-    .fn()
-    .mockImplementation((fn: (t: typeof mockTransaction) => Promise<unknown>) =>
-      fn(mockTransaction)
-    ),
-  define: mockDefine,
-  models: {} as Record<string, ReturnType<typeof createMockModel>>,
-  close: vi.fn().mockResolvedValue(undefined),
-};
-
-vi.mock('@/shared/database', () => ({
-  sequelize: mockSequelize,
-  testConnection: vi.fn().mockResolvedValue(undefined),
-  default: mockSequelize,
+// Evita cargar asociaciones Sequelize (User/Dependencia) en tests que mockean modelos.
+vi.mock('@/modules/dependencias/models/dependencia-membership.model.js', () => ({
+  DependenciaMembership: {
+    create: vi.fn().mockResolvedValue({ id: 'mock-dep-membership-id' }),
+    findOne: vi.fn().mockResolvedValue(null),
+    findAll: vi.fn().mockResolvedValue([]),
+  },
 }));
 
 // ---------------------------------------------------------------------------

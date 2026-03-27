@@ -2,9 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DateTime } from 'luxon';
 import { ValidationError, NotFoundError } from '@/shared/errors/index.js';
 import type { UUID } from '@/shared/database/types.js';
+import { sequelize } from '@/shared/database/index.js';
+import { findMatchingActividadesByDependencia } from '../permiso-scope.helper.js';
 import * as permisoService from '../permiso.service.js';
 
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' as UUID;
+const AREA2_ID = 'f0f0f0f0-f0f0-f0f0-f0f0-f0f0f0f0f0f0' as UUID;
+const ACTIVIDAD2_ID = '11111111-2222-3333-4444-555555555555' as UUID;
 const DEPENDENCIA_ID = '11111111-1111-1111-1111-111111111111' as UUID;
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' as UUID;
 const PRESTADOR_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc' as UUID;
@@ -58,11 +62,19 @@ vi.mock('@/shared/logger/index.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn().mockReturnThis() },
 }));
 
+vi.mock('../permiso-scope.helper.js', () => ({
+  findMatchingActividadesByDependencia: vi.fn(),
+}));
+
+const mockFindMatching = vi.mocked(findMatchingActividadesByDependencia);
+const mockTransaction = vi.mocked(sequelize.transaction);
+
 describe('permiso.service', () => {
   beforeEach((): void => {
     vi.clearAllMocks();
     mockAssertCanAccessOrganization.mockResolvedValue(undefined);
     mockAreaFindByPk.mockResolvedValue({ id: ORG_ID, dependenciaId: DEPENDENCIA_ID });
+    mockFindMatching.mockReset();
   });
 
   describe('validateFechasVigencia', () => {
@@ -198,6 +210,7 @@ describe('permiso.service', () => {
       validFrom: DateTime.fromISO('2025-02-01'),
       validTo: DateTime.fromISO('2025-02-28'),
       status: 'activo' as const,
+      appliesToAllAreas: false,
     };
 
     it('throws when assertCanAccessOrganization rejects', async () => {
@@ -271,9 +284,119 @@ describe('permiso.service', () => {
           prestadorId: PRESTADOR_ID,
           actividadId: ACTIVIDAD_ID,
           status: 'activo',
+          appliesToAllAreas: false,
+          permissionGroupId: null,
         })
       );
       expect(result).toBeDefined();
+    });
+
+    it('creates one permiso per area when appliesToAllAreas is true', async () => {
+      const createDataAll = {
+        ...createData,
+        appliesToAllAreas: true as const,
+      };
+      const prestador = { id: PRESTADOR_ID, dependenciaId: DEPENDENCIA_ID };
+      const actividad = { id: ACTIVIDAD_ID, areaId: ORG_ID };
+      mockPrestadorFindOne.mockResolvedValueOnce(prestador);
+      mockActividadFindOne.mockResolvedValueOnce(actividad);
+      mockFindMatching.mockResolvedValueOnce([
+        { areaId: ORG_ID, areaName: 'Área 1', actividadId: ACTIVIDAD_ID },
+        { areaId: AREA2_ID, areaName: 'Área 2', actividadId: ACTIVIDAD2_ID },
+      ]);
+      mockPermisoFindOne.mockResolvedValue(null);
+
+      const created1 = {
+        id: PERMISO_ID,
+        prestadorId: PRESTADOR_ID,
+        actividadId: ACTIVIDAD_ID,
+        validFrom: new Date('2025-02-01'),
+        validTo: new Date('2025-02-28'),
+        status: 'activo',
+        appliesToAllAreas: true,
+        permissionGroupId: '88888888-8888-8888-8888-888888888888',
+        reload: vi.fn(),
+      };
+      const created2 = {
+        id: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+        prestadorId: PRESTADOR_ID,
+        actividadId: ACTIVIDAD2_ID,
+        validFrom: new Date('2025-02-01'),
+        validTo: new Date('2025-02-28'),
+        status: 'activo',
+        appliesToAllAreas: true,
+        permissionGroupId: '88888888-8888-8888-8888-888888888888',
+        reload: vi.fn(),
+      };
+      const reloaded1 = { ...created1, PrestadorProfile: prestador, Actividad: actividad };
+      const reloaded2 = {
+        ...created2,
+        PrestadorProfile: prestador,
+        Actividad: { id: ACTIVIDAD2_ID, areaId: AREA2_ID },
+      };
+      (created1.reload as ReturnType<typeof vi.fn>).mockResolvedValue(reloaded1);
+      (created2.reload as ReturnType<typeof vi.fn>).mockResolvedValue(reloaded2);
+      mockPermisoCreate.mockResolvedValueOnce(created1).mockResolvedValueOnce(created2);
+
+      const result = await permisoService.createPermiso(createDataAll, ORG_ID, USER_ID);
+
+      expect(Array.isArray(result)).toBe(true);
+      expect((result as unknown[]).length).toBe(2);
+      expect(mockTransaction).toHaveBeenCalled();
+      expect(mockPermisoCreate).toHaveBeenCalledTimes(2);
+      expect(mockPermisoCreate).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          actividadId: ACTIVIDAD_ID,
+          appliesToAllAreas: true,
+          permissionGroupId: expect.any(String) as unknown as string,
+        }),
+        expect.anything()
+      );
+    });
+
+    it('throws ValidationError when multi-area matching fails (e.g. missing activity)', async () => {
+      const createDataAll = {
+        ...createData,
+        appliesToAllAreas: true as const,
+      };
+      mockPrestadorFindOne.mockResolvedValueOnce({
+        id: PRESTADOR_ID,
+        dependenciaId: DEPENDENCIA_ID,
+      });
+      mockActividadFindOne.mockResolvedValueOnce({ id: ACTIVIDAD_ID, areaId: ORG_ID });
+      mockFindMatching.mockRejectedValueOnce(
+        new ValidationError('Falta actividad en un área', undefined, {
+          missingAreas: [{ areaId: AREA2_ID, areaName: 'Sur' }],
+        })
+      );
+
+      await expect(permisoService.createPermiso(createDataAll, ORG_ID, USER_ID)).rejects.toThrow(
+        ValidationError
+      );
+      expect(mockPermisoCreate).not.toHaveBeenCalled();
+    });
+
+    it('throws ValidationError when duplicate exists for any matched actividad (multi-area)', async () => {
+      const createDataAll = {
+        ...createData,
+        appliesToAllAreas: true as const,
+      };
+      mockPrestadorFindOne.mockResolvedValueOnce({
+        id: PRESTADOR_ID,
+        dependenciaId: DEPENDENCIA_ID,
+      });
+      mockActividadFindOne.mockResolvedValueOnce({ id: ACTIVIDAD_ID, areaId: ORG_ID });
+      mockFindMatching.mockResolvedValueOnce([
+        { areaId: ORG_ID, areaName: 'Área 1', actividadId: ACTIVIDAD_ID },
+        { areaId: AREA2_ID, areaName: 'Área 2', actividadId: ACTIVIDAD2_ID },
+      ]);
+      mockPermisoFindOne.mockResolvedValueOnce({ id: 'existing-permiso' });
+
+      await expect(permisoService.createPermiso(createDataAll, ORG_ID, USER_ID)).rejects.toThrow(
+        ValidationError
+      );
+      expect(mockTransaction).not.toHaveBeenCalled();
     });
   });
 
