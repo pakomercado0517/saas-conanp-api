@@ -10,8 +10,10 @@ const ACTIVIDAD_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc' as UUID;
 const BLOQUE_ID = 'dddddddd-dddd-dddd-dddd-dddddddddddd' as UUID;
 const PRESTADOR_ID = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee' as UUID;
 const EVENTO_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff' as UUID;
+const DEPENDENCIA_ID = '11111111-1111-1111-1111-111111111111' as UUID;
 
 const mockAssertCanAccessOrganization = vi.fn();
+const mockAreaFindByPk = vi.fn();
 const mockValidatePrestadorHasPermisoVigente = vi.fn();
 const mockVerificarDisponibilidadPorBloque = vi.fn();
 const mockVerificarDisponibilidadPorDia = vi.fn();
@@ -23,11 +25,16 @@ const mockEventoOperativoFindOne = vi.fn();
 const mockEventoOperativoCreate = vi.fn();
 const mockEventoOperativoFindAndCountAll = vi.fn();
 const mockMembershipFindOne = vi.fn();
-const mockSequelizeTransaction = vi.fn();
 
 vi.mock('@/modules/organizations/services/organization.service.js', () => ({
   assertCanAccessOrganization: (...args: unknown[]): unknown =>
     mockAssertCanAccessOrganization(...args),
+}));
+
+vi.mock('@/modules/areas/models/area.model.js', () => ({
+  Area: {
+    findByPk: (...args: unknown[]): unknown => mockAreaFindByPk(...args),
+  },
 }));
 
 vi.mock('@/modules/permisos/services/permiso.service.js', () => ({
@@ -89,12 +96,6 @@ vi.mock('@/modules/payments/models/payment.model.js', () => ({
   },
 }));
 
-vi.mock('@/shared/database/index.js', () => ({
-  sequelize: {
-    transaction: (...args: unknown[]): unknown => mockSequelizeTransaction(...args),
-  },
-}));
-
 vi.mock('@/shared/logger/index.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn().mockReturnThis() },
 }));
@@ -105,6 +106,7 @@ describe('evento.service', () => {
     mockAssertCanAccessOrganization.mockResolvedValue(undefined);
     mockCheckEventosLimit.mockResolvedValue(undefined);
     mockValidatePrestadorHasPermisoVigente.mockResolvedValue({ id: 'permiso-id' });
+    mockAreaFindByPk.mockResolvedValue({ id: ORG_ID, dependenciaId: DEPENDENCIA_ID });
     mockVerificarDisponibilidadPorBloque.mockResolvedValue({
       disponible: true,
       capacidadTotal: 10,
@@ -119,11 +121,6 @@ describe('evento.service', () => {
       capacidadDisponible: 10,
       limite: 10,
     });
-    const mockTransaction = {
-      commit: vi.fn().mockResolvedValue(undefined),
-      rollback: vi.fn().mockResolvedValue(undefined),
-    };
-    mockSequelizeTransaction.mockResolvedValue(mockTransaction);
   });
 
   describe('createEvento', () => {
@@ -310,7 +307,7 @@ describe('evento.service', () => {
 
       expect(mockEventoOperativoCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          organizationId: ORG_ID,
+          areaId: ORG_ID,
           actividadId: ACTIVIDAD_ID,
           prestadorId: PRESTADOR_ID,
           bloqueId: BLOQUE_ID,
@@ -390,7 +387,7 @@ describe('evento.service', () => {
       mockEventoOperativoFindOne.mockResolvedValueOnce(eventoRecord);
       mockMembershipFindOne.mockResolvedValueOnce({
         userId: USER_ID,
-        organizationId: ORG_ID,
+        areaId: ORG_ID,
         role: 'prestador',
       });
       mockPrestadorFindOne.mockResolvedValueOnce({
@@ -417,7 +414,7 @@ describe('evento.service', () => {
       mockEventoOperativoFindOne.mockResolvedValueOnce(eventoRecord);
       mockMembershipFindOne.mockResolvedValueOnce({
         userId: USER_ID,
-        organizationId: ORG_ID,
+        areaId: ORG_ID,
         role: 'admin',
       });
 
@@ -431,7 +428,7 @@ describe('evento.service', () => {
     it('filters by prestadorId when user is prestador', async () => {
       mockMembershipFindOne.mockResolvedValueOnce({
         userId: USER_ID,
-        organizationId: ORG_ID,
+        areaId: ORG_ID,
         role: 'prestador',
       });
       mockPrestadorFindOne.mockResolvedValueOnce({
@@ -474,7 +471,7 @@ describe('evento.service', () => {
       expect(mockEventoOperativoFindAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            organizationId: ORG_ID,
+            areaId: ORG_ID,
             prestadorId: PRESTADOR_ID,
           }),
         })
@@ -484,7 +481,7 @@ describe('evento.service', () => {
     it('returns all eventos for admin', async () => {
       mockMembershipFindOne.mockResolvedValueOnce({
         userId: USER_ID,
-        organizationId: ORG_ID,
+        areaId: ORG_ID,
         role: 'admin',
       });
       mockEventoOperativoFindAndCountAll.mockResolvedValueOnce({
@@ -513,7 +510,7 @@ describe('evento.service', () => {
       expect(mockEventoOperativoFindAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            organizationId: ORG_ID,
+            areaId: ORG_ID,
           }),
         })
       );

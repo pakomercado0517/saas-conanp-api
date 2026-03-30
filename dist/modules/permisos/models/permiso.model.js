@@ -1,5 +1,5 @@
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../../../shared/database';
+import { sequelize } from '../../../shared/database/index.js';
 import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model';
 import { Actividad } from '../../../modules/actividades/models/actividad.model';
 export class Permiso extends Model {
@@ -76,6 +76,15 @@ Permiso.init({
                 require_protocol: true,
             },
         },
+    },
+    appliesToAllAreas: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
+    permissionGroupId: {
+        type: DataTypes.UUID,
+        allowNull: true,
     },
     createdAt: {
         type: DataTypes.DATE,

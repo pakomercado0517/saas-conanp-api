@@ -41,8 +41,9 @@ export declare const validatePrestadorHasPermisoVigente: (prestadorId: UUID, act
  * @throws {ForbiddenError} Si no tiene acceso a la organización
  * @throws {NotFoundError} Si el prestador o actividad no existen
  * @throws {ValidationError} Si el prestador y actividad no pertenecen a la misma organización
+ * @returns Un permiso o varios si `appliesToAllAreas` es true (materialización por área)
  */
-export declare const createPermiso: (data: CreatePermisoDTO, organizationId: UUID, creatorUserId: UUID) => Promise<Permiso>;
+export declare const createPermiso: (data: CreatePermisoDTO, organizationId: UUID, creatorUserId: UUID) => Promise<Permiso | Permiso[]>;
 /**
  * Obtiene un permiso por ID.
  *

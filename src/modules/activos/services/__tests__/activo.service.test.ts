@@ -8,8 +8,10 @@ const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' as UUID;
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' as UUID;
 const PRESTADOR_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc' as UUID;
 const ACTIVO_ID = 'dddddddd-dddd-dddd-dddd-dddddddddddd' as UUID;
+const DEPENDENCIA_ID = '11111111-1111-1111-1111-111111111111' as UUID;
 
 const mockAssertCanAccessOrganization = vi.fn();
+const mockAreaFindByPk = vi.fn();
 const mockActivoFindOne = vi.fn();
 const mockActivoCreate = vi.fn();
 const mockActivoFindAndCountAll = vi.fn();
@@ -18,6 +20,16 @@ const mockPrestadorFindOne = vi.fn();
 vi.mock('@/modules/organizations/services/organization.service.js', () => ({
   assertCanAccessOrganization: (...args: unknown[]): unknown =>
     mockAssertCanAccessOrganization(...args),
+}));
+
+vi.mock('@/modules/subscriptions/services/subscription-limits.service.js', () => ({
+  checkActivosLimit: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/modules/areas/models/area.model.js', () => ({
+  Area: {
+    findByPk: (...args: unknown[]): unknown => mockAreaFindByPk(...args),
+  },
 }));
 
 vi.mock('@/modules/activos/models/activo.model.js', () => ({
@@ -49,6 +61,7 @@ vi.mock('@/shared/logger/index.js', () => ({
 describe('activo.service', () => {
   beforeEach((): void => {
     vi.clearAllMocks();
+    mockAreaFindByPk.mockResolvedValue({ id: ORG_ID, dependenciaId: DEPENDENCIA_ID });
     mockAssertCanAccessOrganization.mockResolvedValue(undefined);
   });
 
@@ -170,7 +183,7 @@ describe('activo.service', () => {
 
       expect(mockActivoCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          organizationId: ORG_ID,
+          dependenciaId: DEPENDENCIA_ID,
           ownerId: PRESTADOR_ID,
           type: 'vehiculo',
           status: 'pendiente',

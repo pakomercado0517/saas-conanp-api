@@ -38,8 +38,12 @@ export const createPermiso = async (req, res) => {
     const organizationId = req.organizationId;
     const userId = req.user.userId;
     const data = req.body;
-    const permiso = await permisoService.createPermiso(data, organizationId, userId);
-    return sendCreated(res, permiso, 'Permiso creado exitosamente');
+    const result = await permisoService.createPermiso(data, organizationId, userId);
+    if (Array.isArray(result)) {
+        const permissionGroupId = result[0]?.permissionGroupId ?? null;
+        return sendCreated(res, { created: result, permissionGroupId }, 'Permisos creados exitosamente');
+    }
+    return sendCreated(res, result, 'Permiso creado exitosamente');
 };
 /**
  * Obtiene un permiso por ID.

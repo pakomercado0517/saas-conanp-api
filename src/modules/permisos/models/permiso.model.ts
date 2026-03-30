@@ -1,5 +1,5 @@
 import { DataTypes, Model, type Optional } from 'sequelize';
-import { sequelize } from '@/shared/database';
+import { sequelize } from '@/shared/database/index.js';
 import type { UUID } from '@/shared/database/types';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model';
 import { Actividad } from '@/modules/actividades/models/actividad.model';
@@ -12,13 +12,23 @@ export interface PermisoAttributes {
   validTo: Date;
   status: 'activo' | 'inactivo' | 'vencido' | 'suspendido';
   documentUrl: string | null;
+  /** True si el permiso se materializó para todas las áreas de la dependencia */
+  appliesToAllAreas: boolean;
+  /** Agrupa filas creadas en el mismo lote (mismo expediente lógico) */
+  permissionGroupId: UUID | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface PermisoCreationAttributes extends Optional<
   PermisoAttributes,
-  'id' | 'status' | 'documentUrl' | 'createdAt' | 'updatedAt'
+  | 'id'
+  | 'status'
+  | 'documentUrl'
+  | 'appliesToAllAreas'
+  | 'permissionGroupId'
+  | 'createdAt'
+  | 'updatedAt'
 > {}
 
 export class Permiso
@@ -32,6 +42,8 @@ export class Permiso
   declare validTo: Date;
   declare status: 'activo' | 'inactivo' | 'vencido' | 'suspendido';
   declare documentUrl: string | null;
+  declare appliesToAllAreas: boolean;
+  declare permissionGroupId: UUID | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 
@@ -113,6 +125,15 @@ Permiso.init(
           require_protocol: true,
         },
       },
+    },
+    appliesToAllAreas: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    permissionGroupId: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
     createdAt: {
       type: DataTypes.DATE,

@@ -5,13 +5,23 @@ const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const USER_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 const PRESTADOR_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
 const ACTIVO_ID = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+const DEPENDENCIA_ID = '11111111-1111-1111-1111-111111111111';
 const mockAssertCanAccessOrganization = vi.fn();
+const mockAreaFindByPk = vi.fn();
 const mockActivoFindOne = vi.fn();
 const mockActivoCreate = vi.fn();
 const mockActivoFindAndCountAll = vi.fn();
 const mockPrestadorFindOne = vi.fn();
 vi.mock('@/modules/organizations/services/organization.service.js', () => ({
     assertCanAccessOrganization: (...args) => mockAssertCanAccessOrganization(...args),
+}));
+vi.mock('@/modules/subscriptions/services/subscription-limits.service.js', () => ({
+    checkActivosLimit: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('@/modules/areas/models/area.model.js', () => ({
+    Area: {
+        findByPk: (...args) => mockAreaFindByPk(...args),
+    },
 }));
 vi.mock('@/modules/activos/models/activo.model.js', () => ({
     Activo: {
@@ -37,6 +47,7 @@ vi.mock('@/shared/logger/index.js', () => ({
 describe('activo.service', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockAreaFindByPk.mockResolvedValue({ id: ORG_ID, dependenciaId: DEPENDENCIA_ID });
         mockAssertCanAccessOrganization.mockResolvedValue(undefined);
     });
     describe('validateEstadoTransition', () => {
@@ -123,7 +134,7 @@ describe('activo.service', () => {
             createdActivo.reload.mockResolvedValue(reloadedActivo);
             const result = await activoService.createActivo(createData, ORG_ID, USER_ID);
             expect(mockActivoCreate).toHaveBeenCalledWith(expect.objectContaining({
-                organizationId: ORG_ID,
+                dependenciaId: DEPENDENCIA_ID,
                 ownerId: PRESTADOR_ID,
                 type: 'vehiculo',
                 status: 'pendiente',

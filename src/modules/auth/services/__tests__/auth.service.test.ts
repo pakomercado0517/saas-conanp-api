@@ -13,6 +13,7 @@ const HASHED_PASSWORD = '$2b$10$hashedpassword';
 const mockUserFindOne = vi.fn();
 const mockUserCreate = vi.fn();
 const mockUserFindByPk = vi.fn();
+const mockMembershipCreate = vi.fn();
 
 const mockRefreshTokenFindOne = vi.fn();
 const mockRefreshTokenFindAll = vi.fn();
@@ -29,6 +30,29 @@ vi.mock('@/modules/users/models/user.model.js', () => ({
     create: (...args: unknown[]): unknown => mockUserCreate(...args),
     findByPk: (...args: unknown[]): unknown => mockUserFindByPk(...args),
   },
+}));
+
+vi.mock('@/modules/users/models/membership.model.js', () => ({
+  Membership: {
+    create: (...args: unknown[]): unknown => mockMembershipCreate(...args),
+  },
+}));
+
+vi.mock('@/modules/users/services/invitation.service.js', () => ({
+  consumeInvitationForRegistration: vi.fn(),
+  consumeInvitationAfterProof: vi.fn(),
+}));
+
+vi.mock('@/modules/users/services/onboarding-invitation.service.js', () => ({
+  consumeOnboardingInvitationForRegistration: vi.fn(),
+}));
+
+vi.mock('@/modules/dependencias/services/dependencia-invitation.service.js', () => ({
+  consumeDependenciaInvitationForRegistration: vi.fn(),
+}));
+
+vi.mock('@/modules/users/services/invitation-email-proof.service.js', () => ({
+  consumeProofForRegistration: vi.fn(),
 }));
 
 vi.mock('@/modules/auth/models/refresh-token.model.js', () => ({
@@ -61,8 +85,11 @@ const mockUserFindAll = vi.fn();
 describe('auth.service', () => {
   beforeEach((): void => {
     vi.clearAllMocks();
+    mockUserFindOne.mockReset();
+    mockUserFindOne.mockResolvedValue(undefined);
     mockBcryptHash.mockResolvedValue(HASHED_PASSWORD);
     mockBcryptCompare.mockResolvedValue(true);
+    mockMembershipCreate.mockResolvedValue({ id: 'mock-membership-id' });
   });
 
   describe('register', () => {

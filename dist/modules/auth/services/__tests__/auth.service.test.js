@@ -9,6 +9,7 @@ const HASHED_PASSWORD = '$2b$10$hashedpassword';
 const mockUserFindOne = vi.fn();
 const mockUserCreate = vi.fn();
 const mockUserFindByPk = vi.fn();
+const mockMembershipCreate = vi.fn();
 const mockRefreshTokenFindOne = vi.fn();
 const mockRefreshTokenFindAll = vi.fn();
 const mockRefreshTokenCreate = vi.fn();
@@ -22,6 +23,24 @@ vi.mock('@/modules/users/models/user.model.js', () => ({
         create: (...args) => mockUserCreate(...args),
         findByPk: (...args) => mockUserFindByPk(...args),
     },
+}));
+vi.mock('@/modules/users/models/membership.model.js', () => ({
+    Membership: {
+        create: (...args) => mockMembershipCreate(...args),
+    },
+}));
+vi.mock('@/modules/users/services/invitation.service.js', () => ({
+    consumeInvitationForRegistration: vi.fn(),
+    consumeInvitationAfterProof: vi.fn(),
+}));
+vi.mock('@/modules/users/services/onboarding-invitation.service.js', () => ({
+    consumeOnboardingInvitationForRegistration: vi.fn(),
+}));
+vi.mock('@/modules/dependencias/services/dependencia-invitation.service.js', () => ({
+    consumeDependenciaInvitationForRegistration: vi.fn(),
+}));
+vi.mock('@/modules/users/services/invitation-email-proof.service.js', () => ({
+    consumeProofForRegistration: vi.fn(),
 }));
 vi.mock('@/modules/auth/models/refresh-token.model.js', () => ({
     RefreshToken: {
@@ -48,8 +67,11 @@ const mockUserFindAll = vi.fn();
 describe('auth.service', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUserFindOne.mockReset();
+        mockUserFindOne.mockResolvedValue(undefined);
         mockBcryptHash.mockResolvedValue(HASHED_PASSWORD);
         mockBcryptCompare.mockResolvedValue(true);
+        mockMembershipCreate.mockResolvedValue({ id: 'mock-membership-id' });
     });
     describe('register', () => {
         it('throws ConflictError when email already exists', async () => {
