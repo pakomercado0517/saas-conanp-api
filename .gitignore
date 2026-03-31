@@ -17,4 +17,5 @@ postman/
 # github folder
 .github/
 
-#Esto es un cambio para recuperar el proyecto
+# CURSOR RULES
+.cursorrules

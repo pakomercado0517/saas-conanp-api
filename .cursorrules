@@ -1,11 +1,20 @@
 # Reglas de Trabajo - Backend CONANP
 
+# MCP & External Tools
+
+- **Context7:** Úsalo SIEMPRE para verificar documentación de librerías externas antes de generar código, especialmente para Next.js, Tailwind o APIs de terceros. No asumas que conoces la última versión.
+- **Vercel MCP:** Consúltalo antes de sugerir cambios en variables de entorno, logs de errores o configuraciones de despliegue.
+
+---
+
 ## Contexto del Proyecto
 
 ### ¿Qué es este proyecto?
+
 Sistema multi-tenant (Micro-SaaS) para la gestión y regulación de operaciones turísticas en **Áreas Naturales Protegidas (ANP)** de México. La plataforma permite a diferentes ANPs (cada una como una organización) gestionar prestadores de servicios turísticos, sus permisos, activos (embarcaciones, vehículos, guías), actividades turísticas y eventos operativos.
 
 ### Propósito del Negocio
+
 - **Regulación**: Controlar y regular las operaciones turísticas dentro de ANPs
 - **Gestión de Prestadores**: Administrar prestadores de servicios turísticos y sus permisos
 - **Control de Capacidad**: Gestionar la capacidad de actividades turísticas (por bloques o horario libre)
@@ -19,6 +28,7 @@ Sistema multi-tenant (Micro-SaaS) para la gestión y regulación de operaciones 
 **Prestador**: Usuario que ofrece servicios turísticos dentro de una ANP. Debe tener permisos vigentes para realizar actividades.
 
 **Actividad**: Define qué actividad turística puede realizarse (ej: "Snorkel", "Kayak", "Senderismo"). Tiene dos tipos de agenda:
+
 - **BLOQUES**: Horarios predefinidos que el prestador selecciona
 - **HORARIO_LIBRE**: El prestador define su propio horario de inicio y fin
 
@@ -33,6 +43,7 @@ Sistema multi-tenant (Micro-SaaS) para la gestión y regulación de operaciones 
 **Capacidad**: Límite de personas/operaciones permitidas por actividad, fecha y bloque (si aplica).
 
 ### Stack Tecnológico
+
 - **Backend**: Node.js + Express
 - **Lenguaje**: TypeScript (strict mode)
 - **Base de Datos**: PostgreSQL
@@ -43,18 +54,21 @@ Sistema multi-tenant (Micro-SaaS) para la gestión y regulación de operaciones 
 - **Logging**: Pino
 
 ### Arquitectura
+
 - **Multi-tenant**: Todo filtrado por `organizationId`
 - **Modular**: Cada dominio en su propio módulo (`auth`, `organizations`, `users`, `prestadores`, `actividades`, `permisos`, `activos`, `eventos`, `capacidad`, `evidencias`)
 - **Service Layer**: Toda lógica de negocio en services, controllers delgados
 - **Separación estricta**: Auth ≠ Dominio ≠ Infraestructura
 
 ### Principios Fundamentales
+
 1. **Multi-tenant desde el inicio**: Nunca asumir una sola ANP
 2. **Dominio primero**: La lógica es operación turística regulada, no el framework
 3. **Reglas como datos**: Nada hardcodeado por ecosistema (configuración en `Organization.settings`)
 4. **Validaciones backend**: Nunca confiar solo en frontend
 
 ### Referencia Completa
+
 - **Plan técnico completo**: `docs/plan-backend-micro-saas-conanp.md`
 - **Tareas del proyecto (Notion)**: `docs/tareas-proyecto-notion.md`
 
@@ -77,12 +91,12 @@ Sistema multi-tenant (Micro-SaaS) para la gestión y regulación de operaciones 
 // ✅ CORRECTO
 const createActividad = async (data: CreateActividadDTO): Promise<Actividad> => {
   // ...
-}
+};
 
 // ❌ INCORRECTO
 const createActividad = async (data: any) => {
   // ...
-}
+};
 ```
 
 ---
@@ -101,9 +115,7 @@ const createActividad = async (data: any) => {
 import { DateTime } from 'luxon';
 
 // Al guardar en BD: convertir a UTC
-const fechaUTC = DateTime.fromISO(fecha, { zone: 'America/Mexico_City' })
-  .toUTC()
-  .toISO();
+const fechaUTC = DateTime.fromISO(fecha, { zone: 'America/Mexico_City' }).toUTC().toISO();
 
 // Al leer de BD: convertir a zona horaria de México
 const fechaMexico = DateTime.fromISO(fechaBD, { zone: 'utc' })
@@ -161,12 +173,12 @@ const ahora = DateTime.now().setZone('America/Mexico_City');
 ```typescript
 // ✅ CORRECTO - Siempre filtrar por organizationId
 const actividades = await Actividad.findAll({
-  where: { organizationId, active: true }
+  where: { organizationId, active: true },
 });
 
 // ❌ INCORRECTO - Sin filtro multi-tenant
 const actividades = await Actividad.findAll({
-  where: { active: true }
+  where: { active: true },
 });
 ```
 
@@ -192,12 +204,12 @@ export const createActividad = async (req: Request, res: Response) => {
 export const createActividad = async (data: CreateActividadDTO): Promise<Actividad> => {
   // Toda la lógica de negocio aquí
   // Validaciones, transformaciones, etc.
-}
+};
 
 // ❌ INCORRECTO - Lógica en controller
 export const createActividad = async (req: Request, res: Response) => {
   // Validaciones, lógica de negocio, etc. - NO HACER ESTO
-}
+};
 ```
 
 ---
@@ -214,13 +226,13 @@ export const createActividad = async (req: Request, res: Response) => {
 // Schema Zod con mensajes en español
 export const CreateEventoSchema = z.object({
   actividadId: z.string().uuid({
-    message: 'El ID de actividad debe ser un UUID válido'
+    message: 'El ID de actividad debe ser un UUID válido',
   }),
   date: z.string().datetime({
-    message: 'La fecha debe tener un formato válido (ISO 8601)'
+    message: 'La fecha debe tener un formato válido (ISO 8601)',
   }),
   peopleCount: z.number().positive({
-    message: 'El número de personas debe ser mayor a cero'
+    message: 'El número de personas debe ser mayor a cero',
   }),
   bloqueId: z.string().uuid().optional(),
   startTime: z.string().optional(),
@@ -237,13 +249,13 @@ export const validateCreateEvento = (req: Request, res: Response, next: NextFunc
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const mensajes = error.errors.map(err => ({
+      const mensajes = error.errors.map((err) => ({
         campo: err.path.join('.'),
-        mensaje: err.message
+        mensaje: err.message,
       }));
       res.status(400).json({
         error: 'Error de validación',
-        detalles: mensajes
+        detalles: mensajes,
       });
     } else {
       next(error);
@@ -322,26 +334,26 @@ if (!permisoVigente) {
 // Validación de regla de negocio en service
 const crearEvento = async (data: CreateEventoDTO) => {
   const actividad = await Actividad.findByPk(data.actividadId);
-  
+
   if (!actividad) {
     throw new NotFoundError('Actividad');
   }
-  
+
   // Validar tipo de agenda
   if (actividad.agendaType === 'BLOQUES' && !data.bloqueId) {
     throw new ValidationError('Esta actividad requiere seleccionar un bloque');
   }
-  
+
   if (actividad.agendaType === 'HORARIO_LIBRE' && (!data.startTime || !data.endTime)) {
     throw new ValidationError('Esta actividad requiere definir hora de inicio y fin');
   }
-  
+
   // Validar capacidad
   const capacidad = await verificarCapacidad(actividad.id, data.date, data.bloqueId);
   if (!capacidad.disponible) {
     throw new ValidationError(`No hay capacidad disponible. Máximo: ${capacidad.limite}`);
   }
-  
+
   // Más validaciones...
 };
 ```
@@ -359,14 +371,14 @@ import { sequelize } from '@/shared/database';
 
 const crearEventoConTransaccion = async (data: CreateEventoDTO) => {
   const transaction = await sequelize.transaction();
-  
+
   try {
     const evento = await Evento.create(data, { transaction });
     await Capacidad.update(
       { used: sequelize.literal('used + 1') },
       { where: { ... }, transaction }
     );
-    
+
     await transaction.commit();
     return evento;
   } catch (error) {
@@ -414,7 +426,7 @@ const crearEventoConTransaccion = async (data: CreateEventoDTO) => {
 // En migración
 await queryInterface.addIndex('eventos', ['organizationId', 'date'], {
   name: 'idx_eventos_org_date',
-  comment: 'Índice para búsquedas por organización y fecha'
+  comment: 'Índice para búsquedas por organización y fecha',
 });
 ```
 
@@ -440,9 +452,9 @@ await queryInterface.addIndex('eventos', ['organizationId', 'date'], {
 
 ```typescript
 // ✅ CORRECTO - Usar notación de corchetes
-const env = process.env["NODE_ENV"];
-const dbUrl = process.env["DATABASE_PUBLIC_URL"];
-const jwtSecret = process.env["JWT_SECRET"];
+const env = process.env['NODE_ENV'];
+const dbUrl = process.env['DATABASE_PUBLIC_URL'];
+const jwtSecret = process.env['JWT_SECRET'];
 
 // ❌ INCORRECTO - No usar notación de punto
 const env = process.env.NODE_ENV;
@@ -465,9 +477,9 @@ const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
   ...(process.env.NODE_ENV !== 'production' && {
     transport: {
-      target: 'pino-pretty'
-    }
-  })
+      target: 'pino-pretty',
+    },
+  }),
 });
 
 logger.info({ organizationId, userId }, 'Evento creado exitosamente');
@@ -551,7 +563,7 @@ logger.error({ error, organizationId }, 'Error al crear evento');
 // ✅ CORRECTO - Solución simple y directa
 const getActividad = async (id: string, organizationId: string): Promise<Actividad | null> => {
   return await Actividad.findOne({
-    where: { id, organizationId }
+    where: { id, organizationId },
   });
 };
 
@@ -591,7 +603,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     if (!token) {
       throw new UnauthorizedError('Token de autenticación requerido');
     }
-    
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
     req.user = decoded;
     next();
@@ -645,15 +657,19 @@ interface PaginatedResponse<T> {
 
 ```typescript
 // Modelo con soft delete
-export const Actividad = sequelize.define('Actividad', {
-  // ... campos
-  deletedAt: {
-    type: DataTypes.DATE,
-    allowNull: true,
+export const Actividad = sequelize.define(
+  'Actividad',
+  {
+    // ... campos
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
-}, {
-  paranoid: true, // Habilita soft delete en Sequelize
-});
+  {
+    paranoid: true, // Habilita soft delete en Sequelize
+  }
+);
 
 // Query que excluye eliminados automáticamente
 const actividades = await Actividad.findAll({ where: { organizationId } });
@@ -677,7 +693,7 @@ export type ActivoStatus = 'pendiente' | 'aprobado' | 'rechazado' | 'suspendido'
 const cambiarEstadoActivo = async (activoId: string, nuevoEstado: ActivoStatus) => {
   const activo = await Activo.findByPk(activoId);
   if (!activo) throw new NotFoundError('Activo');
-  
+
   // Validar transición válida
   const transicionesValidas: Record<ActivoStatus, ActivoStatus[]> = {
     pendiente: ['aprobado', 'rechazado'],
@@ -685,11 +701,11 @@ const cambiarEstadoActivo = async (activoId: string, nuevoEstado: ActivoStatus) 
     rechazado: ['pendiente'],
     suspendido: ['aprobado'],
   };
-  
+
   if (!transicionesValidas[activo.status].includes(nuevoEstado)) {
     throw new ValidationError(`No se puede cambiar de ${activo.status} a ${nuevoEstado}`);
   }
-  
+
   activo.status = nuevoEstado;
   await activo.save();
 };
@@ -733,7 +749,7 @@ const validarArchivo = (file: File) => {
 
 - Implementar rate limiting en endpoints públicos y de autenticación
 - Usar diferentes límites según el tipo de endpoint
-- Retornar headers informativos (X-RateLimit-*)
+- Retornar headers informativos (X-RateLimit-\*)
 - Mensajes de error claros cuando se excede el límite
 - Considerar rate limiting por organización en endpoints multi-tenant
 
@@ -790,11 +806,13 @@ app.use('/api/v1/eventos', eventosRoutes);
 // ✅ CORRECTO - Query optimizado
 const eventos = await Evento.findAndCountAll({
   where: { organizationId, date },
-  include: [{
-    model: Actividad,
-    attributes: ['id', 'name'], // Solo campos necesarios
-    required: true,
-  }],
+  include: [
+    {
+      model: Actividad,
+      attributes: ['id', 'name'], // Solo campos necesarios
+      required: true,
+    },
+  ],
   limit: 20,
   offset: (page - 1) * limit,
 });
@@ -860,13 +878,16 @@ if (!actividades) {
 
 ```typescript
 // Logging estructurado
-logger.info({
-  action: 'crear_evento',
-  organizationId,
-  userId,
-  eventoId: evento.id,
-  actividadId: evento.actividadId,
-}, 'Evento creado exitosamente');
+logger.info(
+  {
+    action: 'crear_evento',
+    organizationId,
+    userId,
+    eventoId: evento.id,
+    actividadId: evento.actividadId,
+  },
+  'Evento creado exitosamente'
+);
 
 // Auditoría de cambios
 await Auditoria.create({
@@ -891,24 +912,28 @@ await Auditoria.create({
 
 ```typescript
 // Validar permiso granular
-const puedeEditarEvento = async (userId: string, eventoId: string, organizationId: string): Promise<boolean> => {
+const puedeEditarEvento = async (
+  userId: string,
+  eventoId: string,
+  organizationId: string
+): Promise<boolean> => {
   const evento = await Evento.findByPk(eventoId);
   if (!evento || evento.organizationId !== organizationId) {
     return false;
   }
-  
+
   const membership = await Membership.findOne({ where: { userId, organizationId } });
-  
+
   // Admin puede editar cualquier evento
   if (membership?.role === 'admin') {
     return true;
   }
-  
+
   // Prestador solo puede editar sus propios eventos
   if (membership?.role === 'prestador' && evento.prestadorId === userId) {
     return true;
   }
-  
+
   return false;
 };
 ```
@@ -930,7 +955,7 @@ const validarRangoFechas = (fechaInicio: DateTime, fechaFin: DateTime): void => 
   if (fechaInicio >= fechaFin) {
     throw new ValidationError('La fecha de inicio debe ser anterior a la fecha de fin');
   }
-  
+
   if (fechaInicio < DateTime.now().setZone('America/Mexico_City')) {
     throw new ValidationError('No se pueden crear eventos en el pasado');
   }
@@ -1000,9 +1025,8 @@ export const sendSuccess = <T>(res: Response, data: T, message?: string, statusC
 
 ```typescript
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
-    : 'http://localhost:3000',
+  origin:
+    process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : 'http://localhost:3000',
   credentials: true,
   optionsSuccessStatus: 200,
   allowedHeaders: ['Content-Type', 'Authorization'],
