@@ -18,6 +18,18 @@ import { CacheKeys } from '../../../shared/cache/keys.js';
 const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
 const CANCELABLE_STATUSES = ['active', 'trialing', 'past_due', 'unpaid'];
 /**
+ * Indica si la suscripción actual es FREE sin Stripe y puede pasarse a plan de pago con el mismo POST.
+ * Requiere que `SubscriptionPlan` venga incluido en la consulta.
+ */
+export const isFreeSubscriptionEligibleForStripeUpgrade = (subscription) => {
+    const planName = subscription.SubscriptionPlan?.name;
+    if (planName !== 'free')
+        return false;
+    if (subscription.stripeSubscriptionId)
+        return false;
+    return ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status);
+};
+/**
  * Invalida el caché de suscripción de una organización.
  * Se llama después de CREATE/UPDATE/DELETE de suscripciones.
  */
@@ -102,17 +114,17 @@ export const assertPlanLimits = async (planId, organizationId) => {
     const usage = await getOrganizationUsage(organizationId);
     if (plan.maxUsers != null && usage.usersCount >= plan.maxUsers) {
         throw new ValidationError(plan.name === 'free'
-            ? 'El plan gratuito permite solo 1 usuario. Actualiza tu plan para agregar más.'
+            ? `El plan gratuito permite hasta ${plan.maxUsers} usuario(s). Actualiza tu plan para agregar más.`
             : `Has alcanzado el límite de usuarios del plan (${plan.maxUsers}). Considera actualizar tu plan.`, 'maxUsers');
     }
     if (plan.maxEventos != null && usage.eventosCount >= plan.maxEventos) {
         throw new ValidationError(plan.name === 'free'
-            ? 'El plan gratuito permite solo 1 evento por periodo. Actualiza tu plan para agregar más.'
+            ? `El plan gratuito permite hasta ${plan.maxEventos} evento(s) por periodo. Actualiza tu plan para agregar más.`
             : `Has alcanzado el límite de eventos del plan (${plan.maxEventos}). Considera actualizar tu plan.`, 'maxEventos');
     }
     if (plan.maxActividades != null && usage.actividadesCount >= plan.maxActividades) {
         throw new ValidationError(plan.name === 'free'
-            ? 'El plan gratuito permite solo 1 actividad. Actualiza tu plan para agregar más.'
+            ? `El plan gratuito permite hasta ${plan.maxActividades} actividad(es). Actualiza tu plan para agregar más.`
             : `Has alcanzado el límite de actividades del plan (${plan.maxActividades}). Considera actualizar tu plan.`, 'maxActividades');
     }
 };
@@ -321,13 +333,55 @@ export const createSubscription = async (data, areaId, userId) => {
         throw new NotFoundError('Área', { areaId });
     }
     const dependenciaId = area.dependenciaId;
-    await assertNoExistingSubscription(dependenciaId);
-    await assertPlanExistsAndActive(data.planId);
-    await assertPlanLimits(data.planId, areaId);
     const existingSubscription = await Subscription.findOne({
         where: { dependenciaId },
         order: [['createdAt', 'DESC']],
+        include: [{ model: SubscriptionPlan, as: 'SubscriptionPlan' }],
     });
+    if (existingSubscription) {
+        if (!isFreeSubscriptionEligibleForStripeUpgrade(existingSubscription)) {
+            throw new ConflictError(existingSubscription.status === 'active' || existingSubscription.status === 'trialing'
+                ? 'La dependencia ya tiene una suscripción activa. Debe cancelarla antes de crear una nueva.'
+                : `La dependencia ya tiene una suscripción en estado '${existingSubscription.status}'. Para reactivar, cancele la actual primero o contacte soporte.`, {
+                dependenciaId,
+                subscriptionId: existingSubscription.id,
+                status: existingSubscription.status,
+            });
+        }
+    }
+    const targetPlan = await assertPlanExistsAndActive(data.planId);
+    if (targetPlan.name === 'free') {
+        throw new ValidationError('Para el plan gratuito no uses este endpoint; la dependencia ya recibe FREE al crearse. Elige un plan de pago para contratar.', 'planId');
+    }
+    await assertPlanLimits(data.planId, areaId);
+    if (existingSubscription && isFreeSubscriptionEligibleForStripeUpgrade(existingSubscription)) {
+        const stripeCustomerId = await getOrCreateStripeCustomer(dependenciaId, area.name, existingSubscription.stripeCustomerId ?? null);
+        const stripeResult = await createSubscriptionInStripe(data, dependenciaId, stripeCustomerId);
+        await existingSubscription.update({
+            planId: data.planId,
+            status: stripeResult.status,
+            billingCycle: data.billingCycle,
+            currentPeriodStart: stripeResult.currentPeriodStart,
+            currentPeriodEnd: stripeResult.currentPeriodEnd,
+            stripeSubscriptionId: stripeResult.stripeSubscriptionId,
+            stripeCustomerId: stripeResult.stripeCustomerId,
+            stripePriceId: stripeResult.stripePriceId,
+            trialEnd: stripeResult.trialEnd,
+        });
+        await invalidateSubscriptionCache(dependenciaId);
+        logger.info({
+            subscriptionId: existingSubscription.id,
+            dependenciaId,
+            planId: data.planId,
+            status: stripeResult.status,
+        }, 'Suscripción actualizada de FREE a plan de pago (Stripe)');
+        return existingSubscription.reload({
+            include: [
+                { model: Dependencia, as: 'Dependencia' },
+                { model: SubscriptionPlan, as: 'SubscriptionPlan' },
+            ],
+        });
+    }
     const existingStripeCustomerId = existingSubscription?.stripeCustomerId ?? null;
     const stripeCustomerId = await getOrCreateStripeCustomer(dependenciaId, area.name, existingStripeCustomerId);
     const stripeResult = await createSubscriptionInStripe(data, dependenciaId, stripeCustomerId);

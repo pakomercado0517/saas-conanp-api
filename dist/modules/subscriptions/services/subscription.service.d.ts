@@ -1,8 +1,16 @@
 import { type Transaction } from 'sequelize';
 import type { UUID, SubscriptionStatus, BillingCycle } from '../../../shared/database/types.js';
 import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
 import type { PaginationMeta } from '../../../shared/responses/types.js';
 import type { CreateSubscriptionDTO, UpdateSubscriptionDTO, CancelSubscriptionDTO, ListSubscriptionsDTO } from '../../../modules/subscriptions/validators/subscription.validator.js';
+/**
+ * Indica si la suscripción actual es FREE sin Stripe y puede pasarse a plan de pago con el mismo POST.
+ * Requiere que `SubscriptionPlan` venga incluido en la consulta.
+ */
+export declare const isFreeSubscriptionEligibleForStripeUpgrade: (subscription: Pick<Subscription, "status" | "stripeSubscriptionId"> & {
+    SubscriptionPlan?: Pick<SubscriptionPlan, "name"> | null;
+}) => boolean;
 /**
  * Valida que la organización no tenga una suscripción activa.
  * Estados "activos" considerados: active, trialing.

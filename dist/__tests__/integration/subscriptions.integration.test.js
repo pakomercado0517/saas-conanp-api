@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../../server.js';
+import { Area } from '../../modules/areas/models/area.model.js';
+import { Subscription } from '../../modules/subscriptions/models/subscription.model.js';
+import { SubscriptionPlan } from '../../modules/subscriptions/models/subscription-plan.model.js';
 import { createTestUserAndToken, createTestOrganization, bootstrapOrganizationMembershipOnly, bootstrapOrganizationWithSubscription, authRequest, AREAS_API_PREFIX, } from './helpers.js';
 const API_PLANS = '/api/v1/subscription-plans';
 const API_SUBS = '/api/v1/subscriptions';
@@ -82,6 +85,45 @@ describe('Subscriptions endpoints (integration)', () => {
                 expect(res.body.data).toHaveProperty('status');
             }
             // Si el servicio devuelve 500 (p. ej. Stripe mock), no fallar el test
+        });
+        it('con fila FREE sin Stripe no devuelve 409 al contratar plan de pago (upgrade)', async () => {
+            const freePlan = await SubscriptionPlan.findOne({ where: { name: 'free', active: true } });
+            if (!freePlan)
+                return;
+            const orgFree = await createTestOrganization(app, { name: `Org FREE upgrade ${Date.now()}` });
+            await bootstrapOrganizationMembershipOnly(adminAuth.user.id, orgFree.id);
+            const areaRow = await Area.findByPk(orgFree.id);
+            if (!areaRow)
+                throw new Error('Área no encontrada');
+            const now = new Date();
+            const periodEnd = new Date(now);
+            periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+            await Subscription.create({
+                dependenciaId: areaRow.dependenciaId,
+                planId: freePlan.id,
+                status: 'active',
+                billingCycle: 'monthly',
+                currentPeriodStart: now,
+                currentPeriodEnd: periodEnd,
+                stripeSubscriptionId: null,
+                stripeCustomerId: null,
+                stripePriceId: null,
+                metadata: null,
+            });
+            const plansRes = await request(app).get(API_PLANS).expect(200);
+            const plans = plansRes.body.data;
+            const paidPlan = plans.find((p) => p.name !== 'free');
+            if (!paidPlan)
+                return;
+            const res = await authRequest(app, adminAuth.accessToken)
+                .post(`${AREAS_API_PREFIX}/${orgFree.id}/subscriptions`)
+                .send({ planId: paidPlan.id, billingCycle: 'monthly' });
+            expect(res.status).not.toBe(409);
+            if (res.status === 201) {
+                expect(res.body.success).toBe(true);
+                expect(res.body.data).toHaveProperty('id');
+                expect(res.body.data).toHaveProperty('stripeSubscriptionId');
+            }
         });
     });
     describe('Validación de suscripción activa', () => {
