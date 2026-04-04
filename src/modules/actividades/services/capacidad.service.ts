@@ -1,4 +1,4 @@
-import { Op } from 'sequelize';
+import { Op, type Transaction } from 'sequelize';
 import type { UUID } from '@/shared/database/types.js';
 import { Capacidad } from '@/modules/actividades/models/capacidad.model.js';
 import { Actividad } from '@/modules/actividades/models/actividad.model.js';
@@ -38,7 +38,9 @@ const calcularCapacidadUsada = async (
   actividadId: UUID,
   date: string,
   organizationId: UUID,
-  bloqueId?: UUID | null
+  bloqueId?: UUID | null,
+  transaction?: Transaction,
+  excludeEventoId?: UUID
 ): Promise<number> => {
   const whereClause: Record<string, unknown> = {
     actividadId,
@@ -57,10 +59,15 @@ const calcularCapacidadUsada = async (
     }
   }
 
-  const capacidadUsada =
-    (await EventoOperativo.sum('peopleCount', {
-      where: whereClause,
-    })) || 0;
+  if (excludeEventoId) {
+    whereClause['id'] = { [Op.ne]: excludeEventoId };
+  }
+
+  const sumOpts = {
+    where: whereClause,
+    ...(transaction !== undefined ? { transaction } : {}),
+  };
+  const capacidadUsada = (await EventoOperativo.sum('peopleCount', sumOpts)) || 0;
 
   return capacidadUsada;
 };
@@ -266,7 +273,9 @@ export const verificarDisponibilidadPorBloque = async (
   bloqueId: UUID,
   date: DateTime | string,
   cantidad: number,
-  organizationId: UUID
+  organizationId: UUID,
+  transaction?: Transaction,
+  excludeEventoId?: UUID
 ): Promise<DisponibilidadResult> => {
   // Validar que la actividad existe y tiene tipo BLOQUES
   const actividad = await Actividad.findOne({
@@ -274,6 +283,7 @@ export const verificarDisponibilidadPorBloque = async (
       id: actividadId,
       areaId: organizationId,
     },
+    ...(transaction !== undefined ? { transaction } : {}),
   });
 
   if (!actividad) {
@@ -295,6 +305,7 @@ export const verificarDisponibilidadPorBloque = async (
       actividadId,
       areaId: organizationId,
     },
+    ...(transaction !== undefined ? { transaction } : {}),
   });
 
   if (!bloque) {
@@ -314,6 +325,7 @@ export const verificarDisponibilidadPorBloque = async (
       date: dateStr,
       areaId: organizationId,
     },
+    ...(transaction !== undefined ? { transaction } : {}),
   });
 
   // Si no existe capacidad, usar el capacity del bloque como límite
@@ -324,7 +336,9 @@ export const verificarDisponibilidadPorBloque = async (
     actividadId,
     dateStr,
     organizationId,
-    bloqueId
+    bloqueId,
+    transaction,
+    excludeEventoId
   );
 
   // Calcular capacidad disponible
@@ -357,7 +371,9 @@ export const verificarDisponibilidadPorDia = async (
   actividadId: UUID,
   date: DateTime | string,
   cantidad: number,
-  organizationId: UUID
+  organizationId: UUID,
+  transaction?: Transaction,
+  excludeEventoId?: UUID
 ): Promise<DisponibilidadResult> => {
   // Validar que la actividad existe y tiene tipo HORARIO_LIBRE
   const actividad = await Actividad.findOne({
@@ -365,6 +381,7 @@ export const verificarDisponibilidadPorDia = async (
       id: actividadId,
       areaId: organizationId,
     },
+    ...(transaction !== undefined ? { transaction } : {}),
   });
 
   if (!actividad) {
@@ -392,6 +409,7 @@ export const verificarDisponibilidadPorDia = async (
       date: dateStr,
       areaId: organizationId,
     },
+    ...(transaction !== undefined ? { transaction } : {}),
   });
 
   // Para HORARIO_LIBRE, la capacidad debe existir
@@ -406,7 +424,14 @@ export const verificarDisponibilidadPorDia = async (
   }
 
   // Calcular capacidad usada para el día completo
-  const capacidadUsada = await calcularCapacidadUsada(actividadId, dateStr, organizationId, null);
+  const capacidadUsada = await calcularCapacidadUsada(
+    actividadId,
+    dateStr,
+    organizationId,
+    null,
+    transaction,
+    excludeEventoId
+  );
 
   // Calcular capacidad disponible
   const capacidadDisponible = Math.max(0, capacidad.limit - capacidadUsada);
@@ -437,7 +462,16 @@ export const actualizarCapacidadUsada = async (
   actividadId: UUID,
   date: string,
   organizationId: UUID,
-  bloqueId?: UUID | null
+  bloqueId?: UUID | null,
+  transaction?: Transaction,
+  excludeEventoId?: UUID
 ): Promise<number> => {
-  return await calcularCapacidadUsada(actividadId, date, organizationId, bloqueId);
+  return await calcularCapacidadUsada(
+    actividadId,
+    date,
+    organizationId,
+    bloqueId,
+    transaction,
+    excludeEventoId
+  );
 };

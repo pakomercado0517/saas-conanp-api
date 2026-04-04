@@ -17,7 +17,7 @@ import { toDateOnlyDB, DateTime } from '../../../shared/dates/index.js';
  * @param bloqueId - ID del bloque (opcional, solo para BLOQUES)
  * @returns Capacidad usada (suma de peopleCount de eventos activos)
  */
-const calcularCapacidadUsada = async (actividadId, date, organizationId, bloqueId) => {
+const calcularCapacidadUsada = async (actividadId, date, organizationId, bloqueId, transaction, excludeEventoId) => {
     const whereClause = {
         actividadId,
         date,
@@ -34,9 +34,14 @@ const calcularCapacidadUsada = async (actividadId, date, organizationId, bloqueI
             whereClause['bloqueId'] = bloqueId;
         }
     }
-    const capacidadUsada = (await EventoOperativo.sum('peopleCount', {
+    if (excludeEventoId) {
+        whereClause['id'] = { [Op.ne]: excludeEventoId };
+    }
+    const sumOpts = {
         where: whereClause,
-    })) || 0;
+        ...(transaction !== undefined ? { transaction } : {}),
+    };
+    const capacidadUsada = (await EventoOperativo.sum('peopleCount', sumOpts)) || 0;
     return capacidadUsada;
 };
 /**
@@ -193,13 +198,14 @@ export const updateCapacidad = async (capacidadId, organizationId, data, userId)
  * @throws {NotFoundError} Si la actividad o bloque no existen
  * @throws {ValidationError} Si la actividad no tiene tipo BLOQUES
  */
-export const verificarDisponibilidadPorBloque = async (actividadId, bloqueId, date, cantidad, organizationId) => {
+export const verificarDisponibilidadPorBloque = async (actividadId, bloqueId, date, cantidad, organizationId, transaction, excludeEventoId) => {
     // Validar que la actividad existe y tiene tipo BLOQUES
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
             areaId: organizationId,
         },
+        ...(transaction !== undefined ? { transaction } : {}),
     });
     if (!actividad) {
         throw new NotFoundError('Actividad', { actividadId, organizationId });
@@ -214,6 +220,7 @@ export const verificarDisponibilidadPorBloque = async (actividadId, bloqueId, da
             actividadId,
             areaId: organizationId,
         },
+        ...(transaction !== undefined ? { transaction } : {}),
     });
     if (!bloque) {
         throw new NotFoundError('Bloque', { bloqueId, actividadId, organizationId });
@@ -230,11 +237,12 @@ export const verificarDisponibilidadPorBloque = async (actividadId, bloqueId, da
             date: dateStr,
             areaId: organizationId,
         },
+        ...(transaction !== undefined ? { transaction } : {}),
     });
     // Si no existe capacidad, usar el capacity del bloque como límite
     const limite = capacidad ? capacidad.limit : bloque.capacity;
     // Calcular capacidad usada para este bloque específico
-    const capacidadUsada = await calcularCapacidadUsada(actividadId, dateStr, organizationId, bloqueId);
+    const capacidadUsada = await calcularCapacidadUsada(actividadId, dateStr, organizationId, bloqueId, transaction, excludeEventoId);
     // Calcular capacidad disponible
     const capacidadDisponible = Math.max(0, limite - capacidadUsada);
     // Verificar si hay disponibilidad para la cantidad solicitada
@@ -258,13 +266,14 @@ export const verificarDisponibilidadPorBloque = async (actividadId, bloqueId, da
  * @throws {NotFoundError} Si la actividad no existe o no hay capacidad definida
  * @throws {ValidationError} Si la actividad no tiene tipo HORARIO_LIBRE
  */
-export const verificarDisponibilidadPorDia = async (actividadId, date, cantidad, organizationId) => {
+export const verificarDisponibilidadPorDia = async (actividadId, date, cantidad, organizationId, transaction, excludeEventoId) => {
     // Validar que la actividad existe y tiene tipo HORARIO_LIBRE
     const actividad = await Actividad.findOne({
         where: {
             id: actividadId,
             areaId: organizationId,
         },
+        ...(transaction !== undefined ? { transaction } : {}),
     });
     if (!actividad) {
         throw new NotFoundError('Actividad', { actividadId, organizationId });
@@ -284,6 +293,7 @@ export const verificarDisponibilidadPorDia = async (actividadId, date, cantidad,
             date: dateStr,
             areaId: organizationId,
         },
+        ...(transaction !== undefined ? { transaction } : {}),
     });
     // Para HORARIO_LIBRE, la capacidad debe existir
     if (!capacidad) {
@@ -295,7 +305,7 @@ export const verificarDisponibilidadPorDia = async (actividadId, date, cantidad,
         });
     }
     // Calcular capacidad usada para el día completo
-    const capacidadUsada = await calcularCapacidadUsada(actividadId, dateStr, organizationId, null);
+    const capacidadUsada = await calcularCapacidadUsada(actividadId, dateStr, organizationId, null, transaction, excludeEventoId);
     // Calcular capacidad disponible
     const capacidadDisponible = Math.max(0, capacidad.limit - capacidadUsada);
     // Verificar si hay disponibilidad para la cantidad solicitada
@@ -318,7 +328,7 @@ export const verificarDisponibilidadPorDia = async (actividadId, date, cantidad,
  * @param bloqueId - ID del bloque (opcional, solo para BLOQUES)
  * @returns Capacidad usada calculada
  */
-export const actualizarCapacidadUsada = async (actividadId, date, organizationId, bloqueId) => {
-    return await calcularCapacidadUsada(actividadId, date, organizationId, bloqueId);
+export const actualizarCapacidadUsada = async (actividadId, date, organizationId, bloqueId, transaction, excludeEventoId) => {
+    return await calcularCapacidadUsada(actividadId, date, organizationId, bloqueId, transaction, excludeEventoId);
 };
 //# sourceMappingURL=capacidad.service.js.map

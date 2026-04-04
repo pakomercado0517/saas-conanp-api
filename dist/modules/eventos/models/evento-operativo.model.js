@@ -4,6 +4,7 @@ import { Area } from '../../../modules/areas/models/area.model.js';
 import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
 import { Actividad } from '../../../modules/actividades/models/actividad.model.js';
 import { Bloque } from '../../../modules/actividades/models/bloque.model.js';
+import { User } from '../../../modules/users/models/user.model.js';
 export class EventoOperativo extends Model {
 }
 EventoOperativo.init({
@@ -116,6 +117,31 @@ EventoOperativo.init({
         type: DataTypes.DATE,
         allowNull: true,
     },
+    createdByUserId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'id',
+        },
+    },
+    updatedByUserId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'id',
+        },
+    },
+    capacityOverride: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
+    capacityOverrideReason: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -171,6 +197,8 @@ EventoOperativo.belongsTo(Area, { foreignKey: 'areaId', as: 'Area' });
 EventoOperativo.belongsTo(PrestadorProfile, { foreignKey: 'prestadorId', as: 'PrestadorProfile' });
 EventoOperativo.belongsTo(Actividad, { foreignKey: 'actividadId', as: 'Actividad' });
 EventoOperativo.belongsTo(Bloque, { foreignKey: 'bloqueId', as: 'Bloque' });
+EventoOperativo.belongsTo(User, { foreignKey: 'createdByUserId', as: 'CreatedByUser' });
+EventoOperativo.belongsTo(User, { foreignKey: 'updatedByUserId', as: 'UpdatedByUser' });
 Area.hasMany(EventoOperativo, { foreignKey: 'areaId', as: 'EventosOperativos' });
 PrestadorProfile.hasMany(EventoOperativo, { foreignKey: 'prestadorId', as: 'EventosOperativos' });
 Actividad.hasMany(EventoOperativo, { foreignKey: 'actividadId', as: 'EventosOperativos' });

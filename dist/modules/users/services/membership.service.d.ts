@@ -12,6 +12,10 @@ import type { PaginationMeta } from '../../../shared/responses/types.js';
  */
 export declare const assertIsAdmin: (userId: UUID, areaId: UUID) => Promise<void>;
 /**
+ * Indica si el usuario tiene membresía activa con rol admin en el área (organización).
+ */
+export declare const isUserAdminInArea: (userId: UUID, areaId: UUID) => Promise<boolean>;
+/**
  * Invita un usuario a una organización creando una nueva membership.
  * Solo los administradores pueden invitar usuarios.
  *

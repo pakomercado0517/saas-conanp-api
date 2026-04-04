@@ -14,6 +14,8 @@ export declare const CreateEventoSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
     paymentRequired: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     agendaType: z.ZodLiteral<"BLOQUES">;
     bloqueId: z.ZodString;
+    capacityOverride: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    capacityOverrideReason: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>, z.ZodObject<{
     actividadId: z.ZodString;
     prestadorId: z.ZodString;
@@ -23,6 +25,8 @@ export declare const CreateEventoSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
     agendaType: z.ZodLiteral<"HORARIO_LIBRE">;
     startTime: z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>;
     endTime: z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>;
+    capacityOverride: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    capacityOverrideReason: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>], "agendaType">;
 export type CreateEventoDTO = z.infer<typeof CreateEventoSchema>;
 /**
@@ -41,6 +45,8 @@ export declare const UpdateEventoSchema: z.ZodObject<{
         cancelado: "cancelado";
     }>>;
     paymentRequired: z.ZodOptional<z.ZodBoolean>;
+    capacityOverride: z.ZodOptional<z.ZodBoolean>;
+    capacityOverrideReason: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export type UpdateEventoDTO = z.infer<typeof UpdateEventoSchema>;
 /**

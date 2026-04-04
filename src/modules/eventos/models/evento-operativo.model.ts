@@ -5,6 +5,7 @@ import { Area } from '@/modules/areas/models/area.model.js';
 import { PrestadorProfile } from '@/modules/prestadores/models/prestador-profile.model.js';
 import { Actividad } from '@/modules/actividades/models/actividad.model.js';
 import { Bloque } from '@/modules/actividades/models/bloque.model.js';
+import { User } from '@/modules/users/models/user.model.js';
 
 export interface EventoOperativoAttributes {
   id: UUID;
@@ -19,6 +20,10 @@ export interface EventoOperativoAttributes {
   status: 'programado' | 'en_curso' | 'completado' | 'cancelado';
   paymentRequired: boolean;
   paidAt: Date | null;
+  createdByUserId: UUID | null;
+  updatedByUserId: UUID | null;
+  capacityOverride: boolean;
+  capacityOverrideReason: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +38,10 @@ export interface EventoOperativoCreationAttributes extends Optional<
   | 'status'
   | 'paymentRequired'
   | 'paidAt'
+  | 'createdByUserId'
+  | 'updatedByUserId'
+  | 'capacityOverride'
+  | 'capacityOverrideReason'
   | 'createdAt'
   | 'updatedAt'
 > {}
@@ -53,6 +62,10 @@ export class EventoOperativo
   declare status: 'programado' | 'en_curso' | 'completado' | 'cancelado';
   declare paymentRequired: boolean;
   declare paidAt: Date | null;
+  declare createdByUserId: UUID | null;
+  declare updatedByUserId: UUID | null;
+  declare capacityOverride: boolean;
+  declare capacityOverrideReason: string | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 
@@ -60,6 +73,8 @@ export class EventoOperativo
   declare PrestadorProfile?: PrestadorProfile;
   declare Actividad?: Actividad;
   declare Bloque?: Bloque | null;
+  declare CreatedByUser?: User;
+  declare UpdatedByUser?: User;
 }
 
 EventoOperativo.init(
@@ -173,6 +188,31 @@ EventoOperativo.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    createdByUserId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id',
+      },
+    },
+    updatedByUserId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id',
+      },
+    },
+    capacityOverride: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    capacityOverrideReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -231,6 +271,8 @@ EventoOperativo.belongsTo(Area, { foreignKey: 'areaId', as: 'Area' });
 EventoOperativo.belongsTo(PrestadorProfile, { foreignKey: 'prestadorId', as: 'PrestadorProfile' });
 EventoOperativo.belongsTo(Actividad, { foreignKey: 'actividadId', as: 'Actividad' });
 EventoOperativo.belongsTo(Bloque, { foreignKey: 'bloqueId', as: 'Bloque' });
+EventoOperativo.belongsTo(User, { foreignKey: 'createdByUserId', as: 'CreatedByUser' });
+EventoOperativo.belongsTo(User, { foreignKey: 'updatedByUserId', as: 'UpdatedByUser' });
 
 Area.hasMany(EventoOperativo, { foreignKey: 'areaId', as: 'EventosOperativos' });
 PrestadorProfile.hasMany(EventoOperativo, { foreignKey: 'prestadorId', as: 'EventosOperativos' });

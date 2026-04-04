@@ -1,4 +1,4 @@
-import { Op } from 'sequelize';
+import { Op, type Transaction } from 'sequelize';
 import { sequelize } from '@/shared/database/index.js';
 import type { UUID } from '@/shared/database/types.js';
 import { EventoOperativo } from '@/modules/eventos/models/evento-operativo.model.js';
@@ -25,6 +25,87 @@ import {
 } from '@/modules/actividades/services/capacidad.service.js';
 import { checkEventosLimit } from '@/modules/subscriptions/services/subscription-limits.service.js';
 import { toDateOnlyDB, toTimeOnly, DateTime } from '@/shared/dates/index.js';
+import { isUserAdminInArea } from '@/modules/users/services/membership.service.js';
+import { acquireEventoCapacityAdvisoryLock } from './evento-capacity-lock.js';
+
+const CAPACITY_CONFLICT_MESSAGE =
+  'No hay cupo suficiente. La disponibilidad puede haber cambiado porque otro usuario reservó antes. Actualiza la disponibilidad e intenta de nuevo.';
+
+type CapacityCtx = {
+  agendaType: 'BLOQUES' | 'HORARIO_LIBRE';
+  actividadId: UUID;
+  bloqueId: UUID | null;
+  dateStr: string;
+  peopleCount: number;
+  organizationId: UUID;
+  transaction: Transaction;
+  excludeEventoId?: UUID;
+};
+
+const resolveCapacityAndOverrideOrThrow = async (
+  ctx: CapacityCtx,
+  opts: {
+    capacityOverride: boolean;
+    capacityOverrideReason: string | undefined;
+    isAdmin: boolean;
+  }
+): Promise<{ capacityOverrideApplied: boolean }> => {
+  const { capacityOverride, capacityOverrideReason, isAdmin } = opts;
+
+  if (capacityOverride && !isAdmin) {
+    throw new ForbiddenError(
+      'Solo los administradores pueden forzar una reserva (override de capacidad) cuando el cupo está lleno.'
+    );
+  }
+
+  if (capacityOverride && isAdmin && (!capacityOverrideReason || !capacityOverrideReason.trim())) {
+    throw new ValidationError(
+      'Si capacityOverride es true, debes indicar capacityOverrideReason.',
+      'capacityOverrideReason'
+    );
+  }
+
+  let disponibilidad;
+  if (ctx.agendaType === 'BLOQUES' && ctx.bloqueId) {
+    disponibilidad = await verificarDisponibilidadPorBloque(
+      ctx.actividadId,
+      ctx.bloqueId,
+      ctx.dateStr,
+      ctx.peopleCount,
+      ctx.organizationId,
+      ctx.transaction,
+      ctx.excludeEventoId
+    );
+  } else if (ctx.agendaType === 'HORARIO_LIBRE') {
+    disponibilidad = await verificarDisponibilidadPorDia(
+      ctx.actividadId,
+      ctx.dateStr,
+      ctx.peopleCount,
+      ctx.organizationId,
+      ctx.transaction,
+      ctx.excludeEventoId
+    );
+  } else {
+    throw new ValidationError('No se pudo determinar el tipo de agenda para validar capacidad');
+  }
+
+  if (disponibilidad.disponible) {
+    return { capacityOverrideApplied: false };
+  }
+
+  if (capacityOverride && isAdmin && capacityOverrideReason?.trim()) {
+    return { capacityOverrideApplied: true };
+  }
+
+  throw new ValidationError(CAPACITY_CONFLICT_MESSAGE, undefined, {
+    code: 'CAPACITY_EXCEEDED',
+    capacidadTotal: disponibilidad.capacidadTotal,
+    capacidadUsada: disponibilidad.capacidadUsada,
+    capacidadDisponible: disponibilidad.capacidadDisponible,
+    limite: disponibilidad.limite,
+    peopleCount: ctx.peopleCount,
+  });
+};
 
 /**
  * Helper interno: Valida permisos granulares para acceder a un evento.
@@ -200,44 +281,10 @@ export const createEvento = async (
     );
   }
 
-  // 6. Validar capacidad disponible
+  // 6. Fecha normalizada (capacidad se valida dentro de transacción con bloqueo)
   const dateStr = toDateOnlyDB(data.date);
   if (!dateStr) {
     throw new ValidationError('La fecha proporcionada no es válida');
-  }
-
-  let disponibilidad;
-  if (data.agendaType === 'BLOQUES' && data.bloqueId) {
-    disponibilidad = await verificarDisponibilidadPorBloque(
-      data.actividadId,
-      data.bloqueId,
-      dateStr,
-      data.peopleCount,
-      organizationId
-    );
-  } else if (data.agendaType === 'HORARIO_LIBRE') {
-    disponibilidad = await verificarDisponibilidadPorDia(
-      data.actividadId,
-      dateStr,
-      data.peopleCount,
-      organizationId
-    );
-  } else {
-    throw new ValidationError('No se pudo determinar el tipo de agenda para validar capacidad');
-  }
-
-  if (!disponibilidad.disponible) {
-    throw new ValidationError(
-      `No hay capacidad disponible. Capacidad disponible: ${disponibilidad.capacidadDisponible}, solicitada: ${data.peopleCount}`,
-      undefined,
-      {
-        capacidadTotal: disponibilidad.capacidadTotal,
-        capacidadUsada: disponibilidad.capacidadUsada,
-        capacidadDisponible: disponibilidad.capacidadDisponible,
-        limite: disponibilidad.limite,
-        peopleCount: data.peopleCount,
-      }
-    );
   }
 
   // 7. Validar límite de eventos del plan de suscripción
@@ -251,11 +298,9 @@ export const createEvento = async (
   // Si en el futuro se valida que el evento tenga salida de brazaletes asociada o exención,
   // esa validación debe ejecutarse solo cuando getBrazaletesConfig(organizationId).brazaletesObligatorios === true.
 
-  // Iniciar transacción
   const transaction = await sequelize.transaction();
 
   try {
-    // Convertir fechas/horas de DateTime a strings para BD
     const startTimeStr =
       data.agendaType === 'HORARIO_LIBRE' && data.startTime ? toTimeOnly(data.startTime) : null;
     const endTimeStr =
@@ -265,7 +310,32 @@ export const createEvento = async (
       throw new ValidationError('Los horarios proporcionados no son válidos');
     }
 
-    // Crear el evento
+    const bloqueIdForLock = data.agendaType === 'BLOQUES' ? data.bloqueId : null;
+    await acquireEventoCapacityAdvisoryLock(
+      transaction,
+      data.actividadId,
+      dateStr,
+      bloqueIdForLock
+    );
+
+    const isAdmin = await isUserAdminInArea(userId, organizationId);
+    const { capacityOverrideApplied } = await resolveCapacityAndOverrideOrThrow(
+      {
+        agendaType: data.agendaType,
+        actividadId: data.actividadId,
+        bloqueId: bloqueIdForLock,
+        dateStr,
+        peopleCount: data.peopleCount,
+        organizationId,
+        transaction,
+      },
+      {
+        capacityOverride: data.capacityOverride ?? false,
+        capacityOverrideReason: data.capacityOverrideReason,
+        isAdmin,
+      }
+    );
+
     const evento = await EventoOperativo.create(
       {
         areaId: organizationId,
@@ -278,11 +348,15 @@ export const createEvento = async (
         peopleCount: data.peopleCount,
         status: 'programado',
         paymentRequired: data.paymentRequired ?? false,
+        createdByUserId: userId,
+        capacityOverride: capacityOverrideApplied,
+        capacityOverrideReason: capacityOverrideApplied
+          ? (data.capacityOverrideReason ?? '').trim()
+          : null,
       },
       { transaction }
     );
 
-    // Commit de la transacción
     await transaction.commit();
 
     // Cargar relaciones para retornar datos completos
@@ -561,61 +635,27 @@ export const updateEvento = async (
   // Validar permisos granulares
   await validateEventoPermissions(requestingUserId, evento.prestadorId, organizationId);
 
-  // Si se actualiza date o bloqueId/startTime/endTime, validar capacidad disponible nuevamente
   const needsCapacityValidation =
     data.date !== undefined ||
     data.bloqueId !== undefined ||
     data.startTime !== undefined ||
-    data.endTime !== undefined;
+    data.endTime !== undefined ||
+    data.peopleCount !== undefined;
 
-  if (needsCapacityValidation) {
-    const actividad = evento.Actividad || (await Actividad.findByPk(evento.actividadId));
-    if (!actividad) {
-      throw new NotFoundError('Actividad', { actividadId: evento.actividadId, organizationId });
-    }
-
-    const dateStr = data.date ? toDateOnlyDB(data.date) : evento.date;
-    if (!dateStr) {
-      throw new ValidationError('La fecha proporcionada no es válida');
-    }
-
-    const bloqueId = data.bloqueId !== undefined ? data.bloqueId : evento.bloqueId;
-    const peopleCount = data.peopleCount !== undefined ? data.peopleCount : evento.peopleCount;
-
-    let disponibilidad;
-    if (actividad.agendaType === 'BLOQUES' && bloqueId) {
-      disponibilidad = await verificarDisponibilidadPorBloque(
-        actividad.id,
-        bloqueId,
-        dateStr,
-        peopleCount,
-        organizationId
-      );
-    } else if (actividad.agendaType === 'HORARIO_LIBRE') {
-      disponibilidad = await verificarDisponibilidadPorDia(
-        actividad.id,
-        dateStr,
-        peopleCount,
-        organizationId
-      );
-    } else {
-      throw new ValidationError('No se pudo determinar el tipo de agenda para validar capacidad');
-    }
-
-    if (!disponibilidad.disponible) {
-      throw new ValidationError(
-        `No hay capacidad disponible. Capacidad disponible: ${disponibilidad.capacidadDisponible}, solicitada: ${peopleCount}`,
-        undefined,
-        {
-          capacidadTotal: disponibilidad.capacidadTotal,
-          capacidadUsada: disponibilidad.capacidadUsada,
-          capacidadDisponible: disponibilidad.capacidadDisponible,
-          limite: disponibilidad.limite,
-          peopleCount,
-        }
-      );
-    }
+  const actividad = evento.Actividad || (await Actividad.findByPk(evento.actividadId));
+  if (!actividad) {
+    throw new NotFoundError('Actividad', { actividadId: evento.actividadId, organizationId });
   }
+
+  const dateStrForCapacity = data.date !== undefined ? toDateOnlyDB(data.date) : evento.date;
+  if (data.date !== undefined && !dateStrForCapacity) {
+    throw new ValidationError('La fecha proporcionada no es válida');
+  }
+  if (!dateStrForCapacity) {
+    throw new ValidationError('La fecha del evento no es válida');
+  }
+  const effBloqueId = data.bloqueId !== undefined ? data.bloqueId : evento.bloqueId;
+  const effPeopleCount = data.peopleCount !== undefined ? data.peopleCount : evento.peopleCount;
 
   // Preparar datos de actualización
   const updateData: Partial<{
@@ -626,6 +666,9 @@ export const updateEvento = async (
     peopleCount: number;
     status: 'programado' | 'en_curso' | 'completado' | 'cancelado';
     paymentRequired: boolean;
+    updatedByUserId: UUID;
+    capacityOverride: boolean;
+    capacityOverrideReason: string | null;
   }> = {};
 
   // Actualizar date si se proporciona
@@ -679,8 +722,55 @@ export const updateEvento = async (
     updateData.paymentRequired = data.paymentRequired;
   }
 
-  // Actualizar el evento
-  await evento.update(updateData);
+  updateData.updatedByUserId = requestingUserId;
+
+  if (needsCapacityValidation) {
+    const transaction = await sequelize.transaction();
+    try {
+      const bloqueForLock = actividad.agendaType === 'BLOQUES' ? effBloqueId : null;
+      await acquireEventoCapacityAdvisoryLock(
+        transaction,
+        actividad.id,
+        dateStrForCapacity,
+        bloqueForLock
+      );
+
+      const isAdmin = await isUserAdminInArea(requestingUserId, organizationId);
+      const { capacityOverrideApplied } = await resolveCapacityAndOverrideOrThrow(
+        {
+          agendaType: actividad.agendaType as 'BLOQUES' | 'HORARIO_LIBRE',
+          actividadId: actividad.id,
+          bloqueId: bloqueForLock,
+          dateStr: dateStrForCapacity,
+          peopleCount: effPeopleCount,
+          organizationId,
+          transaction,
+          excludeEventoId: evento.id,
+        },
+        {
+          capacityOverride: data.capacityOverride ?? false,
+          capacityOverrideReason: data.capacityOverrideReason,
+          isAdmin,
+        }
+      );
+
+      if (capacityOverrideApplied) {
+        updateData.capacityOverride = true;
+        updateData.capacityOverrideReason = (data.capacityOverrideReason ?? '').trim();
+      } else {
+        updateData.capacityOverride = false;
+        updateData.capacityOverrideReason = null;
+      }
+
+      await evento.update(updateData, { transaction });
+      await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  } else {
+    await evento.update(updateData);
+  }
 
   // Cargar relaciones para retornar datos completos
   await evento.reload({

@@ -1,3 +1,4 @@
+import { type Transaction } from 'sequelize';
 import type { UUID } from '../../../shared/database/types.js';
 import { Capacidad } from '../../../modules/actividades/models/capacidad.model.js';
 import type { CreateCapacidadDTO, UpdateCapacidadDTO } from '../../../modules/capacidad/validators/capacidad.validator.js';
@@ -51,7 +52,7 @@ export declare const updateCapacidad: (capacidadId: UUID, organizationId: UUID, 
  * @throws {NotFoundError} Si la actividad o bloque no existen
  * @throws {ValidationError} Si la actividad no tiene tipo BLOQUES
  */
-export declare const verificarDisponibilidadPorBloque: (actividadId: UUID, bloqueId: UUID, date: DateTime | string, cantidad: number, organizationId: UUID) => Promise<DisponibilidadResult>;
+export declare const verificarDisponibilidadPorBloque: (actividadId: UUID, bloqueId: UUID, date: DateTime | string, cantidad: number, organizationId: UUID, transaction?: Transaction, excludeEventoId?: UUID) => Promise<DisponibilidadResult>;
 /**
  * Verifica disponibilidad de capacidad para un día completo (actividades HORARIO_LIBRE).
  *
@@ -63,7 +64,7 @@ export declare const verificarDisponibilidadPorBloque: (actividadId: UUID, bloqu
  * @throws {NotFoundError} Si la actividad no existe o no hay capacidad definida
  * @throws {ValidationError} Si la actividad no tiene tipo HORARIO_LIBRE
  */
-export declare const verificarDisponibilidadPorDia: (actividadId: UUID, date: DateTime | string, cantidad: number, organizationId: UUID) => Promise<DisponibilidadResult>;
+export declare const verificarDisponibilidadPorDia: (actividadId: UUID, date: DateTime | string, cantidad: number, organizationId: UUID, transaction?: Transaction, excludeEventoId?: UUID) => Promise<DisponibilidadResult>;
 /**
  * Helper interno: Calcula y retorna la capacidad usada para una actividad, fecha y bloque (opcional).
  * Esta función puede ser usada por otros servicios (ej: al crear eventos) para verificar disponibilidad.
@@ -74,5 +75,5 @@ export declare const verificarDisponibilidadPorDia: (actividadId: UUID, date: Da
  * @param bloqueId - ID del bloque (opcional, solo para BLOQUES)
  * @returns Capacidad usada calculada
  */
-export declare const actualizarCapacidadUsada: (actividadId: UUID, date: string, organizationId: UUID, bloqueId?: UUID | null) => Promise<number>;
+export declare const actualizarCapacidadUsada: (actividadId: UUID, date: string, organizationId: UUID, bloqueId?: UUID | null, transaction?: Transaction, excludeEventoId?: UUID) => Promise<number>;
 //# sourceMappingURL=capacidad.service.d.ts.map

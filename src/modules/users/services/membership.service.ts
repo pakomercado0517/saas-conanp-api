@@ -52,6 +52,20 @@ export const assertIsAdmin = async (userId: UUID, areaId: UUID): Promise<void> =
 };
 
 /**
+ * Indica si el usuario tiene membresía activa con rol admin en el área (organización).
+ */
+export const isUserAdminInArea = async (userId: UUID, areaId: UUID): Promise<boolean> => {
+  const membership = await Membership.findOne({
+    where: {
+      userId,
+      areaId,
+      status: 'activo',
+    },
+  });
+  return membership?.role === 'admin';
+};
+
+/**
  * Invita un usuario a una organización creando una nueva membership.
  * Solo los administradores pueden invitar usuarios.
  *

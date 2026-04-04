@@ -9,6 +9,7 @@ const BLOQUE_ID = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
 const PRESTADOR_ID = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
 const EVENTO_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
 const DEPENDENCIA_ID = '11111111-1111-1111-1111-111111111111';
+const auditDefaults = { capacityOverride: false };
 const mockAssertCanAccessOrganization = vi.fn();
 const mockAreaFindByPk = vi.fn();
 const mockValidatePrestadorHasPermisoVigente = vi.fn();
@@ -79,6 +80,20 @@ vi.mock('@/modules/payments/models/payment.model.js', () => ({
 vi.mock('@/shared/logger/index.js', () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn().mockReturnThis() },
 }));
+vi.mock('@/shared/database/index.js', () => ({
+    sequelize: {
+        transaction: vi.fn(() => Promise.resolve({
+            commit: vi.fn().mockResolvedValue(undefined),
+            rollback: vi.fn().mockResolvedValue(undefined),
+        })),
+    },
+}));
+vi.mock('@/modules/users/services/membership.service.js', () => ({
+    isUserAdminInArea: vi.fn().mockResolvedValue(false),
+}));
+vi.mock('@/modules/eventos/services/evento-capacity-lock.js', () => ({
+    acquireEventoCapacityAdvisoryLock: vi.fn().mockResolvedValue(undefined),
+}));
 describe('evento.service', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -112,6 +127,7 @@ describe('evento.service', () => {
                 bloqueId: BLOQUE_ID,
                 peopleCount: 1,
                 paymentRequired: false,
+                ...auditDefaults,
             }, ORG_ID, USER_ID)).rejects.toThrow(ForbiddenError);
         });
         it('throws NotFoundError when actividad does not exist', async () => {
@@ -124,6 +140,7 @@ describe('evento.service', () => {
                 bloqueId: BLOQUE_ID,
                 peopleCount: 1,
                 paymentRequired: false,
+                ...auditDefaults,
             }, ORG_ID, USER_ID)).rejects.toThrow(NotFoundError);
         });
         it('throws ValidationError when agenda type does not match actividad', async () => {
@@ -140,6 +157,7 @@ describe('evento.service', () => {
                 bloqueId: BLOQUE_ID,
                 peopleCount: 1,
                 paymentRequired: false,
+                ...auditDefaults,
             }, ORG_ID, USER_ID)).rejects.toThrow(ValidationError);
         });
         it('throws ValidationError when prestador has no vigent permiso', async () => {
@@ -166,6 +184,7 @@ describe('evento.service', () => {
                 bloqueId: BLOQUE_ID,
                 peopleCount: 1,
                 paymentRequired: false,
+                ...auditDefaults,
             }, ORG_ID, USER_ID)).rejects.toThrow(ValidationError);
         });
         it('throws ValidationError when no capacity available', async () => {
@@ -198,6 +217,7 @@ describe('evento.service', () => {
                 bloqueId: BLOQUE_ID,
                 peopleCount: 1,
                 paymentRequired: false,
+                ...auditDefaults,
             }, ORG_ID, USER_ID)).rejects.toThrow(ValidationError);
         });
         it('creates evento with BLOQUES agenda on success', async () => {
@@ -236,6 +256,7 @@ describe('evento.service', () => {
                 bloqueId: BLOQUE_ID,
                 peopleCount: 1,
                 paymentRequired: false,
+                ...auditDefaults,
             }, ORG_ID, USER_ID);
             expect(mockEventoOperativoCreate).toHaveBeenCalledWith(expect.objectContaining({
                 areaId: ORG_ID,
@@ -245,6 +266,9 @@ describe('evento.service', () => {
                 date: '2025-02-01',
                 peopleCount: 1,
                 status: 'programado',
+                createdByUserId: USER_ID,
+                capacityOverride: false,
+                capacityOverrideReason: null,
             }), expect.any(Object));
             expect(result).toBeDefined();
         });
@@ -281,6 +305,7 @@ describe('evento.service', () => {
                 endTime: DateTime.fromISO('2025-02-01T10:00:00'),
                 peopleCount: 1,
                 paymentRequired: false,
+                ...auditDefaults,
             }, ORG_ID, USER_ID);
             expect(mockVerificarDisponibilidadPorDia).toHaveBeenCalled();
             expect(result).toBeDefined();

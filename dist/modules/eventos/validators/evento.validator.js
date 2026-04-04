@@ -77,6 +77,17 @@ export const CreateEventoSchema = registry.register('CreateEvento', z
             message: 'El ID de bloque debe ser un UUID válido',
         })
             .describe('ID del bloque horario predefinido'),
+        capacityOverride: z
+            .boolean({ message: 'capacityOverride debe ser true o false' })
+            .optional()
+            .default(false)
+            .describe('Solo administradores: permitir reserva aunque el cupo esté lleno'),
+        capacityOverrideReason: z
+            .string()
+            .trim()
+            .max(2000)
+            .optional()
+            .describe('Motivo obligatorio si capacityOverride es true'),
     }),
     z
         .object({
@@ -124,6 +135,17 @@ export const CreateEventoSchema = registry.register('CreateEvento', z
             .describe('Tipo de agenda: HORARIO_LIBRE para horarios definidos por el prestador'),
         startTime: timeOnlySchema.describe('Hora de inicio del evento en formato HH:mm:ss'),
         endTime: timeOnlySchema.describe('Hora de fin del evento en formato HH:mm:ss (debe ser posterior a startTime)'),
+        capacityOverride: z
+            .boolean({ message: 'capacityOverride debe ser true o false' })
+            .optional()
+            .default(false)
+            .describe('Solo administradores: permitir reserva aunque el cupo esté lleno'),
+        capacityOverrideReason: z
+            .string()
+            .trim()
+            .max(2000)
+            .optional()
+            .describe('Motivo obligatorio si capacityOverride es true'),
     })
         .refine((data) => {
         // Comparar horas: endTime debe ser posterior a startTime
@@ -137,6 +159,12 @@ export const CreateEventoSchema = registry.register('CreateEvento', z
     .refine(createEventoPaymentRefine, {
     message: 'Si el evento requiere pago (paymentRequired: true), debe indicar al menos 1 persona (peopleCount >= 1).',
     path: ['paymentRequired'],
+})
+    .refine((data) => !data.capacityOverride ||
+    (data.capacityOverrideReason !== undefined &&
+        data.capacityOverrideReason.trim().length > 0), {
+    message: 'Si capacityOverride es true, debes indicar capacityOverrideReason (motivo del override).',
+    path: ['capacityOverrideReason'],
 }));
 /**
  * Schema Zod para actualizar evento
@@ -178,6 +206,16 @@ export const UpdateEventoSchema = registry.register('UpdateEvento', z
     })
         .optional()
         .describe('Indica si el evento requiere pago (opcional)'),
+    capacityOverride: z
+        .boolean({ message: 'capacityOverride debe ser true o false' })
+        .optional()
+        .describe('Solo administradores: permitir cambio aunque el cupo esté lleno'),
+    capacityOverrideReason: z
+        .string()
+        .trim()
+        .max(2000)
+        .optional()
+        .describe('Motivo obligatorio si capacityOverride es true'),
 })
     .refine((data) => {
     // Si se proporcionan ambos horarios, validar que endTime > startTime
@@ -200,6 +238,12 @@ export const UpdateEventoSchema = registry.register('UpdateEvento', z
 }, {
     message: 'Si paymentRequired es true, peopleCount debe ser al menos 1.',
     path: ['peopleCount'],
+})
+    .refine((data) => data.capacityOverride !== true ||
+    (data.capacityOverrideReason !== undefined &&
+        data.capacityOverrideReason.trim().length > 0), {
+    message: 'Si capacityOverride es true, debes indicar capacityOverrideReason (motivo del override).',
+    path: ['capacityOverrideReason'],
 }));
 // Campos permitidos para ordenamiento
 const SORT_FIELDS = [
