@@ -30,6 +30,16 @@ const mockStripeSubscriptionsCreate = vi.fn();
 const mockStripeSubscriptionsRetrieve = vi.fn();
 const mockStripeSubscriptionsUpdate = vi.fn();
 
+vi.mock('@/shared/cache/index.js', () => ({
+  cache: {
+    del: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock('@/modules/dependencias/models/dependencia.model.js', () => ({
+  Dependencia: {},
+}));
+
 vi.mock('@/modules/subscriptions/models/subscription.model.js', () => ({
   Subscription: {
     findOne: (...args: unknown[]): unknown => mockSubscriptionFindOne(...args),
@@ -466,6 +476,175 @@ describe('subscription.service', () => {
           trial_end: Math.floor(Date.now() / 1000) + 86400,
         })
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('isFreeSubscriptionEligibleForStripeUpgrade', () => {
+    it('returns true for free plan without Stripe and active status', () => {
+      expect(
+        subscriptionService.isFreeSubscriptionEligibleForStripeUpgrade({
+          status: 'active',
+          stripeSubscriptionId: null,
+          SubscriptionPlan: { name: 'free' },
+        })
+      ).toBe(true);
+    });
+
+    it('returns true for trialing status', () => {
+      expect(
+        subscriptionService.isFreeSubscriptionEligibleForStripeUpgrade({
+          status: 'trialing',
+          stripeSubscriptionId: null,
+          SubscriptionPlan: { name: 'free' },
+        })
+      ).toBe(true);
+    });
+
+    it('returns false when plan is not free', () => {
+      expect(
+        subscriptionService.isFreeSubscriptionEligibleForStripeUpgrade({
+          status: 'active',
+          stripeSubscriptionId: null,
+          SubscriptionPlan: { name: 'básico' },
+        })
+      ).toBe(false);
+    });
+
+    it('returns false when stripeSubscriptionId is set', () => {
+      expect(
+        subscriptionService.isFreeSubscriptionEligibleForStripeUpgrade({
+          status: 'active',
+          stripeSubscriptionId: 'sub_123',
+          SubscriptionPlan: { name: 'free' },
+        })
+      ).toBe(false);
+    });
+
+    it('returns false when status is not active or trialing', () => {
+      expect(
+        subscriptionService.isFreeSubscriptionEligibleForStripeUpgrade({
+          status: 'canceled',
+          stripeSubscriptionId: null,
+          SubscriptionPlan: { name: 'free' },
+        })
+      ).toBe(false);
+    });
+  });
+
+  describe('createSubscription', () => {
+    const PAID_PLAN_ID = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee' as UUID;
+    const createDto = {
+      planId: PAID_PLAN_ID,
+      billingCycle: 'monthly' as const,
+    };
+
+    it('upgrades FREE row to paid: Stripe + update, no Subscription.create', async () => {
+      mockAssertIsAdmin.mockResolvedValue(undefined);
+      mockAreaFindByPk.mockResolvedValueOnce({
+        id: ORG_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        name: 'Área demo',
+      });
+
+      const reloaded = {
+        id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        planId: PAID_PLAN_ID,
+        status: 'active',
+      };
+      const freeSub = {
+        id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        stripeSubscriptionId: null,
+        stripeCustomerId: null,
+        status: 'active',
+        SubscriptionPlan: { name: 'free' },
+        update: vi.fn().mockResolvedValue(undefined),
+        reload: vi.fn().mockResolvedValue(reloaded),
+      };
+      mockSubscriptionFindOne.mockResolvedValueOnce(freeSub);
+
+      mockAssertPlanExistsAndActive.mockResolvedValue({
+        id: PAID_PLAN_ID,
+        name: 'básico',
+        active: true,
+      });
+      mockGetPlanById.mockResolvedValue({
+        id: PAID_PLAN_ID,
+        name: 'básico',
+        maxUsers: 100,
+        maxEventos: 1000,
+        maxActividades: 50,
+        stripePriceIdMonthly: 'price_m',
+        stripePriceIdYearly: 'price_y',
+      });
+
+      mockStripeCustomersCreate.mockResolvedValue({ id: 'cus_new' });
+      const now = Math.floor(Date.now() / 1000);
+      mockStripeSubscriptionsCreate.mockResolvedValue({
+        id: 'sub_new',
+        status: 'active',
+        current_period_start: now,
+        current_period_end: now + 30 * 86400,
+        customer: 'cus_new',
+        trial_end: null,
+      });
+
+      const result = await subscriptionService.createSubscription(createDto, ORG_ID, USER_ID);
+
+      expect(mockSubscriptionCreate).not.toHaveBeenCalled();
+      expect(freeSub.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          planId: PAID_PLAN_ID,
+          stripeSubscriptionId: 'sub_new',
+          status: 'active',
+        })
+      );
+      expect(freeSub.reload).toHaveBeenCalled();
+      expect(result).toEqual(reloaded);
+    });
+
+    it('throws ConflictError when existing subscription is not FREE-upgradeable', async () => {
+      mockAssertIsAdmin.mockResolvedValue(undefined);
+      mockAreaFindByPk.mockResolvedValueOnce({
+        id: ORG_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        name: 'Área',
+      });
+      mockSubscriptionFindOne.mockResolvedValueOnce({
+        id: SUB_ID,
+        status: 'active',
+        stripeSubscriptionId: 'sub_existing',
+        SubscriptionPlan: { name: 'free' },
+      });
+
+      await expect(
+        subscriptionService.createSubscription(createDto, ORG_ID, USER_ID)
+      ).rejects.toThrow(ConflictError);
+      expect(mockAssertPlanExistsAndActive).not.toHaveBeenCalled();
+    });
+
+    it('throws ValidationError when target plan is free', async () => {
+      mockAssertIsAdmin.mockResolvedValue(undefined);
+      mockAreaFindByPk.mockResolvedValueOnce({
+        id: ORG_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        name: 'Área',
+      });
+      mockSubscriptionFindOne.mockResolvedValueOnce(null);
+      mockAssertPlanExistsAndActive.mockResolvedValue({
+        id: PLAN_ID,
+        name: 'free',
+        active: true,
+      });
+
+      await expect(
+        subscriptionService.createSubscription(
+          { planId: PLAN_ID, billingCycle: 'monthly' },
+          ORG_ID,
+          USER_ID
+        )
+      ).rejects.toThrow(ValidationError);
     });
   });
 });
