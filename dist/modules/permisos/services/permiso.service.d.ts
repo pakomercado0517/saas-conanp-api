@@ -1,6 +1,7 @@
 import type { UUID } from '../../../shared/database/types.js';
 import { Permiso } from '../../../modules/permisos/models/permiso.model.js';
-import type { CreatePermisoDTO, UpdatePermisoDTO, ListPermisosDTO } from '../../../modules/permisos/validators/permiso.validator.js';
+import { PrestadorProfile } from '../../../modules/prestadores/models/prestador-profile.model.js';
+import type { CreatePermisoDTO, UpdatePermisoDTO, ListPermisosDTO, ListPrestadoresConPermisosPorAreaDTO } from '../../../modules/permisos/validators/permiso.validator.js';
 import type { PaginationMeta } from '../../../shared/responses/types.js';
 import { DateTime } from '../../../shared/dates/index.js';
 /**
@@ -68,6 +69,18 @@ export declare const getPermisoById: (permisoId: UUID, organizationId: UUID, req
  */
 export declare const listPermisosByPrestador: (prestadorId: UUID, organizationId: UUID, filters: ListPermisosDTO, requestingUserId: UUID) => Promise<{
     data: Permiso[];
+    pagination: PaginationMeta;
+}>;
+export interface PrestadorConPermisosEnArea {
+    prestador: PrestadorProfile;
+    permisos: Permiso[];
+}
+/**
+ * Lista prestadores que tienen al menos un permiso en el área, con todos los permisos
+ * de ese área anidados bajo cada prestador. La paginación aplica sobre prestadores distintos.
+ */
+export declare const listPrestadoresConPermisosPorArea: (organizationId: UUID, filters: ListPrestadoresConPermisosPorAreaDTO, requestingUserId: UUID) => Promise<{
+    data: PrestadorConPermisosEnArea[];
     pagination: PaginationMeta;
 }>;
 /**

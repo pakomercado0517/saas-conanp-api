@@ -35,4 +35,8 @@ export declare const validateUpdatePermiso: (req: Request, res: Response, next: 
  * @param next - NextFunction de Express
  */
 export declare const validateListPermisos: (req: Request, res: Response, next: NextFunction) => void;
+/**
+ * Valida query params para GET .../prestadores/con-permisos (agrupado por prestador).
+ */
+export declare const validateListPrestadoresConPermisosPorArea: (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=validation.middleware.d.ts.map

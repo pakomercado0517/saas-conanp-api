@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { createPrestadorProfile, getPrestadorProfileById, listPrestadores, updatePrestadorProfile, createPrestadorCompleto, } from '../controllers/prestador-profile.controller.js';
+import { createPrestadorProfile, getPrestadorProfileById, listPrestadores, listPrestadoresConPermisosPorArea, updatePrestadorProfile, createPrestadorCompleto, } from '../controllers/prestador-profile.controller.js';
 import { validateCreatePrestadorProfile, validateUpdatePrestadorProfile, validateListPrestadores, } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccess, requireAdmin, } from '../../../shared/middleware/index.js';
+import { validateListPrestadoresConPermisosPorArea } from '../../../modules/permisos/middleware/validation.middleware.js';
 /**
  * Router de prestadores
  *
@@ -71,6 +72,12 @@ prestadorRouter.post('/crear-completo', authenticate, requireOrganizationAccess,
  * }
  */
 prestadorRouter.get('/', authenticate, requireOrganizationAccess, validateListPrestadores, listPrestadores);
+/**
+ * GET /api/v1/organizations/:organizationId/prestadores/con-permisos
+ * Prestadores con al menos un permiso en el área; cada ítem incluye `prestador` y `permisos[]`.
+ * La paginación aplica sobre cantidad de prestadores distintos.
+ */
+prestadorRouter.get('/con-permisos', authenticate, requireOrganizationAccess, validateListPrestadoresConPermisosPorArea, listPrestadoresConPermisosPorArea);
 /**
  * GET /api/v1/organizations/:organizationId/prestadores/:prestadorId
  * Obtiene un perfil de prestador por ID.

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CreatePermisoSchema, UpdatePermisoSchema, ListPermisosSchema, } from '../validators/permiso.validator.js';
+import { CreatePermisoSchema, UpdatePermisoSchema, ListPermisosSchema, ListPrestadoresConPermisosPorAreaSchema, } from '../validators/permiso.validator.js';
 /**
  * Middleware de validación para crear permiso
  *
@@ -108,6 +108,33 @@ export const validateListPermisos = (req, res, next) => {
             return;
         }
         // Si no es un error de Zod, pasarlo al siguiente middleware de errores
+        next(error);
+    }
+};
+/**
+ * Valida query params para GET .../prestadores/con-permisos (agrupado por prestador).
+ */
+export const validateListPrestadoresConPermisosPorArea = (req, res, next) => {
+    try {
+        req.validatedQuery = ListPrestadoresConPermisosPorAreaSchema.parse(req.query);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            const detalles = error.issues.map((err) => ({
+                campo: err.path.join('.') || 'raíz',
+                mensaje: err.message,
+                codigo: err.code,
+            }));
+            res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: 'Los datos proporcionados no son válidos',
+                code: 'VALIDATION_ERROR',
+                detalles,
+            });
+            return;
+        }
         next(error);
     }
 };

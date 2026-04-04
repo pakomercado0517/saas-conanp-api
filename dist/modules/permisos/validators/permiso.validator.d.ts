@@ -62,4 +62,36 @@ export declare const ListPermisosSchema: z.ZodObject<{
     documentUrl: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<string | undefined, string | undefined>>;
 }, z.core.$strip>;
 export type ListPermisosDTO = z.infer<typeof ListPermisosSchema>;
+/**
+ * Query params para listar prestadores con sus permisos anidados por área.
+ * Reutiliza filtros de permisos; la paginación aplica sobre prestadores distintos.
+ */
+export declare const ListPrestadoresConPermisosPorAreaSchema: z.ZodObject<{
+    page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    limit: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    sortBy: z.ZodOptional<z.ZodEnum<{
+        createdAt: "createdAt";
+        updatedAt: "updatedAt";
+        status: "status";
+        validFrom: "validFrom";
+        validTo: "validTo";
+    }>>;
+    sortOrder: z.ZodDefault<z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>>;
+    prestadorId: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<string | undefined, string | undefined>>;
+    actividadId: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<string | undefined, string | undefined>>;
+    status: z.ZodOptional<z.ZodEnum<{
+        activo: "activo";
+        inactivo: "inactivo";
+        suspendido: "suspendido";
+        vencido: "vencido";
+    }>>;
+    validFrom: z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>;
+    validTo: z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>;
+    documentUrl: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<string | undefined, string | undefined>>;
+    soloVigentes: z.ZodDefault<z.ZodOptional<z.ZodCoercedBoolean<unknown>>>;
+}, z.core.$strip>;
+export type ListPrestadoresConPermisosPorAreaDTO = z.infer<typeof ListPrestadoresConPermisosPorAreaSchema>;
 //# sourceMappingURL=permiso.validator.d.ts.map

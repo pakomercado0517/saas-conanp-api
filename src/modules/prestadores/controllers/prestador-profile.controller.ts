@@ -7,6 +7,8 @@ import type {
   ListPrestadoresDTO,
 } from '../validators/prestador-profile.validator.js';
 import type { CreatePrestadorCompletoDTO } from '../validators/prestador-profile.validator.js';
+import * as permisoService from '@/modules/permisos/services/permiso.service.js';
+import type { ListPrestadoresConPermisosPorAreaDTO } from '@/modules/permisos/validators/permiso.validator.js';
 
 /**
  * Crea un nuevo perfil de prestador.
@@ -148,6 +150,42 @@ export const listPrestadores = async (req: Request, res: Response): Promise<Resp
   const result = await prestadorProfileService.listPrestadores(organizationId, filters, userId);
 
   return sendPaginated(res, result.data, result.pagination, 'Prestadores obtenidos exitosamente');
+};
+
+/**
+ * GET /api/v1/organizations/:organizationId/prestadores/con-permisos
+ * Prestadores con permisos en el área (permisos anidados por prestador).
+ */
+export const listPrestadoresConPermisosPorArea = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const filters =
+    (req.validatedQuery as ListPrestadoresConPermisosPorAreaDTO | undefined) ??
+    (req.query as unknown as ListPrestadoresConPermisosPorAreaDTO);
+
+  const result = await permisoService.listPrestadoresConPermisosPorArea(
+    organizationId,
+    filters,
+    userId
+  );
+
+  return sendPaginated(
+    res,
+    result.data,
+    result.pagination,
+    'Prestadores con permisos en el área obtenidos exitosamente'
+  );
 };
 
 /**
