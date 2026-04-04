@@ -154,4 +154,15 @@ export const ListPermisosSchema = z.object({
         .optional()
         .transform((val) => (val === '' ? undefined : val)),
 });
+/**
+ * Query params para listar prestadores con sus permisos anidados por área.
+ * Reutiliza filtros de permisos; la paginación aplica sobre prestadores distintos.
+ */
+export const ListPrestadoresConPermisosPorAreaSchema = ListPermisosSchema.extend({
+    soloVigentes: z.coerce
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Si es true, solo incluye permisos vigentes a la fecha actual (status activo y fechas válidas)'),
+});
 //# sourceMappingURL=permiso.validator.js.map

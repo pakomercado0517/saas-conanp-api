@@ -78,6 +78,11 @@ export declare const getPrestadorProfileById: (req: Request, res: Response) => P
  */
 export declare const listPrestadores: (req: Request, res: Response) => Promise<Response>;
 /**
+ * GET /api/v1/organizations/:organizationId/prestadores/con-permisos
+ * Prestadores con permisos en el área (permisos anidados por prestador).
+ */
+export declare const listPrestadoresConPermisosPorArea: (req: Request, res: Response) => Promise<Response>;
+/**
  * Actualiza un perfil de prestador existente.
  * - Los administradores pueden actualizar cualquier perfil
  * - Los prestadores solo pueden actualizar su propio perfil

@@ -184,3 +184,21 @@ export const ListPermisosSchema = z.object({
 });
 
 export type ListPermisosDTO = z.infer<typeof ListPermisosSchema>;
+
+/**
+ * Query params para listar prestadores con sus permisos anidados por área.
+ * Reutiliza filtros de permisos; la paginación aplica sobre prestadores distintos.
+ */
+export const ListPrestadoresConPermisosPorAreaSchema = ListPermisosSchema.extend({
+  soloVigentes: z.coerce
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      'Si es true, solo incluye permisos vigentes a la fecha actual (status activo y fechas válidas)'
+    ),
+});
+
+export type ListPrestadoresConPermisosPorAreaDTO = z.infer<
+  typeof ListPrestadoresConPermisosPorAreaSchema
+>;

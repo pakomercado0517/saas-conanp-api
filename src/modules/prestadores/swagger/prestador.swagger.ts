@@ -4,6 +4,7 @@ import {
   UpdatePrestadorProfileSchema,
   ListPrestadoresSchema,
 } from '../validators/prestador-profile.validator.js';
+import { ListPrestadoresConPermisosPorAreaSchema } from '@/modules/permisos/validators/permiso.validator.js';
 
 // Schema de Prestador en respuestas
 const PrestadorProfileSchema = registry.register(
@@ -220,6 +221,48 @@ registry.registerPath({
               },
             },
           },
+        },
+      },
+    },
+    400: commonErrorResponses[400],
+    401: commonErrorResponses[401],
+    403: commonErrorResponses[403],
+    404: commonErrorResponses[404],
+    500: commonErrorResponses[500],
+  },
+});
+
+// GET prestadores con permisos anidados por área
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/organizations/{organizationId}/prestadores/con-permisos',
+  tags: ['Prestadores'],
+  summary: 'Prestadores con permisos en el área (agrupado)',
+  description:
+    'Lista prestadores distintos con al menos un permiso cuya actividad pertenece al área. Cada elemento incluye `prestador` (perfil y usuario) y `permisos` (todos los permisos de ese prestador en el área). La paginación cuenta prestadores; el orden es por el permiso más reciente del prestador en el área.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      organizationId: z.string().uuid().describe('ID del área (organizationId)'),
+    }),
+    query: ListPrestadoresConPermisosPorAreaSchema,
+  },
+  responses: {
+    200: {
+      description: 'Lista paginada de prestadores con permisos anidados',
+      content: {
+        'application/json': {
+          schema: z.object({
+            success: z.literal(true),
+            data: z.array(z.any()).describe('Cada ítem: { prestador, permisos }'),
+            pagination: z.object({
+              page: z.number(),
+              limit: z.number(),
+              total: z.number(),
+              totalPages: z.number(),
+            }),
+            message: z.string().optional(),
+          }),
         },
       },
     },

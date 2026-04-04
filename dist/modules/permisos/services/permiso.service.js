@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Op } from 'sequelize';
+import { Op, fn, col } from 'sequelize';
 import { sequelize } from '../../../shared/database/index.js';
 import { Area } from '../../../modules/areas/models/area.model.js';
 import { Permiso } from '../../../modules/permisos/models/permiso.model.js';
@@ -17,6 +17,59 @@ const getDependenciaIdFromAreaId = async (areaId) => {
     if (!area)
         throw new NotFoundError('Área', { areaId });
     return area.dependenciaId;
+};
+/**
+ * Construye el where de permisos para listados con filtros opcionales.
+ * Con `soloVigentes`, fuerza permiso activo y rango de fechas en el instante actual.
+ */
+const buildPermisoWhereFromListFilters = (filters, options) => {
+    const where = {};
+    if (filters.prestadorId) {
+        where['prestadorId'] = filters.prestadorId;
+    }
+    if (options.soloVigentes) {
+        const checkDateJS = now().toJSDate();
+        where['status'] = 'activo';
+        where['validFrom'] = { [Op.lte]: checkDateJS };
+        where['validTo'] = { [Op.gte]: checkDateJS };
+        if (filters.actividadId) {
+            where['actividadId'] = filters.actividadId;
+        }
+        if (filters.documentUrl) {
+            where['documentUrl'] = {
+                [Op.iLike]: `%${filters.documentUrl}%`,
+            };
+        }
+        return where;
+    }
+    if (filters.actividadId) {
+        where['actividadId'] = filters.actividadId;
+    }
+    if (filters.status) {
+        where['status'] = filters.status;
+    }
+    if (filters.validFrom) {
+        const validFromDate = filters.validFrom && typeof filters.validFrom === 'object' && 'toJSDate' in filters.validFrom
+            ? filters.validFrom.toJSDate()
+            : filters.validFrom;
+        where['validFrom'] = {
+            [Op.gte]: validFromDate,
+        };
+    }
+    if (filters.validTo) {
+        const validToDate = filters.validTo && typeof filters.validTo === 'object' && 'toJSDate' in filters.validTo
+            ? filters.validTo.toJSDate()
+            : filters.validTo;
+        where['validTo'] = {
+            [Op.lte]: validToDate,
+        };
+    }
+    if (filters.documentUrl) {
+        where['documentUrl'] = {
+            [Op.iLike]: `%${filters.documentUrl}%`,
+        };
+    }
+    return where;
 };
 /**
  * Valida que las fechas de vigencia sean correctas.
@@ -307,37 +360,7 @@ export const listPermisosByPrestador = async (prestadorId, organizationId, filte
     if (!prestador) {
         throw new NotFoundError('Prestador', { prestadorId, organizationId });
     }
-    const where = {
-        prestadorId,
-    };
-    // Aplicar filtros opcionales
-    if (filters.actividadId) {
-        where['actividadId'] = filters.actividadId;
-    }
-    if (filters.status) {
-        where['status'] = filters.status;
-    }
-    if (filters.validFrom) {
-        const validFromDate = filters.validFrom && typeof filters.validFrom === 'object' && 'toJSDate' in filters.validFrom
-            ? filters.validFrom.toJSDate()
-            : filters.validFrom;
-        where['validFrom'] = {
-            [Op.gte]: validFromDate,
-        };
-    }
-    if (filters.validTo) {
-        const validToDate = filters.validTo && typeof filters.validTo === 'object' && 'toJSDate' in filters.validTo
-            ? filters.validTo.toJSDate()
-            : filters.validTo;
-        where['validTo'] = {
-            [Op.lte]: validToDate,
-        };
-    }
-    if (filters.documentUrl) {
-        where['documentUrl'] = {
-            [Op.iLike]: `%${filters.documentUrl}%`,
-        };
-    }
+    const where = buildPermisoWhereFromListFilters({ ...filters, prestadorId }, { soloVigentes: false });
     // Configurar paginación
     const limit = filters.limit;
     const sortBy = filters.sortBy ?? 'createdAt';
@@ -382,6 +405,112 @@ export const listPermisosByPrestador = async (prestadorId, organizationId, filte
         totalPages,
     };
     return { data: result.rows, pagination };
+};
+/**
+ * Lista prestadores que tienen al menos un permiso en el área, con todos los permisos
+ * de ese área anidados bajo cada prestador. La paginación aplica sobre prestadores distintos.
+ */
+export const listPrestadoresConPermisosPorArea = async (organizationId, filters, requestingUserId) => {
+    await assertCanAccessOrganization(requestingUserId, organizationId);
+    const dependenciaId = await getDependenciaIdFromAreaId(organizationId);
+    const permisoWhere = buildPermisoWhereFromListFilters(filters, {
+        soloVigentes: filters.soloVigentes,
+    });
+    const limit = filters.limit;
+    const page = filters.page;
+    const offset = (page - 1) * limit;
+    const actividadInclude = {
+        model: Actividad,
+        as: 'Actividad',
+        where: { areaId: organizationId },
+        required: true,
+    };
+    const prestadorInclude = {
+        model: PrestadorProfile,
+        as: 'PrestadorProfile',
+        where: { dependenciaId },
+        required: true,
+        attributes: [],
+    };
+    const total = await Permiso.count({
+        distinct: true,
+        col: 'prestadorId',
+        where: permisoWhere,
+        include: [actividadInclude, prestadorInclude],
+    });
+    const totalPages = Math.ceil(total / limit);
+    const groupedRows = await Permiso.findAll({
+        attributes: ['prestadorId', [fn('MAX', col('Permiso.createdAt')), 'lastPermisoAt']],
+        where: permisoWhere,
+        include: [
+            { ...actividadInclude, attributes: [] },
+            { ...prestadorInclude, attributes: [] },
+        ],
+        group: ['Permiso.prestadorId'],
+        order: [[fn('MAX', col('Permiso.createdAt')), 'DESC']],
+        limit,
+        offset,
+        subQuery: false,
+    });
+    const prestadorIds = groupedRows.map((row) => row.prestadorId);
+    if (prestadorIds.length === 0) {
+        return {
+            data: [],
+            pagination: { page, limit, total, totalPages },
+        };
+    }
+    const sortBy = filters.sortBy ?? 'createdAt';
+    const sortOrder = filters.sortOrder ?? 'desc';
+    const permisosRows = await Permiso.findAll({
+        where: {
+            ...permisoWhere,
+            prestadorId: { [Op.in]: prestadorIds },
+        },
+        include: [
+            {
+                model: Actividad,
+                as: 'Actividad',
+                where: { areaId: organizationId },
+                required: true,
+            },
+        ],
+        order: [[sortBy, sortOrder]],
+    });
+    const prestadores = await PrestadorProfile.findAll({
+        where: { id: { [Op.in]: prestadorIds }, dependenciaId },
+        include: [{ model: User, as: 'User' }],
+    });
+    const prestadorById = new Map(prestadores.map((p) => [p.id, p]));
+    const permisosByPrestador = new Map();
+    for (const id of prestadorIds) {
+        permisosByPrestador.set(id, []);
+    }
+    for (const permiso of permisosRows) {
+        const list = permisosByPrestador.get(permiso.prestadorId);
+        if (list) {
+            list.push(permiso);
+        }
+    }
+    const data = [];
+    for (const id of prestadorIds) {
+        const prestador = prestadorById.get(id);
+        if (!prestador) {
+            continue;
+        }
+        data.push({
+            prestador,
+            permisos: permisosByPrestador.get(id) ?? [],
+        });
+    }
+    return {
+        data,
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+        },
+    };
 };
 /**
  * Actualiza un permiso existente.

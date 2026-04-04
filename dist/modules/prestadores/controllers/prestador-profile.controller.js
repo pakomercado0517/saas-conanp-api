@@ -1,5 +1,6 @@
 import * as prestadorProfileService from '../services/prestador-profile.service.js';
 import { sendSuccess, sendCreated, sendPaginated } from '../../../shared/responses/helpers.js';
+import * as permisoService from '../../../modules/permisos/services/permiso.service.js';
 /**
  * Crea un nuevo perfil de prestador.
  * Solo los administradores pueden crear perfiles de prestador.
@@ -123,6 +124,25 @@ export const listPrestadores = async (req, res) => {
         req.query;
     const result = await prestadorProfileService.listPrestadores(organizationId, filters, userId);
     return sendPaginated(res, result.data, result.pagination, 'Prestadores obtenidos exitosamente');
+};
+/**
+ * GET /api/v1/organizations/:organizationId/prestadores/con-permisos
+ * Prestadores con permisos en el área (permisos anidados por prestador).
+ */
+export const listPrestadoresConPermisosPorArea = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const userId = req.user.userId;
+    const filters = req.validatedQuery ??
+        req.query;
+    const result = await permisoService.listPrestadoresConPermisosPorArea(organizationId, filters, userId);
+    return sendPaginated(res, result.data, result.pagination, 'Prestadores con permisos en el área obtenidos exitosamente');
 };
 /**
  * Actualiza un perfil de prestador existente.
