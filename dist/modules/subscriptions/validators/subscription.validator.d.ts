@@ -21,6 +21,19 @@ export declare const CreateSubscriptionSchema: z.ZodObject<{
 }, z.core.$strip>;
 export type CreateSubscriptionDTO = z.infer<typeof CreateSubscriptionSchema>;
 /**
+ * Schema para crear sesión de Stripe Checkout (suscripción en página alojada de Stripe).
+ * Mismos campos base que crear suscripción, sin paymentMethodId.
+ */
+export declare const CreateSubscriptionCheckoutSessionSchema: z.ZodObject<{
+    planId: z.ZodString;
+    billingCycle: z.ZodEnum<{
+        monthly: "monthly";
+        yearly: "yearly";
+    }>;
+    trialEnd: z.ZodOptional<z.ZodPipe<z.ZodNullable<z.ZodOptional<z.ZodPipe<z.ZodString, z.ZodTransform<import("luxon").DateTime<boolean>, string>>>>, z.ZodTransform<import("luxon").DateTime<boolean> | undefined, import("luxon").DateTime<boolean> | null | undefined>>>;
+}, z.core.$strip>;
+export type CreateSubscriptionCheckoutSessionDTO = z.infer<typeof CreateSubscriptionCheckoutSessionSchema>;
+/**
  * Schema Zod para actualizar suscripción (cambio de plan)
  */
 export declare const UpdateSubscriptionSchema: z.ZodObject<{

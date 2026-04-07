@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CreateSubscriptionPlanSchema, UpdateSubscriptionPlanSchema, ListSubscriptionPlansSchema, } from '../validators/subscription-plan.validator.js';
-import { CreateSubscriptionSchema, UpdateSubscriptionSchema, CancelSubscriptionSchema, ReactivateSubscriptionSchema, } from '../validators/subscription.validator.js';
+import { CreateSubscriptionSchema, CreateSubscriptionCheckoutSessionSchema, UpdateSubscriptionSchema, CancelSubscriptionSchema, ReactivateSubscriptionSchema, } from '../validators/subscription.validator.js';
 const handleZodError = (error, res) => {
     const detalles = error.issues.map((err) => ({
         campo: err.path.join('.') || 'raíz',
@@ -70,6 +70,22 @@ export const validateListSubscriptionPlans = (req, res, next) => {
 export const validateCreateSubscription = (req, res, next) => {
     try {
         req.body = CreateSubscriptionSchema.parse(req.body);
+        next();
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            handleZodError(error, res);
+            return;
+        }
+        next(error);
+    }
+};
+/**
+ * Middleware de validación para crear sesión Stripe Checkout (suscripción)
+ */
+export const validateCreateSubscriptionCheckoutSession = (req, res, next) => {
+    try {
+        req.body = CreateSubscriptionCheckoutSessionSchema.parse(req.body);
         next();
     }
     catch (error) {

@@ -7,6 +7,7 @@ import {
 } from '../validators/subscription-plan.validator.js';
 import {
   CreateSubscriptionSchema,
+  CreateSubscriptionCheckoutSessionSchema,
   UpdateSubscriptionSchema,
   CancelSubscriptionSchema,
   ReactivateSubscriptionSchema,
@@ -99,6 +100,26 @@ export const validateCreateSubscription = (
 ): void => {
   try {
     req.body = CreateSubscriptionSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      handleZodError(error, res);
+      return;
+    }
+    next(error);
+  }
+};
+
+/**
+ * Middleware de validación para crear sesión Stripe Checkout (suscripción)
+ */
+export const validateCreateSubscriptionCheckoutSession = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    req.body = CreateSubscriptionCheckoutSessionSchema.parse(req.body);
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {

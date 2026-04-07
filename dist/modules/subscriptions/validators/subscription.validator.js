@@ -47,6 +47,13 @@ export const CreateSubscriptionSchema = z.object({
     trialEnd: optionalDateTimeSchema.transform((val) => (val === null ? undefined : val)).optional(),
 });
 /**
+ * Schema para crear sesión de Stripe Checkout (suscripción en página alojada de Stripe).
+ * Mismos campos base que crear suscripción, sin paymentMethodId.
+ */
+export const CreateSubscriptionCheckoutSessionSchema = CreateSubscriptionSchema.omit({
+    paymentMethodId: true,
+});
+/**
  * Schema Zod para actualizar suscripción (cambio de plan)
  */
 export const UpdateSubscriptionSchema = z

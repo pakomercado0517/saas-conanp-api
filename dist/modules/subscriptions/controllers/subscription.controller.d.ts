@@ -8,6 +8,12 @@ import type { Request, Response } from 'express';
  */
 export declare const createSubscription: (req: Request, res: Response) => Promise<Response>;
 /**
+ * Crea una sesión de Stripe Checkout para contratar suscripción en la página alojada de Stripe.
+ *
+ * POST /api/v1/organizations/:organizationId/subscriptions/checkout-session
+ */
+export declare const createSubscriptionCheckoutSession: (req: Request, res: Response) => Promise<Response>;
+/**
  * Obtiene la suscripción actual de la organización.
  *
  * GET /api/v1/organizations/:organizationId/subscriptions/current
@@ -39,6 +45,12 @@ export declare const cancelSubscription: (req: Request, res: Response) => Promis
  * Requiere autenticación. Valida que el usuario tenga acceso a la organización de la suscripción.
  */
 export declare const reactivateSubscription: (req: Request, res: Response) => Promise<Response>;
+/**
+ * POST /api/v1/subscriptions/:subscriptionId/release-incomplete
+ *
+ * Libera suscripción incomplete/incomplete_expired para reintentar Checkout o POST suscripción.
+ */
+export declare const releaseIncompleteSubscription: (req: Request, res: Response) => Promise<Response>;
 /**
  * Obtiene el historial de facturación (invoices) de una suscripción.
  *

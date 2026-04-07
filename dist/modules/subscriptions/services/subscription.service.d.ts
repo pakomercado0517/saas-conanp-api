@@ -3,7 +3,32 @@ import type { UUID, SubscriptionStatus, BillingCycle } from '../../../shared/dat
 import { Subscription } from '../../../modules/subscriptions/models/subscription.model.js';
 import { SubscriptionPlan } from '../../../modules/subscriptions/models/subscription-plan.model.js';
 import type { PaginationMeta } from '../../../shared/responses/types.js';
-import type { CreateSubscriptionDTO, UpdateSubscriptionDTO, CancelSubscriptionDTO, ListSubscriptionsDTO } from '../../../modules/subscriptions/validators/subscription.validator.js';
+import type { CreateSubscriptionDTO, CreateSubscriptionCheckoutSessionDTO, UpdateSubscriptionDTO, CancelSubscriptionDTO, ListSubscriptionsDTO } from '../../../modules/subscriptions/validators/subscription.validator.js';
+/**
+ * Suscripción incomplete/incomplete_expired con sub en Stripe: requiere cancelar en Stripe antes de un nuevo cobro.
+ */
+export declare const isIncompleteSubscriptionRetryable: (subscription: Pick<Subscription, "status" | "stripeSubscriptionId">) => boolean;
+/**
+ * incomplete sin sub en Stripe pero plan distinto de free (dato huérfano): solo normalizar BD.
+ */
+export declare const isIncompleteSubscriptionOrphanWithoutStripe: (subscription: Pick<Subscription, "status"> & {
+    SubscriptionPlan?: Pick<SubscriptionPlan, "name"> | null;
+} & {
+    stripeSubscriptionId: string | null;
+}) => boolean;
+/**
+ * Si aplica liberación automática antes de contratar de nuevo (Checkout o POST suscripción).
+ */
+export declare const shouldAutoReleaseIncompleteForPaidCheckout: (subscription: Subscription & {
+    SubscriptionPlan?: SubscriptionPlan | null;
+}) => boolean;
+/**
+ * Pasa la fila a plan FREE activo sin IDs de suscripción/precio Stripe (mantiene customer si existía).
+ * Tras esto aplica el flujo FREE → plan de pago.
+ */
+export declare const releaseIncompleteSubscriptionForRetry: (subscription: Subscription & {
+    SubscriptionPlan?: SubscriptionPlan | null;
+}) => Promise<Subscription>;
 /**
  * Indica si la suscripción actual es FREE sin Stripe y puede pasarse a plan de pago con el mismo POST.
  * Requiere que `SubscriptionPlan` venga incluido en la consulta.
@@ -106,6 +131,13 @@ export declare const createFreeSubscriptionForOrganization: (areaId: UUID, trans
  */
 export declare const createFreeSubscriptionForDependencia: (dependenciaId: UUID, transaction?: Transaction) => Promise<Subscription>;
 /**
+ * Crea una sesión de Stripe Checkout (modo subscription) para pagar en la página alojada de Stripe.
+ */
+export declare const createSubscriptionCheckoutSession: (data: CreateSubscriptionCheckoutSessionDTO, areaId: UUID, userId: UUID) => Promise<{
+    url: string;
+    sessionId: string;
+}>;
+/**
  * Crea una suscripción completa: Stripe + base de datos.
  *
  * @param data - Datos para crear la suscripción
@@ -132,6 +164,11 @@ export declare const getSubscriptionByOrganization: (organizationId: UUID, userI
  * @returns Suscripción encontrada
  */
 export declare const getSubscriptionById: (subscriptionId: UUID, userId: UUID) => Promise<Subscription>;
+/**
+ * Libera una suscripción incomplete/incomplete_expired (cancela en Stripe si aplica y normaliza a FREE).
+ * Útil para soporte o UI sin iniciar Checkout.
+ */
+export declare const releaseIncompleteSubscriptionById: (subscriptionId: UUID, userId: UUID) => Promise<Subscription>;
 /**
  * Obtiene el historial de facturación (invoices) de una suscripción desde Stripe.
  *

@@ -10,8 +10,12 @@ import { logger } from '../../../shared/logger/index.js';
 import { cache } from '../../../shared/cache/index.js';
 import { CacheKeys } from '../../../shared/cache/keys.js';
 import { cacheConfig } from '../../../shared/cache/config.js';
-/** Estados de suscripción que permiten operaciones (no bloquean). */
-const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
+/**
+ * Estados de suscripción que permiten acceso a rutas con requireOrganizationAccess.
+ * Incluye `incomplete`: contratación con Stripe (`default_incomplete`) antes de confirmar el pago;
+ * sin esto el admin queda bloqueado en toda el área hasta que el webhook ponga `active`.
+ */
+const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing', 'incomplete'];
 /**
  * Invalida el caché de organización.
  * Se llama después de UPDATE/DELETE de organizaciones.
@@ -101,9 +105,9 @@ const getSubscriptionByOrganization = async (areaId) => {
     return subscription;
 };
 /**
- * Verifica que la organización tenga suscripción activa (active o trialing)
+ * Verifica que la organización tenga suscripción en estado operativo (active, trialing o incomplete)
  * y que el periodo actual no haya vencido.
- * Bloquea si no hay suscripción, está inactiva/past_due/canceled o el periodo expiró.
+ * Bloquea si no hay suscripción, está en estado no permitido (p. ej. past_due, canceled) o el periodo expiró.
  *
  * @throws {ForbiddenError} Si no hay suscripción, el estado no permite operaciones o está vencida
  */

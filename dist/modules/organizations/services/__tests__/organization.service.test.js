@@ -116,6 +116,14 @@ describe('organization.service', () => {
             });
             await expect(organizationService.assertActiveSubscription(ORG_ID)).resolves.toBeUndefined();
         });
+        it('does not throw when subscription is incomplete (checkout Stripe pendiente)', async () => {
+            mockSubscriptionFindOne.mockResolvedValueOnce({
+                dependenciaId: DEPENDENCIA_ID,
+                status: 'incomplete',
+                currentPeriodEnd: new Date(Date.now() + 86400000),
+            });
+            await expect(organizationService.assertActiveSubscription(ORG_ID)).resolves.toBeUndefined();
+        });
     });
     describe('getSubscriptionStatus', () => {
         it('returns null when no subscription', async () => {

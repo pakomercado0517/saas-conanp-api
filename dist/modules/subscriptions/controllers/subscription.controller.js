@@ -24,6 +24,25 @@ export const createSubscription = async (req, res) => {
     return sendCreated(res, sanitized, 'Suscripción creada exitosamente');
 };
 /**
+ * Crea una sesión de Stripe Checkout para contratar suscripción en la página alojada de Stripe.
+ *
+ * POST /api/v1/organizations/:organizationId/subscriptions/checkout-session
+ */
+export const createSubscriptionCheckoutSession = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const organizationId = req.organizationId;
+    const userId = req.user.userId;
+    const data = req.body;
+    const result = await subscriptionService.createSubscriptionCheckoutSession(data, organizationId, userId);
+    return sendCreated(res, result, 'Sesión de Checkout creada; redirige al usuario a url');
+};
+/**
  * Obtiene la suscripción actual de la organización.
  *
  * GET /api/v1/organizations/:organizationId/subscriptions/current
@@ -114,6 +133,25 @@ export const reactivateSubscription = async (req, res) => {
     const result = await subscriptionService.reactivateSubscription(subscriptionId, subscription.dependenciaId, userId);
     const sanitized = sanitizeSubscriptionForResponse(result);
     return sendSuccess(res, sanitized, 'Suscripción reactivada exitosamente');
+};
+/**
+ * POST /api/v1/subscriptions/:subscriptionId/release-incomplete
+ *
+ * Libera suscripción incomplete/incomplete_expired para reintentar Checkout o POST suscripción.
+ */
+export const releaseIncompleteSubscription = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            error: 'No autorizado',
+            message: 'Token de autenticación requerido',
+        });
+    }
+    const subscriptionId = req.params['subscriptionId'];
+    const userId = req.user.userId;
+    const subscription = await subscriptionService.releaseIncompleteSubscriptionById(subscriptionId, userId);
+    const sanitized = sanitizeSubscriptionForResponse(subscription);
+    return sendSuccess(res, sanitized, 'Suscripción liberada; la dependencia quedó en plan FREE activo');
 };
 /**
  * Obtiene el historial de facturación (invoices) de una suscripción.
