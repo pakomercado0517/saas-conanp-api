@@ -9,7 +9,7 @@ import { AppError } from './app-error.js';
 export class NotFoundError extends AppError {
   constructor(resource: string, details?: Record<string, unknown>) {
     super(
-      `${resource} no encontrado${resource.endsWith('a') ? 'a' : resource.endsWith('o') ? 'o' : ''}`,
+      `${resource} no encontrad${resource.endsWith('a') ? 'a' : 'o'}`,
       404,
       'NOT_FOUND',
       details

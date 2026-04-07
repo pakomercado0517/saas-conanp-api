@@ -233,6 +233,11 @@ export declare const reactivateSubscription: (subscriptionId: UUID, dependenciaI
  */
 export declare const createSubscriptionFromWebhook: (stripeSubscription: Record<string, unknown>) => Promise<Subscription | null>;
 /**
+ * Desvincula la fila de la sub eliminada en Stripe y deja estado coherente para un nuevo Checkout.
+ * Plan FREE: active sin canceledAt. Plan de pago: canceled con canceledAt (la sub ya no existe en Stripe).
+ */
+export declare const handleSubscriptionDeletedFromWebhook: (stripeSubscription: Record<string, unknown>) => Promise<Subscription | null>;
+/**
  * Actualiza el estado de una suscripción desde un webhook de Stripe.
  * NO valida acceso a organización (se llama desde Stripe).
  *
@@ -248,6 +253,11 @@ export declare const updateSubscriptionFromWebhook: (stripeSubscription: Record<
  * @returns Suscripción actualizada o null
  */
 export declare const renewSubscriptionPeriodFromWebhook: (stripeInvoice: Record<string, unknown>) => Promise<Subscription | null>;
+/**
+ * Tras el primer pago (Checkout), sincroniza estado desde Stripe cuando el invoice no es renovación de ciclo.
+ * Cubre billing_reason subscription_create / subscription_update (invoice.payment_succeeded).
+ */
+export declare const syncSubscriptionFromInvoicePaymentSucceeded: (stripeInvoice: Record<string, unknown>) => Promise<Subscription | null>;
 /**
  * Marca la suscripción como past_due desde invoice.payment_failed.
  *

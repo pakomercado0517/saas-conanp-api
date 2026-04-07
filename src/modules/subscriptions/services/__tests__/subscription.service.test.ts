@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Stripe from 'stripe';
-import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from '@/shared/errors/index.js';
 import type { UUID } from '@/shared/database/types.js';
 import { sequelize } from '@/shared/database/index.js';
 import * as subscriptionService from '../subscription.service.js';
@@ -361,11 +366,13 @@ describe('subscription.service', () => {
       const existingSub = {
         id: SUB_ID,
         organizationId: ORG_ID,
+        dependenciaId: DEPENDENCIA_ID,
         stripeSubscriptionId: 'sub_stripe123',
         update: vi.fn().mockResolvedValue(undefined),
         reload: vi.fn().mockResolvedValue(undefined),
       };
-      mockSubscriptionFindOne.mockResolvedValueOnce(existingSub);
+      (existingSub.reload as ReturnType<typeof vi.fn>).mockResolvedValue(existingSub);
+      mockSubscriptionFindOne.mockResolvedValueOnce(existingSub).mockResolvedValueOnce(existingSub);
 
       const result = await subscriptionService.createSubscriptionFromWebhook({
         id: 'sub_stripe123',
@@ -418,6 +425,187 @@ describe('subscription.service', () => {
       );
       expect(result).toBeDefined();
     });
+
+    it('desvincula sub Stripe incomplete (checkout abandonado) y enlaza la nueva', async () => {
+      mockStripeSubscriptionsRetrieve.mockResolvedValueOnce({
+        id: 'sub_old',
+        status: 'incomplete',
+      });
+      mockGetPlanById.mockResolvedValueOnce({
+        id: PLAN_ID,
+        stripePriceIdMonthly: 'price_1',
+        stripePriceIdYearly: 'price_2',
+      });
+      const freeRowStale = {
+        id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        stripeSubscriptionId: 'sub_old',
+        status: 'incomplete' as const,
+        SubscriptionPlan: { name: 'free' },
+        update: vi.fn().mockImplementation(async (patch: Record<string, unknown>) => {
+          Object.assign(freeRowStale, patch);
+        }),
+        reload: vi.fn().mockImplementation(async () => freeRowStale),
+      };
+      mockSubscriptionFindOne.mockResolvedValueOnce(null).mockResolvedValueOnce(freeRowStale);
+
+      const result = await subscriptionService.createSubscriptionFromWebhook({
+        id: 'sub_new',
+        metadata: { dependenciaId: DEPENDENCIA_ID, planId: PLAN_ID },
+        status: 'active',
+        current_period_start: Math.floor(Date.now() / 1000),
+        current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+        items: { data: [{ price: { id: 'price_1' } }] },
+        customer: 'cus_x',
+      });
+
+      expect(mockStripeSubscriptionsRetrieve).toHaveBeenCalledWith('sub_old');
+      expect(freeRowStale.update).toHaveBeenCalled();
+      expect(freeRowStale.update).toHaveBeenCalledWith(
+        expect.objectContaining({ stripeSubscriptionId: 'sub_new', planId: PLAN_ID })
+      );
+      expect(result).toBeDefined();
+    });
+
+    it('desvincula sub Stripe cancelada en fila FREE y enlaza la nueva', async () => {
+      mockStripeSubscriptionsRetrieve.mockResolvedValueOnce({
+        id: 'sub_old',
+        status: 'canceled',
+      });
+      mockGetPlanById.mockResolvedValueOnce({
+        id: PLAN_ID,
+        stripePriceIdMonthly: 'price_1',
+        stripePriceIdYearly: 'price_2',
+      });
+      const freeRowStale = {
+        id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        stripeSubscriptionId: 'sub_old',
+        status: 'canceled' as const,
+        SubscriptionPlan: { name: 'free' },
+        update: vi.fn().mockImplementation(async (patch: Record<string, unknown>) => {
+          Object.assign(freeRowStale, patch);
+        }),
+        reload: vi.fn().mockImplementation(async () => freeRowStale),
+      };
+      mockSubscriptionFindOne.mockResolvedValueOnce(null).mockResolvedValueOnce(freeRowStale);
+
+      const result = await subscriptionService.createSubscriptionFromWebhook({
+        id: 'sub_new',
+        metadata: { dependenciaId: DEPENDENCIA_ID, planId: PLAN_ID },
+        status: 'active',
+        current_period_start: Math.floor(Date.now() / 1000),
+        current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+        items: { data: [{ price: { id: 'price_1' } }] },
+        customer: 'cus_x',
+      });
+
+      expect(mockStripeSubscriptionsRetrieve).toHaveBeenCalledWith('sub_old');
+      expect(freeRowStale.update).toHaveBeenCalled();
+      expect(freeRowStale.update).toHaveBeenCalledWith(
+        expect.objectContaining({ stripeSubscriptionId: 'sub_new', planId: PLAN_ID })
+      );
+      expect(result).toBeDefined();
+    });
+
+    it('returns null when otra sub Stripe sigue activa en la dependencia', async () => {
+      mockStripeSubscriptionsRetrieve.mockResolvedValueOnce({
+        id: 'sub_old',
+        status: 'active',
+      });
+      mockGetPlanById.mockResolvedValueOnce({
+        id: PLAN_ID,
+        stripePriceIdMonthly: 'price_1',
+        stripePriceIdYearly: 'price_2',
+      });
+      const row = {
+        id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        stripeSubscriptionId: 'sub_old',
+        status: 'active' as const,
+        SubscriptionPlan: { name: 'free' },
+        update: vi.fn(),
+        reload: vi.fn(),
+      };
+      mockSubscriptionFindOne.mockResolvedValueOnce(null).mockResolvedValueOnce(row);
+
+      const result = await subscriptionService.createSubscriptionFromWebhook({
+        id: 'sub_new',
+        metadata: { dependenciaId: DEPENDENCIA_ID, planId: PLAN_ID },
+        status: 'active',
+        current_period_start: Math.floor(Date.now() / 1000),
+        current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+        items: { data: [{ price: { id: 'price_1' } }] },
+        customer: 'cus_x',
+      });
+
+      expect(result).toBeNull();
+      expect(row.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleSubscriptionDeletedFromWebhook', () => {
+    it('returns null when no row matches stripe id', async () => {
+      mockSubscriptionFindOne.mockResolvedValueOnce(null);
+
+      const result = await subscriptionService.handleSubscriptionDeletedFromWebhook({
+        id: 'sub_gone',
+        canceled_at: Math.floor(Date.now() / 1000),
+      });
+
+      expect(result).toBeNull();
+    });
+
+    it('plan free: desvincula y deja active sin canceledAt', async () => {
+      const row = {
+        id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        SubscriptionPlan: { name: 'free' },
+        update: vi.fn().mockResolvedValue(undefined),
+        reload: vi.fn().mockResolvedValue({ id: SUB_ID, status: 'active' }),
+      };
+      mockSubscriptionFindOne.mockResolvedValueOnce(row);
+
+      await subscriptionService.handleSubscriptionDeletedFromWebhook({
+        id: 'sub_del',
+        canceled_at: Math.floor(Date.now() / 1000),
+      });
+
+      expect(row.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stripeSubscriptionId: null,
+          stripePriceId: null,
+          status: 'active',
+          canceledAt: null,
+        })
+      );
+    });
+
+    it('plan de pago: desvincula y marca canceled', async () => {
+      const row = {
+        id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        SubscriptionPlan: { name: 'básico' },
+        update: vi.fn().mockResolvedValue(undefined),
+        reload: vi.fn().mockResolvedValue({ id: SUB_ID, status: 'canceled' }),
+      };
+      mockSubscriptionFindOne.mockResolvedValueOnce(row);
+
+      await subscriptionService.handleSubscriptionDeletedFromWebhook({
+        id: 'sub_del',
+        canceled_at: Math.floor(Date.now() / 1000),
+      });
+
+      expect(row.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stripeSubscriptionId: null,
+          stripePriceId: null,
+          status: 'canceled',
+          cancelAtPeriodEnd: false,
+          canceledAt: expect.any(Date),
+        })
+      );
+    });
   });
 
   describe('updateSubscriptionFromWebhook', () => {
@@ -427,15 +615,67 @@ describe('subscription.service', () => {
       expect(result).toBeNull();
     });
 
-    it('returns null when subscription not found in BD', async () => {
+    it('returns null when BD miss and Stripe subscription is resource_missing', async () => {
       mockSubscriptionFindOne.mockResolvedValueOnce(null);
+      const stripeErr = new Stripe.errors.StripeInvalidRequestError({
+        message: 'No such subscription',
+        type: 'invalid_request_error',
+      });
+      Object.assign(stripeErr, { code: 'resource_missing' });
+      mockStripeSubscriptionsRetrieve.mockRejectedValueOnce(stripeErr);
 
       const result = await subscriptionService.updateSubscriptionFromWebhook({
-        id: 'sub_stripe123',
+        id: 'sub_gone',
         status: 'canceled',
       });
 
+      expect(mockStripeSubscriptionsRetrieve).toHaveBeenCalledWith('sub_gone');
       expect(result).toBeNull();
+    });
+
+    it('when BD miss: retrieve Stripe y upsert vía createSubscriptionFromWebhook', async () => {
+      mockStripeSubscriptionsRetrieve.mockResolvedValueOnce({
+        id: 'sub_miss_then_fetch',
+        metadata: { dependenciaId: DEPENDENCIA_ID, planId: PLAN_ID },
+        status: 'active',
+        current_period_start: Math.floor(Date.now() / 1000),
+        current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+        items: { data: [{ price: { id: 'price_1' } }] },
+        customer: 'cus_fetch',
+      });
+      mockGetPlanById.mockResolvedValueOnce({
+        id: PLAN_ID,
+        stripePriceIdMonthly: 'price_1',
+        stripePriceIdYearly: 'price_2',
+      });
+      const freeRow = {
+        id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        stripeSubscriptionId: null,
+        status: 'active',
+        SubscriptionPlan: { name: 'free' },
+        update: vi.fn().mockResolvedValue(undefined),
+        reload: vi.fn().mockImplementation(async () => freeRow),
+      };
+      mockSubscriptionFindOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(freeRow);
+      mockDependenciaFindByPk.mockResolvedValue({ id: DEPENDENCIA_ID });
+
+      const result = await subscriptionService.updateSubscriptionFromWebhook({
+        id: 'sub_miss_then_fetch',
+        status: 'incomplete',
+      });
+
+      expect(mockStripeSubscriptionsRetrieve).toHaveBeenCalledWith('sub_miss_then_fetch');
+      expect(freeRow.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stripeSubscriptionId: 'sub_miss_then_fetch',
+          status: 'active',
+        })
+      );
+      expect(result).toBeDefined();
     });
 
     it('updates subscription and returns it', async () => {
@@ -456,6 +696,47 @@ describe('subscription.service', () => {
         status: 'canceled',
       });
 
+      expect(subRecord.update).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('syncSubscriptionFromInvoicePaymentSucceeded', () => {
+    it('returns null for subscription_cycle', async () => {
+      const result = await subscriptionService.syncSubscriptionFromInvoicePaymentSucceeded({
+        billing_reason: 'subscription_cycle',
+        subscription: 'sub_x',
+      });
+
+      expect(result).toBeNull();
+      expect(mockStripeSubscriptionsRetrieve).not.toHaveBeenCalled();
+    });
+
+    it('subscription_create: retrieve y updateSubscriptionFromWebhook en fila existente', async () => {
+      mockStripeSubscriptionsRetrieve.mockResolvedValueOnce({
+        id: 'sub_inv',
+        metadata: { dependenciaId: DEPENDENCIA_ID, planId: PLAN_ID },
+        status: 'active',
+        current_period_start: Math.floor(Date.now() / 1000),
+        current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+        items: { data: [{ price: { id: 'price_1' } }] },
+        customer: 'cus_1',
+      });
+      const subRecord = {
+        id: SUB_ID,
+        dependenciaId: DEPENDENCIA_ID,
+        stripeSubscriptionId: 'sub_inv',
+        update: vi.fn().mockResolvedValue(undefined),
+        reload: vi.fn().mockResolvedValue({ id: SUB_ID, status: 'active' }),
+      };
+      mockSubscriptionFindOne.mockResolvedValueOnce(subRecord);
+
+      const result = await subscriptionService.syncSubscriptionFromInvoicePaymentSucceeded({
+        billing_reason: 'subscription_create',
+        subscription: 'sub_inv',
+      });
+
+      expect(mockStripeSubscriptionsRetrieve).toHaveBeenCalledWith('sub_inv');
       expect(subRecord.update).toHaveBeenCalled();
       expect(result).toBeDefined();
     });

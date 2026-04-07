@@ -215,7 +215,11 @@ export const releaseIncompleteSubscription = async (
     userId
   );
   const sanitized = sanitizeSubscriptionForResponse(subscription);
-  return sendSuccess(res, sanitized, 'Suscripción liberada; la dependencia quedó en plan FREE activo');
+  return sendSuccess(
+    res,
+    sanitized,
+    'Suscripción liberada; la dependencia quedó en plan FREE activo'
+  );
 };
 
 /**

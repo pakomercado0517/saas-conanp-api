@@ -21,7 +21,12 @@ import {
 import { sequelize } from '@/shared/database/index.js';
 import Stripe from 'stripe';
 import { stripeClient, handleStripeError } from '@/shared/stripe/index.js';
-import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/shared/errors/index.js';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from '@/shared/errors/index.js';
 import type { PaginationMeta } from '@/shared/responses/types.js';
 import { logger } from '@/shared/logger/index.js';
 import { cache } from '@/shared/cache/index.js';
@@ -77,7 +82,10 @@ export const shouldAutoReleaseIncompleteForPaidCheckout = (
 const cancelStripeSubscriptionIdempotent = async (stripeSubscriptionId: string): Promise<void> => {
   try {
     await stripeClient.subscriptions.cancel(stripeSubscriptionId);
-    logger.info({ stripeSubscriptionId }, 'Suscripción Stripe cancelada para reintentar contratación');
+    logger.info(
+      { stripeSubscriptionId },
+      'Suscripción Stripe cancelada para reintentar contratación'
+    );
   } catch (err) {
     if (err instanceof Stripe.errors.StripeError && err.code === 'resource_missing') {
       logger.warn(
@@ -844,12 +852,7 @@ export const getSubscriptionByOrganization = async (
     where: {
       dependenciaId: area.dependenciaId,
       status: {
-        [Op.in]: [
-          ...ACTIVE_SUBSCRIPTION_STATUSES,
-          'canceled',
-          'incomplete',
-          'incomplete_expired',
-        ],
+        [Op.in]: [...ACTIVE_SUBSCRIPTION_STATUSES, 'canceled', 'incomplete', 'incomplete_expired'],
       },
     },
     order: [['currentPeriodEnd', 'DESC']],
@@ -1419,15 +1422,58 @@ export const createSubscriptionFromWebhook = async (
     rowByDependencia?.stripeSubscriptionId &&
     rowByDependencia.stripeSubscriptionId !== stripeSubscriptionId
   ) {
-    logger.warn(
-      {
-        dependenciaId,
-        stripeSubscriptionId,
-        existingStripeSubscriptionId: rowByDependencia.stripeSubscriptionId,
-      },
-      'Webhook subscription.created: la dependencia ya tiene otra suscripción en Stripe'
-    );
-    return null;
+    const staleStripeSubscriptionId = rowByDependencia.stripeSubscriptionId;
+    const replaceable = await isStripeSubscriptionReplaceable(staleStripeSubscriptionId);
+    if (replaceable) {
+      const patch: Record<string, unknown> = {
+        stripeSubscriptionId: null,
+        stripePriceId: null,
+      };
+      if (rowByDependencia.SubscriptionPlan?.name === 'free') {
+        patch['status'] = 'active';
+        patch['cancelAtPeriodEnd'] = false;
+        patch['canceledAt'] = null;
+        patch['trialEnd'] = null;
+      }
+      await rowByDependencia.update(patch);
+      await rowByDependencia.reload({
+        include: [{ model: SubscriptionPlan, as: 'SubscriptionPlan' }],
+      });
+      logger.info(
+        {
+          dependenciaId,
+          staleStripeSubscriptionId,
+          incomingStripeSubscriptionId: stripeSubscriptionId,
+        },
+        'Webhook subscription.created: sub Stripe obsoleta desvinculada, se enlaza la nueva'
+      );
+    } else {
+      logger.warn(
+        {
+          dependenciaId,
+          stripeSubscriptionId,
+          existingStripeSubscriptionId: staleStripeSubscriptionId,
+        },
+        'Webhook subscription.created: la dependencia ya tiene otra suscripción en Stripe'
+      );
+      return null;
+    }
+  }
+
+  if (
+    rowByDependencia &&
+    !rowByDependencia.stripeSubscriptionId &&
+    rowByDependencia.SubscriptionPlan?.name === 'free' &&
+    !ACTIVE_SUBSCRIPTION_STATUSES.includes(rowByDependencia.status)
+  ) {
+    await rowByDependencia.update({
+      status: 'active',
+      canceledAt: null,
+      cancelAtPeriodEnd: false,
+    });
+    await rowByDependencia.reload({
+      include: [{ model: SubscriptionPlan, as: 'SubscriptionPlan' }],
+    });
   }
 
   if (rowByDependencia && isFreeSubscriptionEligibleForStripeUpgrade(rowByDependencia)) {
@@ -1454,6 +1500,44 @@ export const createSubscriptionFromWebhook = async (
         status,
       },
       'Webhook subscription.created: suscripción FREE actualizada a plan de pago (Checkout o Stripe)'
+    );
+    return rowByDependencia.reload({
+      include: [
+        { model: Dependencia, as: 'Dependencia' },
+        { model: SubscriptionPlan, as: 'SubscriptionPlan' },
+      ],
+    });
+  }
+
+  if (
+    rowByDependencia &&
+    !rowByDependencia.stripeSubscriptionId &&
+    !isFreeSubscriptionEligibleForStripeUpgrade(rowByDependencia) &&
+    rowByDependencia.SubscriptionPlan?.name !== 'free'
+  ) {
+    await rowByDependencia.update({
+      planId,
+      status,
+      billingCycle,
+      currentPeriodStart,
+      currentPeriodEnd,
+      cancelAtPeriodEnd,
+      stripeSubscriptionId,
+      stripeCustomerId,
+      stripePriceId: priceId ?? null,
+      trialEnd,
+      ...(status === 'canceled' && canceledAt ? { canceledAt } : {}),
+    });
+    await invalidateSubscriptionCache(dependenciaId);
+    logger.info(
+      {
+        subscriptionId: rowByDependencia.id,
+        stripeSubscriptionId,
+        dependenciaId,
+        planId,
+        status,
+      },
+      'Webhook subscription.created: fila de plan de pago sin sub Stripe enlazada al Checkout'
     );
     return rowByDependencia.reload({
       include: [
@@ -1516,6 +1600,94 @@ export const createSubscriptionFromWebhook = async (
 };
 
 /**
+ * Indica si en Stripe la suscripción ya no puede bloquear un alta nueva (cancelada, expirada o borrada).
+ */
+const isStripeSubscriptionReplaceable = async (stripeSubscriptionId: string): Promise<boolean> => {
+  try {
+    const sub = await stripeClient.subscriptions.retrieve(stripeSubscriptionId);
+    // `incomplete`: intento de pago/checkout abandonado; debe poder sustituirse por una nueva sub sin release manual.
+    return (
+      sub.status === 'canceled' ||
+      sub.status === 'incomplete_expired' ||
+      sub.status === 'incomplete'
+    );
+  } catch (err) {
+    if (err instanceof Stripe.errors.StripeError && err.code === 'resource_missing') {
+      return true;
+    }
+    handleStripeError(err);
+    throw err;
+  }
+};
+
+/**
+ * Desvincula la fila de la sub eliminada en Stripe y deja estado coherente para un nuevo Checkout.
+ * Plan FREE: active sin canceledAt. Plan de pago: canceled con canceledAt (la sub ya no existe en Stripe).
+ */
+export const handleSubscriptionDeletedFromWebhook = async (
+  stripeSubscription: Record<string, unknown>
+): Promise<Subscription | null> => {
+  const stripeSubscriptionId = stripeSubscription['id'] as string | undefined;
+  if (!stripeSubscriptionId) return null;
+
+  const subscription = await Subscription.findOne({
+    where: { stripeSubscriptionId },
+    include: [{ model: SubscriptionPlan, as: 'SubscriptionPlan' }],
+  });
+
+  if (!subscription) {
+    logger.debug(
+      { stripeSubscriptionId },
+      'Webhook subscription.deleted: sin fila en BD (idempotente o ya liberada)'
+    );
+    return null;
+  }
+
+  const canceledAtStripe = stripeSubscription['canceled_at'] as number | null | undefined;
+  const canceledAt = canceledAtStripe != null ? new Date(canceledAtStripe * 1000) : new Date();
+
+  const isFreePlan = subscription.SubscriptionPlan?.name === 'free';
+
+  if (isFreePlan) {
+    await subscription.update({
+      stripeSubscriptionId: null,
+      stripePriceId: null,
+      status: 'active',
+      cancelAtPeriodEnd: false,
+      canceledAt: null,
+      trialEnd: null,
+    });
+  } else {
+    await subscription.update({
+      stripeSubscriptionId: null,
+      stripePriceId: null,
+      status: 'canceled',
+      cancelAtPeriodEnd: false,
+      canceledAt,
+    });
+  }
+
+  await invalidateSubscriptionCache(subscription.dependenciaId);
+
+  logger.info(
+    {
+      subscriptionId: subscription.id,
+      dependenciaId: subscription.dependenciaId,
+      stripeSubscriptionId,
+      isFreePlan,
+    },
+    'Webhook subscription.deleted: fila desvinculada de Stripe'
+  );
+
+  return subscription.reload({
+    include: [
+      { model: Dependencia, as: 'Dependencia' },
+      { model: SubscriptionPlan, as: 'SubscriptionPlan' },
+    ],
+  });
+};
+
+/**
  * Actualiza el estado de una suscripción desde un webhook de Stripe.
  * NO valida acceso a organización (se llama desde Stripe).
  *
@@ -1537,8 +1709,24 @@ export const updateSubscriptionFromWebhook = async (
   });
 
   if (!subscription) {
-    logger.warn({ stripeSubscriptionId }, 'Webhook: suscripción no encontrada en BD');
-    return null;
+    logger.warn(
+      { stripeSubscriptionId },
+      'Webhook: suscripción no encontrada en BD; se consulta Stripe y se intenta upsert (carrera updated vs created)'
+    );
+    try {
+      const fresh = await stripeClient.subscriptions.retrieve(stripeSubscriptionId);
+      return createSubscriptionFromWebhook(fresh as unknown as Record<string, unknown>);
+    } catch (err) {
+      if (err instanceof Stripe.errors.StripeError && err.code === 'resource_missing') {
+        logger.warn(
+          { stripeSubscriptionId },
+          'Webhook: suscripción no existe en Stripe al reintentar tras miss en BD'
+        );
+        return null;
+      }
+      handleStripeError(err);
+      throw err;
+    }
   }
 
   const statusMap: Record<string, SubscriptionStatus> = {
@@ -1670,6 +1858,39 @@ export const renewSubscriptionPeriodFromWebhook = async (
       { model: SubscriptionPlan, as: 'SubscriptionPlan' },
     ],
   });
+};
+
+/**
+ * Tras el primer pago (Checkout), sincroniza estado desde Stripe cuando el invoice no es renovación de ciclo.
+ * Cubre billing_reason subscription_create / subscription_update (invoice.payment_succeeded).
+ */
+export const syncSubscriptionFromInvoicePaymentSucceeded = async (
+  stripeInvoice: Record<string, unknown>
+): Promise<Subscription | null> => {
+  const billingReason = stripeInvoice['billing_reason'] as string | undefined;
+  if (billingReason !== 'subscription_create' && billingReason !== 'subscription_update') {
+    return null;
+  }
+
+  const subscriptionId = stripeInvoice['subscription'];
+  const stripeSubscriptionId =
+    typeof subscriptionId === 'string' ? subscriptionId : (subscriptionId as { id?: string })?.id;
+  if (!stripeSubscriptionId) return null;
+
+  try {
+    const fresh = await stripeClient.subscriptions.retrieve(stripeSubscriptionId);
+    return updateSubscriptionFromWebhook(fresh as unknown as Record<string, unknown>);
+  } catch (err) {
+    if (err instanceof Stripe.errors.StripeError && err.code === 'resource_missing') {
+      logger.warn(
+        { stripeSubscriptionId },
+        'Webhook invoice.payment_succeeded: suscripción no existe en Stripe'
+      );
+      return null;
+    }
+    handleStripeError(err);
+    throw err;
+  }
 };
 
 /**
