@@ -11,7 +11,9 @@ import {
 import {
   createSubscriptionFromWebhook,
   updateSubscriptionFromWebhook,
+  handleSubscriptionDeletedFromWebhook,
   renewSubscriptionPeriodFromWebhook,
+  syncSubscriptionFromInvoicePaymentSucceeded,
   markSubscriptionPastDueFromWebhook,
   handleTrialWillEndFromWebhook,
 } from '@/modules/subscriptions/services/subscription.service.js';
@@ -51,24 +53,53 @@ const dispatchWebhookEvent = async (event: Stripe.Event): Promise<void> => {
   } else if (eventType === 'customer.subscription.created') {
     const obj = event.data.object as unknown as Record<string, unknown>;
     const stripeSubscriptionId = obj['id'] as string | undefined;
-    await createSubscriptionFromWebhook(obj);
-    logger.info(
-      { eventId: event.id, eventType, stripeSubscriptionId },
-      'Webhook Stripe: suscripción creada en BD'
-    );
+    const persisted = await createSubscriptionFromWebhook(obj);
+    if (persisted) {
+      logger.info(
+        { eventId: event.id, eventType, stripeSubscriptionId },
+        'Webhook Stripe: suscripción persistida desde subscription.created'
+      );
+    } else {
+      logger.warn(
+        { eventId: event.id, eventType, stripeSubscriptionId },
+        'Webhook Stripe: subscription.created no persistió fila en BD (revisar metadata, conflicto o logs previos)'
+      );
+    }
   } else if (eventType === 'customer.subscription.updated') {
-    await updateSubscriptionFromWebhook(event.data.object as unknown as Record<string, unknown>);
-    logger.info({ eventId: event.id, eventType }, 'Webhook Stripe: suscripción actualizada');
+    const obj = event.data.object as unknown as Record<string, unknown>;
+    const stripeSubscriptionId = obj['id'] as string | undefined;
+    const updatedSub = await updateSubscriptionFromWebhook(obj);
+    if (updatedSub) {
+      logger.info({ eventId: event.id, eventType }, 'Webhook Stripe: suscripción actualizada');
+    } else {
+      logger.warn(
+        { eventId: event.id, eventType, stripeSubscriptionId },
+        'Webhook Stripe: subscription.updated no aplicó cambios en BD'
+      );
+    }
   } else if (eventType === 'customer.subscription.deleted') {
-    await updateSubscriptionFromWebhook(event.data.object as unknown as Record<string, unknown>);
-    logger.info({ eventId: event.id, eventType }, 'Webhook Stripe: suscripción cancelada');
+    await handleSubscriptionDeletedFromWebhook(
+      event.data.object as unknown as Record<string, unknown>
+    );
+    logger.info(
+      { eventId: event.id, eventType },
+      'Webhook Stripe: suscripción eliminada en Stripe procesada'
+    );
   } else if (eventType === 'invoice.payment_succeeded') {
     const obj = event.data.object as unknown as Record<string, unknown>;
-    const sub = await renewSubscriptionPeriodFromWebhook(obj);
-    if (sub) {
+    const renewed = await renewSubscriptionPeriodFromWebhook(obj);
+    if (renewed) {
       logger.info(
-        { eventId: event.id, eventType, subscriptionId: sub.id },
+        { eventId: event.id, eventType, subscriptionId: renewed.id },
         'Webhook Stripe: período de suscripción renovado'
+      );
+    }
+    // Mutuamente excluyente con renew por billing_reason; ejecutar siempre evita omitir sync si cambia el orden o el payload.
+    const synced = await syncSubscriptionFromInvoicePaymentSucceeded(obj);
+    if (synced) {
+      logger.info(
+        { eventId: event.id, eventType, subscriptionId: synced.id },
+        'Webhook Stripe: suscripción sincronizada tras primer pago (invoice subscription_create|update)'
       );
     }
   } else if (eventType === 'invoice.payment_failed') {

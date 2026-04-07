@@ -7,7 +7,7 @@ import { AppError } from './app-error.js';
  */
 export class NotFoundError extends AppError {
     constructor(resource, details) {
-        super(`${resource} no encontrado${resource.endsWith('a') ? 'a' : resource.endsWith('o') ? 'o' : ''}`, 404, 'NOT_FOUND', details);
+        super(`${resource} no encontrad${resource.endsWith('a') ? 'a' : 'o'}`, 404, 'NOT_FOUND', details);
         this.name = 'NotFoundError';
     }
 }

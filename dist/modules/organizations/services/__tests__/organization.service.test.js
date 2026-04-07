@@ -92,13 +92,23 @@ describe('organization.service', () => {
             mockSubscriptionFindOne.mockResolvedValueOnce(null);
             await expect(organizationService.assertActiveSubscription(ORG_ID)).rejects.toThrow(ForbiddenError);
         });
-        it('throws ForbiddenError when subscription status is not active', async () => {
+        it('throws ForbiddenError when subscription is canceled but still linked to Stripe', async () => {
             mockSubscriptionFindOne.mockResolvedValueOnce({
                 dependenciaId: DEPENDENCIA_ID,
                 status: 'canceled',
+                stripeSubscriptionId: 'sub_still_in_db',
                 currentPeriodEnd: new Date(Date.now() + 86400000),
             });
             await expect(organizationService.assertActiveSubscription(ORG_ID)).rejects.toThrow(ForbiddenError);
+        });
+        it('does not throw when canceled without stripeSubscriptionId (re-contratar tras webhook)', async () => {
+            mockSubscriptionFindOne.mockResolvedValueOnce({
+                dependenciaId: DEPENDENCIA_ID,
+                status: 'canceled',
+                stripeSubscriptionId: null,
+                currentPeriodEnd: new Date(Date.now() - 86400000),
+            });
+            await expect(organizationService.assertActiveSubscription(ORG_ID)).resolves.toBeUndefined();
         });
         it('throws ForbiddenError when period has ended', async () => {
             mockSubscriptionFindOne.mockResolvedValueOnce({
@@ -112,6 +122,14 @@ describe('organization.service', () => {
             mockSubscriptionFindOne.mockResolvedValueOnce({
                 dependenciaId: DEPENDENCIA_ID,
                 status: 'active',
+                currentPeriodEnd: new Date(Date.now() + 86400000),
+            });
+            await expect(organizationService.assertActiveSubscription(ORG_ID)).resolves.toBeUndefined();
+        });
+        it('does not throw when subscription is incomplete (checkout Stripe pendiente)', async () => {
+            mockSubscriptionFindOne.mockResolvedValueOnce({
+                dependenciaId: DEPENDENCIA_ID,
+                status: 'incomplete',
                 currentPeriodEnd: new Date(Date.now() + 86400000),
             });
             await expect(organizationService.assertActiveSubscription(ORG_ID)).resolves.toBeUndefined();

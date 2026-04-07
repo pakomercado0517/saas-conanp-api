@@ -18,9 +18,10 @@ export declare const assertCanAccessOrganization: (userId: UUID, areaId: UUID) =
  */
 export declare const assertCanAccessDependencia: (userId: UUID, dependenciaId: UUID) => Promise<void>;
 /**
- * Verifica que la organización tenga suscripción activa (active o trialing)
+ * Verifica que la organización tenga suscripción en estado operativo (active, trialing o incomplete)
  * y que el periodo actual no haya vencido.
- * Bloquea si no hay suscripción, está inactiva/past_due/canceled o el periodo expiró.
+ * Bloquea si no hay suscripción, está en estado no permitido (p. ej. past_due) o el periodo expiró.
+ * Excepción: `canceled` sin `stripeSubscriptionId` (sub ya borrada en Stripe) permite acceso para re-contratar.
  *
  * @throws {ForbiddenError} Si no hay suscripción, el estado no permite operaciones o está vencida
  */

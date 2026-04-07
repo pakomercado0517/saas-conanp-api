@@ -25,4 +25,5 @@ import '../../modules/evidencias/swagger/evidencia.swagger.js';
 import '../../modules/reportes/swagger/reporte.swagger.js';
 import '../../modules/payments/swagger/payment.swagger.js';
 import '../../modules/subscriptions/swagger/subscription-plan.swagger.js';
+import '../../modules/subscriptions/swagger/subscription.swagger.js';
 // etc...

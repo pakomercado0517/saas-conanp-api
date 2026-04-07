@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { createSubscription, getCurrentSubscription, changePlan, cancelSubscription, reactivateSubscription, getBillingHistory, } from '../controllers/subscription.controller.js';
-import { validateCreateSubscription, validateUpdateSubscription, validateCancelSubscription, validateReactivateSubscription, } from '../middleware/validation.middleware.js';
+import { createSubscription, createSubscriptionCheckoutSession, getCurrentSubscription, changePlan, cancelSubscription, reactivateSubscription, releaseIncompleteSubscription, getBillingHistory, } from '../controllers/subscription.controller.js';
+import { validateCreateSubscription, validateCreateSubscriptionCheckoutSession, validateUpdateSubscription, validateCancelSubscription, validateReactivateSubscription, } from '../middleware/validation.middleware.js';
 import { authenticate, requireOrganizationAccessOnly, requireAdmin, subscriptionCreateLimiter, subscriptionChangePlanLimiter, } from '../../../shared/middleware/index.js';
 /**
  * Router de suscripciones anidadas en organizaciones
@@ -15,6 +15,11 @@ const subscriptionOrgRouter = Router({ mergeParams: true });
  * Solo admins de la organización pueden crear suscripciones.
  */
 subscriptionOrgRouter.post('/', subscriptionCreateLimiter, authenticate, requireOrganizationAccessOnly, requireAdmin, validateCreateSubscription, createSubscription);
+/**
+ * POST /api/v1/organizations/:organizationId/subscriptions/checkout-session
+ * Crea sesión Stripe Checkout (modo subscription); la respuesta incluye url para redirigir al usuario.
+ */
+subscriptionOrgRouter.post('/checkout-session', subscriptionCreateLimiter, authenticate, requireOrganizationAccessOnly, requireAdmin, validateCreateSubscriptionCheckoutSession, createSubscriptionCheckoutSession);
 /**
  * GET /api/v1/organizations/:organizationId/subscriptions/current
  * Obtiene la suscripción actual de la organización.
@@ -43,6 +48,11 @@ subscriptionRouter.post('/:subscriptionId/cancel', authenticate, validateCancelS
  * Reactiva una suscripción programada para cancelarse.
  */
 subscriptionRouter.post('/:subscriptionId/reactivate', authenticate, validateReactivateSubscription, reactivateSubscription);
+/**
+ * POST /api/v1/subscriptions/:subscriptionId/release-incomplete
+ * Cancela sub huérfana en Stripe (si existe) y normaliza la fila a FREE para reintentar contratación.
+ */
+subscriptionRouter.post('/:subscriptionId/release-incomplete', authenticate, releaseIncompleteSubscription);
 /**
  * GET /api/v1/subscriptions/:subscriptionId/invoices
  * Obtiene el historial de facturación de la suscripción.

@@ -10,8 +10,17 @@ import { logger } from '../../../shared/logger/index.js';
 import { cache } from '../../../shared/cache/index.js';
 import { CacheKeys } from '../../../shared/cache/keys.js';
 import { cacheConfig } from '../../../shared/cache/config.js';
-/** Estados de suscripción que permiten operaciones (no bloquean). */
-const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
+/**
+ * Estados de suscripción que permiten acceso a rutas con requireOrganizationAccess.
+ * Incluye `incomplete`: contratación con Stripe (`default_incomplete`) antes de confirmar el pago;
+ * sin esto el admin queda bloqueado en toda el área hasta que el webhook ponga `active`.
+ */
+const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing', 'incomplete'];
+/**
+ * Tras cancelar la sub en Stripe (webhook deleted) la fila puede quedar `canceled` sin `stripeSubscriptionId`.
+ * El usuario debe poder seguir entrando al área para contratar de nuevo (Checkout); no es un fallo de rol admin.
+ */
+const isCanceledWithoutStripeSubscription = (subscription) => subscription.status === 'canceled' && !subscription.stripeSubscriptionId;
 /**
  * Invalida el caché de organización.
  * Se llama después de UPDATE/DELETE de organizaciones.
@@ -101,9 +110,10 @@ const getSubscriptionByOrganization = async (areaId) => {
     return subscription;
 };
 /**
- * Verifica que la organización tenga suscripción activa (active o trialing)
+ * Verifica que la organización tenga suscripción en estado operativo (active, trialing o incomplete)
  * y que el periodo actual no haya vencido.
- * Bloquea si no hay suscripción, está inactiva/past_due/canceled o el periodo expiró.
+ * Bloquea si no hay suscripción, está en estado no permitido (p. ej. past_due) o el periodo expiró.
+ * Excepción: `canceled` sin `stripeSubscriptionId` (sub ya borrada en Stripe) permite acceso para re-contratar.
  *
  * @throws {ForbiddenError} Si no hay suscripción, el estado no permite operaciones o está vencida
  */
@@ -112,8 +122,12 @@ export const assertActiveSubscription = async (areaId) => {
     if (!subscription) {
         throw new ForbiddenError('La dependencia no tiene suscripción. Contrata un plan para continuar.', { areaId });
     }
-    if (!ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status)) {
+    if (!ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status) &&
+        !isCanceledWithoutStripeSubscription(subscription)) {
         throw new ForbiddenError(`La suscripción no está activa (estado: ${subscription.status}). Renueva o actualiza el pago para continuar.`, { areaId, status: subscription.status });
+    }
+    if (isCanceledWithoutStripeSubscription(subscription)) {
+        return;
     }
     const now = new Date();
     if (subscription.currentPeriodEnd < now) {

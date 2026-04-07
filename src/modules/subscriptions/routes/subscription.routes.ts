@@ -1,14 +1,17 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import {
   createSubscription,
+  createSubscriptionCheckoutSession,
   getCurrentSubscription,
   changePlan,
   cancelSubscription,
   reactivateSubscription,
+  releaseIncompleteSubscription,
   getBillingHistory,
 } from '../controllers/subscription.controller.js';
 import {
   validateCreateSubscription,
+  validateCreateSubscriptionCheckoutSession,
   validateUpdateSubscription,
   validateCancelSubscription,
   validateReactivateSubscription,
@@ -42,6 +45,20 @@ subscriptionOrgRouter.post(
   requireAdmin,
   validateCreateSubscription,
   createSubscription
+);
+
+/**
+ * POST /api/v1/organizations/:organizationId/subscriptions/checkout-session
+ * Crea sesión Stripe Checkout (modo subscription); la respuesta incluye url para redirigir al usuario.
+ */
+subscriptionOrgRouter.post(
+  '/checkout-session',
+  subscriptionCreateLimiter,
+  authenticate,
+  requireOrganizationAccessOnly,
+  requireAdmin,
+  validateCreateSubscriptionCheckoutSession,
+  createSubscriptionCheckoutSession
 );
 
 /**
@@ -97,6 +114,16 @@ subscriptionRouter.post(
   authenticate,
   validateReactivateSubscription,
   reactivateSubscription
+);
+
+/**
+ * POST /api/v1/subscriptions/:subscriptionId/release-incomplete
+ * Cancela sub huérfana en Stripe (si existe) y normaliza la fila a FREE para reintentar contratación.
+ */
+subscriptionRouter.post(
+  '/:subscriptionId/release-incomplete',
+  authenticate,
+  releaseIncompleteSubscription
 );
 
 /**

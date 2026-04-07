@@ -16,6 +16,10 @@ export declare const validateListSubscriptionPlans: (req: Request, res: Response
  */
 export declare const validateCreateSubscription: (req: Request, res: Response, next: NextFunction) => void;
 /**
+ * Middleware de validación para crear sesión Stripe Checkout (suscripción)
+ */
+export declare const validateCreateSubscriptionCheckoutSession: (req: Request, res: Response, next: NextFunction) => void;
+/**
  * Middleware de validación para actualizar suscripción (cambio de plan)
  */
 export declare const validateUpdateSubscription: (req: Request, res: Response, next: NextFunction) => void;

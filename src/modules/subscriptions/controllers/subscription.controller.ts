@@ -4,6 +4,7 @@ import { sanitizeSubscriptionForResponse } from '../sanitizers/subscription-sani
 import { sendSuccess, sendCreated, sendPaginated } from '@/shared/responses/helpers.js';
 import type {
   CreateSubscriptionDTO,
+  CreateSubscriptionCheckoutSessionDTO,
   UpdateSubscriptionDTO,
   CancelSubscriptionDTO,
 } from '../validators/subscription.validator.js';
@@ -31,6 +32,36 @@ export const createSubscription = async (req: Request, res: Response): Promise<R
   const subscription = await subscriptionService.createSubscription(data, organizationId, userId);
   const sanitized = sanitizeSubscriptionForResponse(subscription);
   return sendCreated(res, sanitized, 'Suscripción creada exitosamente');
+};
+
+/**
+ * Crea una sesión de Stripe Checkout para contratar suscripción en la página alojada de Stripe.
+ *
+ * POST /api/v1/organizations/:organizationId/subscriptions/checkout-session
+ */
+export const createSubscriptionCheckoutSession = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const organizationId = req.organizationId!;
+  const userId = req.user.userId;
+  const data = req.body as CreateSubscriptionCheckoutSessionDTO;
+
+  const result = await subscriptionService.createSubscriptionCheckoutSession(
+    data,
+    organizationId,
+    userId
+  );
+
+  return sendCreated(res, result, 'Sesión de Checkout creada; redirige al usuario a url');
 };
 
 /**
@@ -157,6 +188,38 @@ export const reactivateSubscription = async (req: Request, res: Response): Promi
   );
   const sanitized = sanitizeSubscriptionForResponse(result);
   return sendSuccess(res, sanitized, 'Suscripción reactivada exitosamente');
+};
+
+/**
+ * POST /api/v1/subscriptions/:subscriptionId/release-incomplete
+ *
+ * Libera suscripción incomplete/incomplete_expired para reintentar Checkout o POST suscripción.
+ */
+export const releaseIncompleteSubscription = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'No autorizado',
+      message: 'Token de autenticación requerido',
+    });
+  }
+
+  const subscriptionId = req.params['subscriptionId'] as string;
+  const userId = req.user.userId;
+
+  const subscription = await subscriptionService.releaseIncompleteSubscriptionById(
+    subscriptionId,
+    userId
+  );
+  const sanitized = sanitizeSubscriptionForResponse(subscription);
+  return sendSuccess(
+    res,
+    sanitized,
+    'Suscripción liberada; la dependencia quedó en plan FREE activo'
+  );
 };
 
 /**
